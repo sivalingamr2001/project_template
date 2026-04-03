@@ -509,3 +509,5 @@ Server/obj/
 # Logs
 *.log
 logs/
+
+.idea
