@@ -490,3 +490,22 @@ $RECYCLE.BIN/
 *.db
 *.db-shm
 *.db-wal
+
+# --- Custom Project Rules ---
+
+# Build artifacts
+Artifact/
+
+# Frontend (React/Vite)
+client/node_modules/
+client/dist/
+client/build/
+client/.env
+
+# Backend explicit (optional safety)
+Server/bin/
+Server/obj/
+
+# Logs
+*.log
+logs/
