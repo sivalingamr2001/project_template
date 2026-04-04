@@ -43,25 +43,31 @@ export const MAX_ACCESS_DAYS = 365;
 // Mock users
 export const MOCK_USERS = {
   employee: {
-    id: 'emp-001',
+    id: 1001,
     name: 'John Doe',
     email: 'john.doe@company.com',
     role: 'EMPLOYEE' as const,
     department: 'Engineering',
+    location: 'New York',
+    phone: '555-1234',
   },
   hod: {
-    id: 'hod-001',
+    id: 1002,
     name: 'Sarah Smith',
     email: 'sarah.smith@company.com',
     role: 'HOD' as const,
     department: 'Engineering',
+    location: 'New York',
+    phone: '555-5678',
   },
   it: {
-    id: 'it-001',
+    id: 1003,
     name: 'Mike Johnson',
     email: 'mike.johnson@company.com',
     role: 'IT_INFRA' as const,
     department: 'IT Operations',
+    location: 'New York',
+    phone: '555-9012',
   },
 };
 

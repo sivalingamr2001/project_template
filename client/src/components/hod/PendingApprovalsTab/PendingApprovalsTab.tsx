@@ -1,13 +1,11 @@
 import { Card, CardContent } from '../../ui/card';
 import { PendingTable } from './PendingTable';
-import { useHODApprove } from '../useHODApprove';
 import { useHODPending } from '../useHODPending';
-import { useHODReject } from '../useHODReject';
+import { useApp } from '@/hooks/useApp';
 
 export function PendingApprovalsTab() {
   const { data = [], isLoading } = useHODPending();
-  const approve = useHODApprove();
-  const reject = useHODReject();
+  const { setSelectedRequestId, setCurrentPage } = useApp();
 
   return (
     <Card>
@@ -15,9 +13,10 @@ export function PendingApprovalsTab() {
         <PendingTable
           data={data}
           isLoading={isLoading}
-          onApprove={(id) => approve.mutate(id)}
-          onReject={(requestId, reason) => reject.mutate({ requestId, reason })}
-          isPending={approve.isPending || reject.isPending}
+          onView={(requestId) => {
+            setSelectedRequestId(requestId);
+            setCurrentPage('EMPLOYEE_REQUEST_DETAIL');
+          }}
         />
       </CardContent>
     </Card>

@@ -13,9 +13,10 @@ export class WorkflowEngine {
     item: AccessItem,
     newStatus: AccessItemStatus,
     approverRole: 'HOD' | 'IT_INFRA',
-    approverId: string,
+    approverId: number,
     approverName: string,
-    comment?: string
+    comment?: string,
+    accessType?: string
   ): { success: boolean; item: AccessItem; error?: string } {
     // Rule: Cannot approve an already expired item
     if (new Date(item.expiresAt) < new Date()) {
@@ -33,7 +34,7 @@ export class WorkflowEngine {
     }
 
     const record: ApprovalRecord = {
-      id: `approval-${Date.now()}`,
+      id: Date.now() + Math.floor(Math.random() * 10000),
       approverRole,
       approverId,
       approverName,
@@ -42,6 +43,10 @@ export class WorkflowEngine {
       timestamp: new Date().toISOString(),
       previousStatus: item.status as AccessItemStatus,
     };
+
+    if (approverRole === 'HOD' && accessType) {
+      item.accessType = accessType
+    }
 
     item.approvalHistory.push(record);
     item.status = newStatus;

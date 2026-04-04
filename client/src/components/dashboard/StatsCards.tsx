@@ -1,5 +1,5 @@
 import { useData } from '../../context/DataContext';
-import { useApp } from '../../context/AppContext';
+import { useApp } from "@/hooks/useApp"
 import { Clock, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 
 export function StatsCards() {

@@ -8,7 +8,7 @@ interface AuditLogProps {
 }
 
 export function AuditLog({ request }: AuditLogProps) {
-  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
 
   return (
     <div className="space-y-3">

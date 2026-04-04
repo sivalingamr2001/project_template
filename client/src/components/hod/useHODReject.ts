@@ -2,8 +2,9 @@ import { toast } from 'sonner';
 
 export const useHODReject = () => {
   return {
-    mutate: ({ reason }: { requestId: number; reason: string }) => {
-      toast.success(reason ? 'Request rejected' : 'Request updated');
+    mutate: (_requestId: number, reason: string) => {
+      console.log('HOD reject', _requestId, reason);
+      toast.success(reason ? 'Request rejected by HOD' : 'Request updated');
     },
     isPending: false,
   };

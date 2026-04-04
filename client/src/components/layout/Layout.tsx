@@ -10,7 +10,7 @@ export function Layout({ children }: LayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <div className="flex h-screen bg-background p-[10px]">
+    <div className="flex h-screen bg-background p-0">
       <Sidebar
         collapsed={sidebarCollapsed}
       />

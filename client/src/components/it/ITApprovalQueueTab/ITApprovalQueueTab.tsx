@@ -1,22 +1,22 @@
 import { Card, CardContent } from '../../ui/card';
 import { QueueTable } from './QueueTable';
-import { useITApprove } from '../useITApprove';
 import { useITQueue } from '../useITQueue';
-import { useITReject } from '../useITReject';
+import { useApp } from '@/hooks/useApp';
 
 export function ITApprovalQueueTab() {
   const { data = [], isLoading } = useITQueue();
-  const approve = useITApprove();
-  const reject = useITReject();
+  const { setSelectedRequestId, setCurrentPage } = useApp();
+
   return (
     <Card>
       <CardContent className="pt-4">
         <QueueTable
           data={data}
           isLoading={isLoading}
-          onApprove={(id) => approve.mutate(id)}
-          onReject={(requestId, reason) => reject.mutate({ requestId, reason })}
-          isPending={approve.isPending || reject.isPending}
+          onView={(requestId) => {
+            setSelectedRequestId(requestId);
+            setCurrentPage('EMPLOYEE_REQUEST_DETAIL');
+          }}
         />
       </CardContent>
     </Card>

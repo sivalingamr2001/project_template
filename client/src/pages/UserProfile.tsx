@@ -1,4 +1,4 @@
-import { useApp } from '../context/AppContext';
+import { useApp } from "@/hooks/useApp"
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -7,11 +7,13 @@ export function UserProfile() {
   const { currentUser, currentRole } = useApp();
 
   const profileRows = [
+    { id: 'employee-id', label: 'Employee ID', value: currentUser?.id ?? '-' },
     { id: 'name', label: 'Full Name', value: currentUser?.name ?? '-' },
+    { id: 'department', label: 'Department', value: currentUser?.department ?? '-' },
+    { id: 'location', label: 'Location', value: currentUser?.location ?? '-' },
+    { id: 'phone', label: 'Phone Number', value: currentUser?.phone ?? '-' },
     { id: 'email', label: 'Email Address', value: currentUser?.email ?? '-' },
     { id: 'role', label: 'Role', value: currentRole?.replace('_', ' ') ?? '-' },
-    { id: 'department', label: 'Department', value: currentUser?.department ?? '-' },
-    { id: 'employee-id', label: 'Employee ID', value: currentUser?.id ?? '-' },
   ];
 
   return (
@@ -23,11 +25,11 @@ export function UserProfile() {
         </p>
       </div>
 
-      <Card className="max-w-3xl shadow-sm">
+      <Card className="max-w-full shadow-sm">
         <CardHeader>
           <CardTitle>Profile Information</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-5 sm:grid-cols-2">
+        <CardContent className="grid gap-5 sm:grid-cols-3">
           {profileRows.map((field) => (
             <div key={field.id} className="space-y-2">
               <Label htmlFor={field.id}>{field.label}</Label>

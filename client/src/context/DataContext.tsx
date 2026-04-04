@@ -1,20 +1,20 @@
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 import type { AccessRequest, AccessItemStatus, Notification } from '../lib/types';
-import { generateMockRequests } from '../lib/mock-data';
-import { useApp } from './AppContext';
 import { WorkflowEngine } from '../lib/workflow-engine';
 import { processExpirations } from '../lib/expiry-job';
+import { useApp } from '@/hooks/useApp';
 
 interface DataContextType {
   requests: AccessRequest[];
   notifications: Notification[];
   addRequest: (request: AccessRequest) => void;
   updateRequest: (request: AccessRequest) => void;
-  approveItem: (requestId: string, itemId: string, comment?: string) => boolean;
-  rejectItem: (requestId: string, itemId: string, comment?: string) => boolean;
-  revokeItem: (requestId: string, itemId: string) => void;
-  extendItemExpiry: (requestId: string, itemId: string, days: number) => void;
-  markNotificationAsRead: (notificationId: string) => void;
+  approveItem: (requestId: number, itemId: number, comment?: string, accessType?: string) => boolean;
+  rejectItem: (requestId: number, itemId: number, comment?: string) => boolean;
+  revokeItem: (requestId: number, itemId: number) => void;
+  extendItemExpiry: (requestId: number, itemId: number, days: number) => void;
+  markNotificationAsRead: (notificationId: number) => void;
+  refreshData: () => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -24,7 +24,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [requests, setRequests] = useState<AccessRequest[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const generateNotifications = (reqs: AccessRequest[], role: string, userId: string) => {
+  const generateNotifications = (reqs: AccessRequest[], role: string, userId: number) => {
     const notifs: Notification[] = [];
 
     if (role === 'HOD') {
@@ -33,11 +33,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ).length;
       if (pendingCount > 0) {
         notifs.push({
-          id: `notif-hod-${Date.now()}`,
+          id: Date.now() + Math.floor(Math.random() * 10000),
           userId,
           role: 'HOD' as any,
           type: 'PENDING_APPROVAL',
-          requestId: reqs.find(r => r.items.some(i => i.status === 'PENDING'))?.id || '',
+          requestid: reqs.find(r => r.items.some(i => i.status === 'PENDING'))?.id || 0,
           message: `${pendingCount} requests waiting for approval`,
           read: false,
           createdAt: new Date().toISOString(),
@@ -49,11 +49,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       ).length;
       if (itPendingCount > 0) {
         notifs.push({
-          id: `notif-it-${Date.now()}`,
+          id: Date.now() + Math.floor(Math.random() * 10000),
           userId,
           role: 'IT_INFRA' as any,
           type: 'PENDING_APPROVAL',
-          requestId: reqs.find(r => r.items.some(i => i.status === 'APPROVED_HOD'))?.id || '',
+          requestid: reqs.find(r => r.items.some(i => i.status === 'APPROVED_HOD'))?.id || 0,
           message: `${itPendingCount} requests waiting for IT approval`,
           read: false,
           createdAt: new Date().toISOString(),
@@ -64,21 +64,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications(notifs);
   };
 
-  // Initialize mock data on mount
+  // Initialize request state empty; HOD/IT views only show user-submitted requests.
   useEffect(() => {
-    const mockRequests = generateMockRequests();
-    const processedRequests = processExpirations(mockRequests);
-    setRequests(processedRequests);
+    setRequests([]);
   }, []);
 
-  // Generate notifications when user changes
+  // Generate notifications from actual request state when user or requests change
   useEffect(() => {
     if (currentUser && currentRole) {
-      const mockRequests = generateMockRequests();
-      const processedRequests = processExpirations(mockRequests);
-      generateNotifications(processedRequests, currentRole, currentUser.id);
+      generateNotifications(requests, currentRole, currentUser.id);
     }
-  }, [currentUser, currentRole]);
+  }, [currentUser, currentRole, requests]);
 
   const addRequest = (request: AccessRequest) => {
     setRequests([...requests, request]);
@@ -88,7 +84,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setRequests(requests.map(r => (r.id === updatedRequest.id ? updatedRequest : r)));
   };
 
-  const approveItem = (requestId: string, itemId: string, comment?: string): boolean => {
+  const approveItem = (requestId: number, itemId: number, comment?: string, accessType?: string): boolean => {
     if (!currentUser || !currentRole) return false;
 
     const request = requests.find(r => r.id === requestId);
@@ -104,17 +100,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
       currentRole === 'HOD' ? 'HOD' : 'IT_INFRA',
       currentUser.id,
       currentUser.name,
-      comment
+      comment,
+      accessType
     );
 
     if (result.success) {
       const updatedRequest = {
         ...request,
         items: request.items.map(i => (i.id === itemId ? result.item : i)),
+        status: WorkflowEngine.calculateRequestStatus({
+          ...request,
+          items: request.items.map(i => (i.id === itemId ? result.item : i)),
+        }) as any,
         approvalTimeline: [
           ...request.approvalTimeline,
           {
-            id: `approval-${Date.now()}`,
+            id: Date.now() + Math.floor(Math.random() * 10000),
             approverRole: (currentRole === 'HOD' ? 'HOD' : 'IT_INFRA') as any,
             approverId: currentUser.id,
             approverName: currentUser.name,
@@ -130,7 +131,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const rejectItem = (requestId: string, itemId: string, comment?: string): boolean => {
+  const rejectItem = (requestId: number, itemId: number, comment?: string): boolean => {
     if (!currentUser || !currentRole) return false;
 
     const request = requests.find(r => r.id === requestId);
@@ -152,12 +153,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const updatedRequest = {
         ...request,
         items: request.items.map(i => (i.id === itemId ? result.item : i)),
-        status: 'REJECTED' as any,
+        status: WorkflowEngine.calculateRequestStatus({
+          ...request,
+          items: request.items.map(i => (i.id === itemId ? result.item : i)),
+        }) as any,
         rejectionReason: comment,
         approvalTimeline: [
           ...request.approvalTimeline,
           {
-            id: `approval-${Date.now()}`,
+            id: Date.now() + Math.floor(Math.random() * 10000),
             approverRole: (currentRole === 'HOD' ? 'HOD' : 'IT_INFRA') as any,
             approverId: currentUser.id,
             approverName: currentUser.name,
@@ -173,20 +177,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
-  const revokeItem = (requestId: string, itemId: string) => {
+  const revokeItem = (requestId: number, itemId: number) => {
     const request = requests.find(r => r.id === requestId);
     if (!request) return;
 
+    const updatedItems = request.items.map(item =>
+      item.id === itemId ? { ...item, status: 'REVOKED' as const } : item
+    );
     const updatedRequest = {
       ...request,
-      items: request.items.map(item =>
-        item.id === itemId ? { ...item, status: 'REVOKED' as const } : item
-      ),
+      items: updatedItems,
+      status: WorkflowEngine.calculateRequestStatus({
+        ...request,
+        items: updatedItems,
+      }) as any,
     };
     updateRequest(updatedRequest);
   };
 
-  const extendItemExpiry = (requestId: string, itemId: string, days: number) => {
+  const extendItemExpiry = (requestId: number, itemId: number, days: number) => {
     const request = requests.find(r => r.id === requestId);
     if (!request) return;
 
@@ -204,10 +213,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     updateRequest(updatedRequest);
   };
 
-  const markNotificationAsRead = (notificationId: string) => {
+  const markNotificationAsRead = (notificationId: number) => {
     setNotifications(
       notifications.map(n => (n.id === notificationId ? { ...n, read: true } : n))
     );
+  };
+
+  const refreshData = () => {
+    const processedRequests = processExpirations(requests);
+    setRequests(processedRequests);
+    if (currentUser && currentRole) {
+      generateNotifications(processedRequests, currentRole, currentUser.id);
+    }
   };
 
   return (
@@ -222,6 +239,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         revokeItem,
         extendItemExpiry,
         markNotificationAsRead,
+        refreshData,
       }}
     >
       {children}

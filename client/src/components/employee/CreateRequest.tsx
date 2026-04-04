@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { useApp } from '../../context/AppContext';
+import { useApp } from "@/hooks/useApp"
 import { SYSTEMS, ACCESS_TYPES, MAX_ACCESS_DAYS } from '../../lib/constants';
 import { generateId, addDays } from '../../lib/utils';
 import type { AccessRequest } from '../../lib/types';
@@ -8,7 +8,7 @@ import { Plus, X } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 interface AccessItemForm {
-  id: string;
+  id: number;
   system: string;
   accessType: string;
 }
@@ -23,13 +23,13 @@ export function CreateRequest() {
     setItems([...items, { id: generateId(), system: '', accessType: '' }]);
   };
 
-  const handleRemoveItem = (id: string) => {
+  const handleRemoveItem = (id: number) => {
     if (items.length > 1) {
       setItems(items.filter(item => item.id !== id));
     }
   };
 
-  const handleItemChange = (id: string, field: string, value: string) => {
+  const handleItemChange = (id: number, field: string, value: string) => {
     setItems(items.map(item => (item.id === id ? { ...item, [field]: value } : item)));
   };
 

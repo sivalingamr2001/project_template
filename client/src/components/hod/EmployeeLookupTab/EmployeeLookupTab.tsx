@@ -5,13 +5,12 @@ import { EmployeeAccessTable } from './EmployeeAccessTable';
 import { EmployeeCard } from './EmployeeCard';
 import { EmployeeSearchBar } from './EmployeeSearchBar';
 import { useEmployeeLookup } from '../useEmployeeLookup';
-import type { ApprovalItem } from '../hod.types';
 
 export function EmployeeLookupTab() {
   const [empId, setEmpId] = useState('');
   const [filter, setFilter] = useState('All');
-  const { data } = useEmployeeLookup(empId);
-  const rows = data?.accesses?.filter((item: ApprovalItem) => filter === 'All' || item.accessType === filter) ?? [];
+  const { data } = useEmployeeLookup(Number(empId));
+  const rows = data?.accesses?.filter((item) => filter === 'All' || item.accessType === filter) ?? [];
 
   return (
     <div className="space-y-4">

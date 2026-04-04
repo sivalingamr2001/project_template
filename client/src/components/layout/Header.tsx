@@ -1,5 +1,5 @@
 import { ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen, UserCircle2 } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useApp } from "@/hooks/useApp"
 import { NotificationBell } from '../shared/NotificationBell';
 import { Button } from '../ui/button';
 import {
@@ -16,10 +16,10 @@ interface HeaderProps {
 }
 
 export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
-  const { currentUser, currentRole, setCurrentRole, setCurrentPage, logout } = useApp();
+  const { currentRole, setCurrentRole, setCurrentPage, logout } = useApp();
 
   return (
-    <div className="bg-background border-b border-border px-6 py-4 flex items-center justify-between gap-4">
+    <div className="bg-background border-b border-border p-2 flex items-center justify-between gap-4">
       <div className="flex items-center gap-3">
         <Button
           variant="outline"
@@ -58,8 +58,6 @@ export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2">
               <UserCircle2 className="h-4 w-4" />
-              <span>{currentUser?.name ?? 'Profile'}</span>
-              <ChevronDown className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
 

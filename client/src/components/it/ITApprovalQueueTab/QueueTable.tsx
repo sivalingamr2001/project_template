@@ -1,51 +1,43 @@
-import type { ITQueueItem } from '../it.types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
-import { QueueActions } from './QueueActions';
+import type { ITQueueItem } from '../it.types'
+import { CommonTable } from '../../shared/CommonTable'
+import { Button } from '../../ui/button'
+import { useData } from '../../../context/DataContext'
 
 export function QueueTable(props: {
-  data: ITQueueItem[];
-  isLoading: boolean;
-  onApprove: (id: number) => void;
-  onReject: (id: number, reason: string) => void;
-  isPending: boolean;
+  data: ITQueueItem[]
+  isLoading: boolean
+  onView: (id: number) => void
 }) {
-  if (props.isLoading) {
-    return <div className="py-8 text-center text-muted-foreground">Loading IT queue...</div>;
-  }
+  const { refreshData } = useData()
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Employee</TableHead>
-          <TableHead>Folder</TableHead>
-          <TableHead>Access</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {props.data.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No queue items</TableCell>
-          </TableRow>
-        ) : (
-          props.data.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.employeeName}</TableCell>
-              <TableCell>{row.folderName}</TableCell>
-              <TableCell>{row.accessType}</TableCell>
-              <TableCell>
-                <QueueActions
-                  requestId={row.id}
-                  onApprove={props.onApprove}
-                  onReject={props.onReject}
-                  isPending={props.isPending}
-                />
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
+    <CommonTable<ITQueueItem>
+      data={props.data}
+      isLoading={props.isLoading}
+      rowKey={(row) => row.id}
+      columns={[
+        {
+          header: 'Employee',
+          cell: (row) => row.employeeName,
+        },
+        {
+          header: 'Folder',
+          cell: (row) => row.folderName,
+        },
+        {
+          header: 'Access',
+          cell: (row) => row.accessType,
+        },
+      ]}
+      renderRowActions={(row) => (
+        <Button size="sm" variant="outline" onClick={() => props.onView(row.requestId)}>
+          View
+        </Button>
+      )}
+      rowToSearchString={(row) => [row.employeeName, row.folderName, row.accessType].join(' ')}
+      onRefresh={refreshData}
+      emptyMessage="No queue items"
+      searchPlaceholder="Search queue"
+    />
+  )
 }

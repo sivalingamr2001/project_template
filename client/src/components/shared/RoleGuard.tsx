@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp } from "@/hooks/useApp"
 import type { UserRole } from '../../lib/types';
 import { Lock } from 'lucide-react';
 

@@ -5,15 +5,14 @@ import { EmployeeCard } from '../../hod/EmployeeLookupTab/EmployeeCard';
 import { EmployeeSearchBar } from '../../hod/EmployeeLookupTab/EmployeeSearchBar';
 import { ITEmployeeAccessTable } from './ITEmployeeAccessTable';
 import { useEmployeeLookup } from '../../hod/useEmployeeLookup';
-import type { ApprovalItem } from '../../hod/hod.types';
 import { useRevokeAccess } from '../useRevokeAccess';
 
 export function ITEmployeeLookupTab() {
   const [empId, setEmpId] = useState('');
   const [filter, setFilter] = useState('All');
-  const { data } = useEmployeeLookup(empId);
+  const { data } = useEmployeeLookup(Number(empId));
   const revoke = useRevokeAccess();
-  const rows = data?.accesses?.filter((item: ApprovalItem) => filter === 'All' || item.accessType === filter) ?? [];
+  const rows = data?.accesses?.filter((item) => filter === 'All' || item.accessType === filter) ?? [];
 
   return (
     <div className="space-y-4">

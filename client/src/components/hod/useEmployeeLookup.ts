@@ -1,14 +1,14 @@
 import { useData } from '../../context/DataContext';
 
-export const useEmployeeLookup = (empId: string) => {
+export const useEmployeeLookup = (empId: number) => {
   const { requests } = useData();
 
-  if (!empId.trim()) {
+  if (!empId.toString().trim()) {
     return { data: undefined, isLoading: false };
   }
 
   const employeeRequests = requests.filter((request) =>
-    request.requesterId.toLowerCase().includes(empId.toLowerCase())
+    request.requesterId.toString().includes(empId.toString())
   );
 
   if (employeeRequests.length === 0) {
@@ -19,6 +19,7 @@ export const useEmployeeLookup = (empId: string) => {
   const accesses = employeeRequests.flatMap((request, index) =>
     request.items.map((item, itemIndex) => ({
       id: Number(`${index}${itemIndex}`),
+      requestId: request.id,
       employeeName: request.requesterName,
       empId: request.requesterId,
       folderName: item.system,

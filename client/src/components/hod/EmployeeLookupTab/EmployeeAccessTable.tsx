@@ -1,34 +1,36 @@
-import type { ApprovalItem } from '../hod.types';
+import type { AccessListItem } from '../hod.types';
 import { StatusBadge } from '../../shared/StatusBadge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { CommonTable } from '../../shared/CommonTable';
+import { useData } from '../../../context/DataContext';
 
-export function EmployeeAccessTable({ data }: { data: ApprovalItem[] }) {
+export function EmployeeAccessTable({ data }: { data: AccessListItem[] }) {
+  const { refreshData } = useData();
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Folder</TableHead>
-          <TableHead>Access</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={3} className="h-20 text-center text-muted-foreground">No access records</TableCell>
-          </TableRow>
-        ) : (
-          data.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.folderName}</TableCell>
-              <TableCell>{row.accessType}</TableCell>
-              <TableCell>
-                <StatusBadge status={row.status === 'APPROVED' ? 'ACTIVE' : row.status === 'REJECTED' ? 'REJECTED' : 'PENDING'} size="sm" />
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+    <CommonTable<AccessListItem>
+      data={data}
+      isLoading={false}
+      rowKey={(row) => row.id}
+      columns={[
+        {
+          header: 'Folder',
+          cell: (row) => row.folderName,
+        },
+        {
+          header: 'Access',
+          cell: (row) => row.accessType,
+        },
+        {
+          header: 'Status',
+          cell: (row) => (
+            <StatusBadge status={row.status === 'APPROVED' ? 'ACTIVE' : row.status === 'REJECTED' ? 'REJECTED' : 'PENDING'} size="sm" />
+          ),
+        },
+      ]}
+      rowToSearchString={(row) => [row.folderName, row.accessType, row.status].join(' ')}
+      onRefresh={refreshData}
+      emptyMessage="No access records"
+      searchPlaceholder="Search access records"
+    />
   );
 }

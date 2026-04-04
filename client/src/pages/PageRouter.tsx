@@ -1,21 +1,20 @@
-import { useApp } from '../context/AppContext';
-import { RequestList } from '../components/employee/RequestList';
+import { useApp } from "@/hooks/useApp"
 import { RequestDetails } from '../components/employee/RequestDetails';
 import { HODDashboard } from '../components/hod';
 import { ITDashboard } from '../components/it';
-import { Analytics } from './Analytics';
+
 import { EmployeeDashboard } from './EmployeeDashboard';
 import { UserProfile } from './UserProfile';
 
 export function PageRouter() {
-  const { currentPage, currentRole } = useApp();
+  const { currentPage, currentRole, selectedRequestId } = useApp();
 
   if (currentRole === 'EMPLOYEE') {
     switch (currentPage) {
       case 'EMPLOYEE_DASHBOARD':
         return <EmployeeDashboard />;
-      case 'EMPLOYEE_REQUESTS':
-        return <RequestList />;
+      // case 'EMPLOYEE_REQUESTS':
+      //   return <RequestList />;
       case 'EMPLOYEE_REQUEST_DETAIL':
         return <RequestDetails />;
       case 'USER_PROFILE':
@@ -28,9 +27,11 @@ export function PageRouter() {
   if (currentRole === 'HOD') {
     switch (currentPage) {
       case 'HOD_APPROVALS':
+      case 'HOD_HISTORY':
+      case 'HOD_LOOKUP':
         return <HODDashboard />;
-      case 'ANALYTICS':
-        return <Analytics />;
+      case 'EMPLOYEE_REQUEST_DETAIL':
+        return <RequestDetails key={selectedRequestId ?? 'hod-request-detail'} />;
       case 'USER_PROFILE':
         return <UserProfile />;
       default:
@@ -41,11 +42,12 @@ export function PageRouter() {
   if (currentRole === 'IT_INFRA') {
     switch (currentPage) {
       case 'IT_QUEUE':
-        return <ITDashboard />;
       case 'IT_ACTIVE_ACCESS':
+      case 'IT_LOOKUP':
+      case 'IT_AUDIT_LOG':
         return <ITDashboard />;
-      case 'ANALYTICS':
-        return <Analytics />;
+      case 'EMPLOYEE_REQUEST_DETAIL':
+        return <RequestDetails key={selectedRequestId ?? 'it-request-detail'} />;
       case 'USER_PROFILE':
         return <UserProfile />;
       default:

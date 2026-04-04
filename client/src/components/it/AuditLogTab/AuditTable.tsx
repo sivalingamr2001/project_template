@@ -1,36 +1,34 @@
-import type { AuditLogItem } from '../it.types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
-import { AuditActionTag } from './AuditActionTag';
+import type { AuditLogItem } from '../it.types'
+import { CommonTable } from '../../shared/CommonTable'
+import { AuditActionTag } from './AuditActionTag'
+import { useData } from '../../../context/DataContext'
 
 export function AuditTable({ data, isLoading }: { data: AuditLogItem[]; isLoading: boolean }) {
-  if (isLoading) {
-    return <div className="py-8 text-center text-muted-foreground">Loading audit log...</div>;
-  }
+  const { refreshData } = useData()
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Action</TableHead>
-          <TableHead>Actor</TableHead>
-          <TableHead>Created On</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">No audit entries</TableCell>
-          </TableRow>
-        ) : (
-          data.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell><AuditActionTag action={row.action} /></TableCell>
-              <TableCell>{row.actor}</TableCell>
-              <TableCell>{row.createdOn}</TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
+    <CommonTable<AuditLogItem>
+      data={data}
+      isLoading={isLoading}
+      rowKey={(row) => row.id}
+      columns={[
+        {
+          header: 'Action',
+          cell: (row) => <AuditActionTag action={row.action} />,
+        },
+        {
+          header: 'Actor',
+          cell: (row) => row.actor,
+        },
+        {
+          header: 'Created On',
+          cell: (row) => row.createdOn,
+        },
+      ]}
+      rowToSearchString={(row) => [row.action, row.actor, row.createdOn].join(' ')}
+      onRefresh={refreshData}
+      emptyMessage="No audit entries"
+      searchPlaceholder="Search audit log"
+    />
+  )
 }

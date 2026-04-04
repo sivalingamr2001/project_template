@@ -12,7 +12,7 @@ export function generateMockRequests(): AccessRequest[] {
     // Pending requests
     {
       id: generateId(),
-      requesterId: 'emp-002',
+      requesterId: 2002,
       requesterName: 'Alice Johnson',
       requesterDept: 'Finance',
       requestedAt: addDays(now, -5),
@@ -32,7 +32,7 @@ export function generateMockRequests(): AccessRequest[] {
     },
     {
       id: generateId(),
-      requesterId: 'emp-003',
+      requesterId: 2003,
       requesterName: 'Bob Williams',
       requesterDept: 'Engineering',
       requestedAt: addDays(now, -3),
@@ -63,7 +63,7 @@ export function generateMockRequests(): AccessRequest[] {
     // HOD Approved requests
     {
       id: generateId(),
-      requesterId: 'emp-004',
+      requesterId: 2004,
       requesterName: 'Carol Davis',
       requesterDept: 'Marketing',
       requestedAt: addDays(now, -10),
@@ -106,7 +106,7 @@ export function generateMockRequests(): AccessRequest[] {
     // IT Approved (ready to activate)
     {
       id: generateId(),
-      requesterId: 'emp-005',
+      requesterId: 2005,
       requesterName: 'David Brown',
       requesterDept: 'Engineering',
       requestedAt: addDays(now, -15),
@@ -166,7 +166,7 @@ export function generateMockRequests(): AccessRequest[] {
     // Active requests
     {
       id: generateId(),
-      requesterId: 'emp-006',
+      requesterId: 2006,
       requesterName: 'Eve Wilson',
       requesterDept: 'Operations',
       requestedAt: addDays(now, -30),
@@ -224,7 +224,7 @@ export function generateMockRequests(): AccessRequest[] {
     // Expiring soon (within 30 days)
     {
       id: generateId(),
-      requesterId: 'emp-007',
+      requesterId: 2007,
       requesterName: 'Frank Miller',
       requesterDept: 'Finance',
       requestedAt: addDays(now, -340),
@@ -246,7 +246,7 @@ export function generateMockRequests(): AccessRequest[] {
     // Rejected requests
     {
       id: generateId(),
-      requesterId: 'emp-008',
+      requesterId: 2008,
       requesterName: 'Grace Lee',
       requesterDept: 'HR',
       requestedAt: addDays(now, -7),
@@ -290,7 +290,7 @@ export function generateMockRequests(): AccessRequest[] {
     // Revoked request
     {
       id: generateId(),
-      requesterId: 'emp-009',
+      requesterId: 2009,
       requesterName: 'Henry Chen',
       requesterDept: 'Sales',
       requestedAt: addDays(now, -100),
@@ -312,7 +312,7 @@ export function generateMockRequests(): AccessRequest[] {
     // Additional active requests for demo
     ...Array.from({ length: 15 }, (_, i): AccessRequest => ({
       id: generateId(),
-      requesterId: `emp-${100 + i}`,
+      requesterId: 3000 + i,
       requesterName: `Employee ${100 + i}`,
       requesterDept: ['Engineering', 'Finance', 'Marketing', 'Sales', 'Operations'][i % 5],
       requestedAt: addDays(now, -(20 + i * 3)),

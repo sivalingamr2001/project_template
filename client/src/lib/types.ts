@@ -2,11 +2,13 @@
 export type UserRole = 'EMPLOYEE' | 'HOD' | 'IT_INFRA';
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
   role: UserRole;
   department?: string;
+  location?: string;
+  phone?: string;
 }
 
 // Request status types
@@ -15,7 +17,7 @@ export type AccessItemStatus = 'PENDING' | 'APPROVED_HOD' | 'APPROVED_IT' | 'ACT
 
 // Access item types
 export interface AccessItem {
-  id: string;
+  id: number;
   system: string;
   accessType: string;
   requestedAt: string;
@@ -26,9 +28,9 @@ export interface AccessItem {
 
 // Approval record for audit trail
 export interface ApprovalRecord {
-  id: string;
+  id: number;
   approverRole: 'HOD' | 'IT_INFRA';
-  approverId: string;
+  approverId: number;
   approverName: string;
   action: 'APPROVED' | 'REJECTED';
   comment?: string;
@@ -38,8 +40,8 @@ export interface ApprovalRecord {
 
 // Main request type
 export interface AccessRequest {
-  id: string;
-  requesterId: string;
+  id: number;
+  requesterId: number;
   requesterName: string;
   requesterDept: string;
   requestedAt: string;
@@ -51,11 +53,11 @@ export interface AccessRequest {
 
 // Notification types
 export interface Notification {
-  id: string;
-  userId: string;
+  id: number;
+  userId: number;
   role: UserRole;
   type: 'PENDING_APPROVAL' | 'APPROVED' | 'REJECTED' | 'EXPIRING_SOON' | 'EXPIRED';
-  requestId: string;
+  requestid: number;
   message: string;
   read: boolean;
   createdAt: string;

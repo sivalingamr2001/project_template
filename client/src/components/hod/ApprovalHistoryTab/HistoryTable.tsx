@@ -1,40 +1,43 @@
-import type { ApprovalItem } from '../hod.types';
-import { StatusBadge } from '../../shared/StatusBadge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import type { AccessListItem } from '../hod.types'
+import { StatusBadge } from '../../shared/StatusBadge'
+import { CommonTable } from '../../shared/CommonTable'
+import { useData } from '../../../context/DataContext'
 
-export function HistoryTable({ data, isLoading }: { data: ApprovalItem[]; isLoading: boolean }) {
-  if (isLoading) {
-    return <div className="py-8 text-center text-muted-foreground">Loading history...</div>;
-  }
+export function HistoryTable({ data, isLoading }: { data: AccessListItem[]; isLoading: boolean }) {
+  const { refreshData } = useData()
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Employee</TableHead>
-          <TableHead>Folder</TableHead>
-          <TableHead>Access</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">No approval history</TableCell>
-          </TableRow>
-        ) : (
-          data.map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.employeeName}</TableCell>
-              <TableCell>{row.folderName}</TableCell>
-              <TableCell>{row.accessType}</TableCell>
-              <TableCell>
-                <StatusBadge status={row.status === 'APPROVED' ? 'ACTIVE' : row.status === 'REJECTED' ? 'REJECTED' : 'PENDING'} size="sm" />
-              </TableCell>
-            </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
-  );
+    <CommonTable<AccessListItem>
+      data={data}
+      isLoading={isLoading}
+      rowKey={(row) => row.id}
+      columns={[
+        {
+          header: 'Employee',
+          cell: (row) => row.employeeName,
+        },
+        {
+          header: 'Folder',
+          cell: (row) => row.folderName,
+        },
+        {
+          header: 'Access',
+          cell: (row) => row.accessType,
+        },
+        {
+          header: 'Status',
+          cell: (row) => (
+            <StatusBadge
+              status={row.status === 'APPROVED' ? 'ACTIVE' : row.status === 'REJECTED' ? 'REJECTED' : 'PENDING'}
+              size="sm"
+            />
+          ),
+        },
+      ]}
+      rowToSearchString={(row) => [row.employeeName, row.folderName, row.accessType, row.status].join(' ')}
+      onRefresh={refreshData}
+      emptyMessage="No approval history"
+      searchPlaceholder="Search history"
+    />
+  )
 }

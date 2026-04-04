@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { useApp } from '../../context/AppContext';
+import { useApp } from "@/hooks/useApp"
 import { formatDateTime } from '../../lib/utils';
 import { Button } from '../ui/button';
 import {

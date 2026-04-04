@@ -1,5 +1,5 @@
 import { useData } from '../../context/DataContext';
-import { useApp } from '../../context/AppContext';
+import { useApp } from "@/hooks/useApp"
 import { StatusBadge } from '../shared/StatusBadge';
 import { formatDate } from '../../lib/utils';
 import { Plus, Eye } from 'lucide-react';
@@ -57,7 +57,7 @@ export function RequestList() {
                     ))}
                   </div>
                 </div>
-                <Eye size={20} className="text-muted-foreground flex-shrink-0" />
+                <Eye size={20} className="text-muted-foreground shrink-0" />
               </div>
             </div>
           ))}

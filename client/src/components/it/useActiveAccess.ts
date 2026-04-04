@@ -8,7 +8,7 @@ export const useActiveAccess = () => {
       request.items
         .filter((item) => item.status === 'ACTIVE')
         .map((item, index) => ({
-          id: Number(`${request.id.replace(/\D/g, '') || '0'}${index}`),
+          id: request.id * 100 + index,
           employeeName: request.requesterName,
           empId: request.requesterId,
           folderName: item.system,
