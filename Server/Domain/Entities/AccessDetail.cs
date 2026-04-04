@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Server.Domain.Enums;
 
 namespace Server.Domain.Entities;
 
@@ -12,29 +13,38 @@ public class AccessDetail
     [Required]
     public int AccessRequestId { get; set; }
 
+
     [ForeignKey(nameof(AccessRequestId))]
     public AccessRequest AccessRequest { get; set; } = null!;
+
 
     [Required]
     [MaxLength(500)]
     public string FolderPath { get; set; } = string.Empty;
 
+
     [Required]
     [MaxLength(50)]
     public string AccessType { get; set; } = string.Empty;
 
+
     [MaxLength(500)]
     public string? Reason { get; set; }
 
+
     public DateTime? ExpiredAt { get; set; }
+
 
     [Required]
     [MaxLength(50)]
-    public string Status { get; set; } = "Pending";
+    public AccessStatus Status { get; set; }
+
 
     public bool IsActive { get; set; } = true;
 
+
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+
 
     [Required]
     [MaxLength(100)]

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Server.Domain.Enums;
 using Server.Infrastructure.Persistence;
 
 namespace Server.Features.AccessRequests;
@@ -25,19 +26,19 @@ public class RevokeAccessRequestHandler
             return false;
 
         request.IsRevoke = true;
-        request.Status = AccessWorkflowService.Revoked;
+        request.Status = "Revoked";
         request.ModifiedOn = DateTime.UtcNow;
         request.ModifiedBy = modifiedBy;
 
         foreach (var detail in request.Details)
         {
-            detail.Status = AccessWorkflowService.Revoked;
+            detail.Status = AccessStatus.Revoked;
             detail.ModifiedOn = DateTime.UtcNow;
             detail.ModifiedBy = modifiedBy;
 
-            foreach (var approval in detail.Approvals.Where(a => a.Status == AccessWorkflowService.Pending))
+            foreach (var approval in detail.Approvals.Where(a => a.Status != AccessStatus.Approved && a.Status != AccessStatus.Rejected))
             {
-                approval.Status = AccessWorkflowService.Revoked;
+                approval.Status = AccessStatus.Revoked;
                 approval.ModifiedOn = DateTime.UtcNow;
                 approval.ModifiedBy = modifiedBy;
             }

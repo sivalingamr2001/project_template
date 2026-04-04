@@ -1,15 +1,11 @@
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 using Server.Infrastructure.Persistence;
 
 namespace Server.Features.AccessRequests;
 
 public class AccessWorkflowService
 {
-    public const string Pending = "Pending";
-    public const string Approved = "Approved";
-    public const string Rejected = "Rejected";
-    public const string Revoked = "Revoked";
-
     private readonly AppDbContext _db;
 
     public AccessWorkflowService(AppDbContext db) => _db = db;
@@ -70,21 +66,27 @@ public class AccessWorkflowService
 
     public void UpdateDetailStatus(AccessDetail detail, string modifiedBy)
     {
-        if (detail.Approvals.Any(a => a.Status == Rejected))
+        if (detail.Approvals.Any(a => a.Status == AccessStatus.Rejected))
         {
-            detail.Status = Rejected;
+            detail.Status = AccessStatus.Rejected;
         }
-        else if (detail.Approvals.All(a => a.Status == Approved))
+        else if (detail.Approvals.Any(a => a.Status == AccessStatus.Revoked))
         {
-            detail.Status = Approved;
+            detail.Status = AccessStatus.Revoked;
         }
-        else if (detail.Approvals.Any(a => a.Status == Revoked))
+        else if (detail.Approvals.All(a => a.Status == AccessStatus.Approved))
         {
-            detail.Status = Revoked;
+            detail.Status = AccessStatus.Approved;
+        }
+        else if (detail.Approvals.Any(a => a.ApprovalLevel == ApprovalType.HOD && a.Status == AccessStatus.Approved))
+        {
+            // HOD approved, IT still pending
+            detail.Status = AccessStatus.PendingIT;
         }
         else
         {
-            detail.Status = Pending;
+            // HOD not yet approved
+            detail.Status = AccessStatus.PendingHOD;
         }
 
         detail.ModifiedOn = DateTime.UtcNow;
@@ -95,23 +97,23 @@ public class AccessWorkflowService
     {
         if (!request.Details.Any())
         {
-            request.Status = Pending;
+            request.Status = "Pending";
         }
-        else if (request.Details.Any(d => d.Status == Rejected))
+        else if (request.Details.Any(d => d.Status == AccessStatus.Rejected))
         {
-            request.Status = Rejected;
+            request.Status = "Rejected";
         }
-        else if (request.Details.Any(d => d.Status == Revoked) || request.IsRevoke)
+        else if (request.Details.Any(d => d.Status == AccessStatus.Revoked) || request.IsRevoke)
         {
-            request.Status = Revoked;
+            request.Status = "Revoked";
         }
-        else if (request.Details.All(d => d.Status == Approved))
+        else if (request.Details.All(d => d.Status == AccessStatus.Approved))
         {
-            request.Status = Approved;
+            request.Status = "Approved";
         }
         else
         {
-            request.Status = Pending;
+            request.Status = "Pending";
         }
 
         request.ModifiedOn = DateTime.UtcNow;

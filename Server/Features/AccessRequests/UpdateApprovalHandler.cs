@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Application.DTOs;
+using Server.Domain.Enums;
 using Server.Infrastructure.Persistence;
 
 namespace Server.Features.AccessRequests;
@@ -28,7 +29,6 @@ public class UpdateApprovalHandler
             return null;
 
         const string modifiedBy = "system";
-        var normalizedStatus = action.Status.Trim();
 
         approval.Status = action.Status;
         approval.Comments = action.Comments;
@@ -39,8 +39,8 @@ public class UpdateApprovalHandler
         var detail = approval.AccessDetail;
         var request = detail.AccessRequest;
 
-        if (normalizedStatus.Equals(AccessWorkflowService.Approved, StringComparison.OrdinalIgnoreCase) &&
-            action.ApprovalLevel == 2 &&
+        if (action.Status == AccessStatus.Approved &&
+            action.ApprovalLevel == ApprovalType.IT &&
             detail.ExpiredAt is null)
         {
             detail.ExpiredAt = DateTime.UtcNow.AddDays(365);
@@ -49,15 +49,15 @@ public class UpdateApprovalHandler
         _workflow.UpdateDetailStatus(detail, modifiedBy);
         _workflow.UpdateRequestStatus(request, modifiedBy);
 
-        await AddNotificationsAsync(requestId, detail, approval, normalizedStatus, modifiedBy);
+        await AddNotificationsAsync(requestId, detail, approval, action.Status, modifiedBy);
         await _workflow.AddAuditAsync(
             requestId,
             detailId,
             approvalId,
             action.ApproverEmpId,
             $"ApprovalLevel{action.ApprovalLevel}Updated",
-            normalizedStatus,
-            $"Approval level {action.ApprovalLevel} updated to {normalizedStatus} for request #{requestId}, detail #{detailId}.",
+            action.Status.ToString(),
+            $"Approval level {action.ApprovalLevel} updated to {action.Status} for request #{requestId}, detail #{detailId}.",
             action.Comments,
             modifiedBy);
 
@@ -66,24 +66,24 @@ public class UpdateApprovalHandler
         return approval.ToDto();
     }
 
-    private async Task AddNotificationsAsync(int requestId, Domain.Entities.AccessDetail detail, Domain.Entities.AccessApproval approval, string status, string createdBy)
+    private async Task AddNotificationsAsync(int requestId, Domain.Entities.AccessDetail detail, Domain.Entities.AccessApproval approval, AccessStatus status, string createdBy)
     {
-        if (approval.ApprovalLevel == 1 &&
-            status.Equals(AccessWorkflowService.Approved, StringComparison.OrdinalIgnoreCase))
+        if (approval.ApprovalLevel == ApprovalType.HOD &&
+            status == AccessStatus.Approved)
         {
             await _workflow.AddNotificationAsync(requestId, detail.Id, approval.Id, detail.AccessRequest.EmpId, "User", "HodApproved",
                 $"HOD approved request #{requestId} for {detail.FolderPath}. It is now waiting for IT Infra approval.", createdBy);
             await _workflow.AddNotificationAsync(requestId, detail.Id, approval.Id, null, "ITInfra", "ApprovalPending",
                 $"Request #{requestId} for {detail.FolderPath} is waiting for IT Infra approval.", createdBy);
         }
-        else if (approval.ApprovalLevel == 1 &&
-                 status.Equals(AccessWorkflowService.Rejected, StringComparison.OrdinalIgnoreCase))
+        else if (approval.ApprovalLevel == ApprovalType.HOD &&
+                 status == AccessStatus.Rejected)
         {
             await _workflow.AddNotificationAsync(requestId, detail.Id, approval.Id, detail.AccessRequest.EmpId, "User", "HodRejected",
                 $"HOD rejected request #{requestId} for {detail.FolderPath}.", createdBy);
         }
-        else if (approval.ApprovalLevel == 2 &&
-                 status.Equals(AccessWorkflowService.Approved, StringComparison.OrdinalIgnoreCase))
+        else if (approval.ApprovalLevel == ApprovalType.IT &&
+                 status == AccessStatus.Approved)
         {
             await _workflow.AddNotificationAsync(requestId, detail.Id, approval.Id, detail.AccessRequest.EmpId, "User", "InfraApproved",
                 $"IT Infra approved request #{requestId} for {detail.FolderPath}. Access granted until {detail.ExpiredAt:yyyy-MM-dd}.", createdBy);
@@ -92,8 +92,8 @@ public class UpdateApprovalHandler
             await _workflow.AddNotificationAsync(requestId, detail.Id, approval.Id, approval.ApproverEmpId, "ITInfra", "InfraApproved",
                 $"You approved request #{requestId} for {detail.FolderPath}.", createdBy);
         }
-        else if (approval.ApprovalLevel == 2 &&
-                 status.Equals(AccessWorkflowService.Rejected, StringComparison.OrdinalIgnoreCase))
+        else if (approval.ApprovalLevel == ApprovalType.IT &&
+                 status == AccessStatus.Rejected)
         {
             await _workflow.AddNotificationAsync(requestId, detail.Id, approval.Id, detail.AccessRequest.EmpId, "User", "InfraRejected",
                 $"IT Infra rejected request #{requestId} for {detail.FolderPath}.", createdBy);

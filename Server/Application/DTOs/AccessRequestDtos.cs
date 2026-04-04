@@ -1,17 +1,19 @@
+using Server.Domain.Enums;
+
 namespace Server.Application.DTOs;
 
 public record AccessDetailCreateDto(string FolderPath, string AccessType, string? Reason, DateTime? ExpiredAt);
 
 public record AccessRequestCreateDto(int EmpId, string ITSRNumber, bool IsAgreed, bool IsRevoke, List<AccessDetailCreateDto> Details);
 
-public record AccessApprovalActionDto(int ApproverEmpId, int ApprovalLevel, string Status, string? Comments);
+public record AccessApprovalActionDto(int ApproverEmpId, ApprovalType ApprovalLevel, AccessStatus Status, string? Comments);
 
 public record AccessApprovalResponseDto(
     int Id,
     int AccessDetailId,
     int ApproverEmpId,
-    int ApprovalLevel,
-    string Status,
+    ApprovalType ApprovalLevel,
+    AccessStatus Status,
     string? Comments,
     DateTime CreatedOn,
     string CreatedBy,
@@ -24,7 +26,7 @@ public record AccessDetailResponseDto(
     string FolderPath,
     string AccessType,
     string? Reason,
-    string Status,
+    AccessStatus Status,
     DateTime? ExpiredAt,
     bool IsActive,
     DateTime CreatedOn,
@@ -53,10 +55,10 @@ public record PendingApprovalQueueItemDto(
     int ApprovalId,
     int RequestEmpId,
     int ApproverEmpId,
-    int ApprovalLevel,
+    ApprovalType ApprovalLevel,
     string RequestStatus,
-    string DetailStatus,
-    string ApprovalStatus,
+    AccessStatus DetailStatus,
+    AccessStatus ApprovalStatus,
     string FolderPath,
     string AccessType,
     string? Reason,
@@ -71,7 +73,7 @@ public record ActiveAccessDto(
     int EmpId,
     string FolderPath,
     string AccessType,
-    string Status,
+    AccessStatus Status,
     DateTime? GrantedUntil,
     bool IsExpired,
     string? ITSRNumber,

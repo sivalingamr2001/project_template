@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Server.Application.DTOs;
+using Server.Domain.Enums;
 using Server.Infrastructure.Persistence;
 
 namespace Server.Features.AccessRequests;
@@ -55,8 +56,8 @@ public static class AccessRequestEndpoints
                 .Include(a => a.AccessDetail)
                 .ThenInclude(d => d.AccessRequest)
                 .Where(a =>
-                    a.ApprovalLevel == 1 &&
-                    a.Status == AccessWorkflowService.Pending &&
+                    a.ApprovalLevel == ApprovalType.HOD &&
+                    a.Status == AccessStatus.PendingHOD &&
                     (a.ApproverEmpId == 0 || a.ApproverEmpId == hodId))
                 .OrderBy(a => a.AccessDetail.AccessRequest.CreatedOn)
                 .Select(a => new PendingApprovalQueueItemDto(
@@ -88,10 +89,10 @@ public static class AccessRequestEndpoints
                 .Include(a => a.AccessDetail)
                 .ThenInclude(d => d.AccessRequest)
                 .Where(a =>
-                    a.ApprovalLevel == 2 &&
-                    a.Status == AccessWorkflowService.Pending &&
+                    a.ApprovalLevel == ApprovalType.IT &&
+                    a.Status == AccessStatus.PendingIT &&
                     (a.ApproverEmpId == 0 || a.ApproverEmpId == infraEmpId) &&
-                    a.AccessDetail.Approvals.Any(s => s.ApprovalLevel == 1 && s.Status == AccessWorkflowService.Approved))
+                    a.AccessDetail.Approvals.Any(s => s.ApprovalLevel == ApprovalType.HOD && s.Status == AccessStatus.Approved))
                 .OrderBy(a => a.AccessDetail.AccessRequest.CreatedOn)
                 .Select(a => new PendingApprovalQueueItemDto(
                     a.AccessDetail.AccessRequestId,
@@ -121,8 +122,8 @@ public static class AccessRequestEndpoints
             var query = db.AccessDetails
                 .Include(d => d.AccessRequest)
                 .Where(d =>
-                    d.Status == AccessWorkflowService.Approved &&
-                    d.AccessRequest.Status == AccessWorkflowService.Approved &&
+                    d.Status == AccessStatus.Approved &&
+                    d.AccessRequest.Status == "Approved" &&
                     !d.AccessRequest.IsRevoke &&
                     d.IsActive);
 
@@ -158,7 +159,7 @@ public static class AccessRequestEndpoints
             var query = db.AccessDetails
                 .Include(d => d.AccessRequest)
                 .Where(d =>
-                    d.Status == AccessWorkflowService.Approved &&
+                    d.Status == AccessStatus.Approved &&
                     d.ExpiredAt.HasValue &&
                     d.ExpiredAt.Value <= threshold &&
                     !d.AccessRequest.IsRevoke);

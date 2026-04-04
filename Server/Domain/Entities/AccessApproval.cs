@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Server.Domain.Enums;
 
 namespace Server.Domain.Entities;
 
@@ -9,21 +10,31 @@ public class AccessApproval
     [Key]
     public int Id { get; set; }
 
+
     [Required]
     public int AccessDetailId { get; set; }
+
 
     [ForeignKey(nameof(AccessDetailId))]
     public AccessDetail AccessDetail { get; set; } = null!;
 
-    [Required]
-    public int ApproverEmpId { get; set; }
 
     [Required]
-    public int ApprovalLevel { get; set; }
+    public int ApproverEmpId { get; set; }  
 
     [Required]
     [MaxLength(50)]
-    public string Status { get; set; } = "Pending";
+    public string TypeOfAccessApproved { get; set; } = string.Empty;
+
+
+    [Required]
+    public ApprovalType ApprovalLevel { get; set; }
+
+
+    [Required]
+    [MaxLength(50)]
+    public AccessStatus Status { get; set; }
+
 
     [MaxLength(1000)]
     public string? Comments { get; set; }

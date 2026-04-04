@@ -1,5 +1,6 @@
 using Server.Application.DTOs;
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 using Server.Infrastructure.Persistence;
 
 namespace Server.Features.AccessRequests;
@@ -23,7 +24,7 @@ public class CreateAccessRequestHandler
         var entity = new AccessRequest
         {
             EmpId = request.EmpId,
-            Status = AccessWorkflowService.Pending,
+            Status = "Pending",
             IsAgreed = request.IsAgreed,
             IsRevoke = request.IsRevoke,
             ITSRNumber = request.ITSRNumber,
@@ -41,7 +42,7 @@ public class CreateAccessRequestHandler
                 AccessType = item.AccessType,
                 Reason = item.Reason ?? string.Empty,
                 ExpiredAt = item.ExpiredAt,
-                Status = AccessWorkflowService.Pending,
+                Status = AccessStatus.PendingHOD,
                 CreatedOn = now,
                 CreatedBy = createdBy,
                 ModifiedOn = now,
@@ -51,8 +52,8 @@ public class CreateAccessRequestHandler
             detail.Approvals.Add(new AccessApproval
             {
                 ApproverEmpId = 0,
-                ApprovalLevel = 1,
-                Status = AccessWorkflowService.Pending,
+                ApprovalLevel = ApprovalType.HOD,
+                Status = AccessStatus.PendingHOD,
                 CreatedOn = now,
                 CreatedBy = createdBy,
                 ModifiedOn = now,
@@ -62,8 +63,8 @@ public class CreateAccessRequestHandler
             detail.Approvals.Add(new AccessApproval
             {
                 ApproverEmpId = 0,
-                ApprovalLevel = 2,
-                Status = AccessWorkflowService.Pending,
+                ApprovalLevel = ApprovalType.IT,
+                Status = AccessStatus.PendingIT,
                 CreatedOn = now,
                 CreatedBy = createdBy,
                 ModifiedOn = now,
