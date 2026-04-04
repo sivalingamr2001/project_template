@@ -11,6 +11,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/auth": "http://localhost:5258",
+      "/access-requests": "http://localhost:5258",
+      "/notifications": "http://localhost:5258",
+    },
+  },
   build: {
     outDir: path.resolve(__dirname, '../Artifact/client'),
   },

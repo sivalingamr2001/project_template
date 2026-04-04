@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Server.Features.AccessRequests;
 using Server.Features.Users.Login;
-using Server.Features.Users.Register;
 using Server.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,15 +13,18 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped<RegisterHandler>();
 builder.Services.AddScoped<LoginHandler>();
+builder.Services.AddScoped<AccessWorkflowService>();
+builder.Services.AddScoped<CreateAccessRequestHandler>();
+builder.Services.AddScoped<UpdateApprovalHandler>();
+builder.Services.AddScoped<RevokeAccessRequestHandler>();
 
 // Add CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactClient", policy =>
     {
-        policy.WithOrigins("http://localhost:5173") // Vite default port
+        policy.WithOrigins("http://localhost:3001") // Vite default port
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
@@ -48,8 +51,8 @@ app.UseCors("AllowReactClient");
 
 app.MapHealthChecks("/health");
 
-app.MapRegisterEndpoint();
 app.MapLoginEndpoint();
+app.MapAccessRequestEndpoints();
 
 // Serve React SPA
 app.MapFallbackToFile("index.html");
