@@ -16,18 +16,15 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
 
   const getIcon = () => {
     switch (status) {
-      case 'PENDING':
+      case 'PendingHOD':
+      case 'PendingIT':
         return <Clock size={iconSize} className="mr-1" />;
-      case 'APPROVED_HOD':
-      case 'HOD_APPROVED':
-      case 'APPROVED_IT':
-      case 'IT_APPROVED':
-      case 'ACTIVE':
+      case 'Approved':
         return <CheckCircle size={iconSize} className="mr-1" />;
-      case 'REJECTED':
-      case 'REVOKED':
+      case 'Rejected':
+      case 'Revoked':
         return <XCircle size={iconSize} className="mr-1" />;
-      case 'EXPIRED':
+      case 'Expired':
         return <AlertCircle size={iconSize} className="mr-1" />;
       default:
         return null;

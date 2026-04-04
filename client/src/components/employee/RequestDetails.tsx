@@ -54,15 +54,15 @@ export function RequestDetails() {
     )
   }
 
-  const hodStageCompleted = ["HOD_APPROVED", "IT_APPROVED", "ACTIVE"].includes(
+  const hodStageCompleted = ["PendingIT", "Approved"].includes(
     request.status
   )
-  const itStageCompleted = ["IT_APPROVED", "ACTIVE"].includes(request.status)
-  const isRejected = request.status === "REJECTED"
+  const itStageCompleted = ["Approved"].includes(request.status)
+  const isRejected = request.status === "Rejected"
 
   const actionableItems = request.items.filter((item) => {
-    if (currentRole === "HOD") return item.status === "PENDING"
-    if (currentRole === "IT_INFRA") return item.status === "APPROVED_HOD"
+    if (currentRole === "HOD") return item.status === "PendingHOD"
+    if (currentRole === "IT") return item.status === "PendingIT"
     return false
   })
 
@@ -127,7 +127,7 @@ export function RequestDetails() {
           ? "failed"
           : itStageCompleted
             ? "complete"
-            : request.status === "HOD_APPROVED"
+            : request.status === "PendingIT"
               ? "active"
               : "pending",
       description: "IT finalizes infrastructure access.",
@@ -154,7 +154,7 @@ export function RequestDetails() {
           setCurrentPage(
             currentRole === "HOD"
               ? "HOD_APPROVALS"
-              : currentRole === "IT_INFRA"
+              : currentRole === "IT"
                 ? "IT_QUEUE"
                 : "EMPLOYEE_REQUESTS"
           )
@@ -421,7 +421,7 @@ export function RequestDetails() {
                               [item.id]: value,
                             }))
                           }}
-                          disabled={currentRole === "IT_INFRA"}
+                          disabled={currentRole === "IT"}
                         >
                           <SelectTrigger
                             id={`dialog-item-access-${item.id}`}

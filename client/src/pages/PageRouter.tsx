@@ -39,7 +39,7 @@ export function PageRouter() {
     }
   }
 
-  if (currentRole === 'IT_INFRA') {
+  if (currentRole === 'IT') {
     switch (currentPage) {
       case 'IT_QUEUE':
       case 'IT_ACTIVE_ACCESS':

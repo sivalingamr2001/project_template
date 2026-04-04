@@ -43,17 +43,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
           createdAt: new Date().toISOString(),
         });
       }
-    } else if (role === 'IT_INFRA') {
+    } else if (role === 'IT') {
       const itPendingCount = reqs.filter(r =>
-        r.items.some(i => i.status === 'APPROVED_HOD')
+        r.items.some(i => i.status === 'PendingIT')
       ).length;
       if (itPendingCount > 0) {
         notifs.push({
           id: Date.now() + Math.floor(Math.random() * 10000),
           userId,
-          role: 'IT_INFRA' as any,
+          role: 'IT' as any,
           type: 'PENDING_APPROVAL',
-          requestid: reqs.find(r => r.items.some(i => i.status === 'APPROVED_HOD'))?.id || 0,
+          requestid: reqs.find(r => r.items.some(i => i.status === 'PendingIT'))?.id || 0,
           message: `${itPendingCount} requests waiting for IT approval`,
           read: false,
           createdAt: new Date().toISOString(),
@@ -93,11 +93,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const item = request.items.find(i => i.id === itemId);
     if (!item) return false;
 
-    const newStatus = currentRole === 'HOD' ? 'APPROVED_HOD' : 'APPROVED_IT';
+    const newStatus = currentRole === 'HOD' ? 'PendingIT' : 'Approved';
     const result = WorkflowEngine.transitionItemStatus(
       item,
       newStatus as AccessItemStatus,
-      currentRole === 'HOD' ? 'HOD' : 'IT_INFRA',
+      currentRole === 'HOD' ? 'HOD' : 'IT',
       currentUser.id,
       currentUser.name,
       comment,
@@ -116,10 +116,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...request.approvalTimeline,
           {
             id: Date.now() + Math.floor(Math.random() * 10000),
-            approverRole: (currentRole === 'HOD' ? 'HOD' : 'IT_INFRA') as any,
+            approverRole: (currentRole === 'HOD' ? 'HOD' : 'IT') as any,
             approverId: currentUser.id,
             approverName: currentUser.name,
-            action: 'APPROVED' as const,
+            action: 'HODApproved' as const,
             comment,
             timestamp: new Date().toISOString(),
           },
@@ -142,8 +142,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
     const result = WorkflowEngine.transitionItemStatus(
       item,
-      'REJECTED',
-      currentRole === 'HOD' ? 'HOD' : 'IT_INFRA',
+      'Rejected',
+      currentRole === 'HOD' ? 'HOD' : 'IT',
       currentUser.id,
       currentUser.name,
       comment
@@ -162,10 +162,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ...request.approvalTimeline,
           {
             id: Date.now() + Math.floor(Math.random() * 10000),
-            approverRole: (currentRole === 'HOD' ? 'HOD' : 'IT_INFRA') as any,
+            approverRole: (currentRole === 'HOD' ? 'HOD' : 'IT') as any,
             approverId: currentUser.id,
             approverName: currentUser.name,
-            action: 'REJECTED' as const,
+            action: 'HODRejected' as const,
             comment,
             timestamp: new Date().toISOString(),
           },

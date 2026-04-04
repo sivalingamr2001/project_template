@@ -6,18 +6,17 @@ import { formatDate } from '../../lib/utils';
 import type { AccessRequest } from '../../lib/types';
 
 const statusSteps = [
-  { key: 'PENDING', label: 'Submitted', color: 'bg-yellow-500' },
-  { key: 'HOD_APPROVED', label: 'HOD Review', color: 'bg-blue-500' },
-  { key: 'APPROVED_IT', label: 'IT Review', color: 'bg-orange-500' },
-  { key: 'ACTIVE', label: 'Access Granted', color: 'bg-green-500' },
-  { key: 'EXPIRED', label: 'Expired/Revoked', color: 'bg-red-500' },
+  { key: 'PendingHOD', label: 'Submitted', color: 'bg-yellow-500' },
+  { key: 'PendingIT', label: 'HOD Review', color: 'bg-blue-500' },
+  { key: 'Approved', label: 'Access Granted', color: 'bg-green-500' },
+  { key: 'Expired', label: 'Expired/Revoked', color: 'bg-red-500' },
 ];
 
 export function RequestTimeline({ request }: { request?: AccessRequest }) {
   if (!request) return null;
 
   const normalizedStatus =
-    request.status === 'REVOKED' || request.status === 'REJECTED' ? 'EXPIRED' : request.status;
+    request.status === 'Revoked' || request.status === 'Rejected' ? 'Expired' : request.status;
   let currentStepIndex = statusSteps.findIndex(step => step.key === normalizedStatus);
   if (currentStepIndex < 0) currentStepIndex = 0;
 

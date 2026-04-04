@@ -16,9 +16,9 @@ export function EmployeeDashboard() {
   const userRequests = requests.filter((r) => r.requesterId === currentUser?.id)
   const stats = {
     totalRequests: userRequests.length,
-    approved: userRequests.filter((r) => r.status === "ACTIVE").length,
+    approved: userRequests.filter((r) => r.status === "Approved").length,
     pending: userRequests.filter((r) =>
-      ["PENDING", "HOD_APPROVED"].includes(r.status)
+      ["PendingHOD", "PendingIT"].includes(r.status)
     ).length,
   }
 
@@ -40,7 +40,7 @@ export function EmployeeDashboard() {
       expiresAt: new Date(
         Date.now() + (detail.durationDays || 30) * 86400000
       ).toISOString(),
-      status: "PENDING" as const,
+      status: "PendingHOD" as const,
       approvalHistory: [],
     }))
 
@@ -51,7 +51,7 @@ export function EmployeeDashboard() {
       requesterDept: currentUser.department || "Unknown",
       requestedAt: now,
       items,
-      status: "PENDING",
+      status: "PendingHOD",
       approvalTimeline: [],
     }
 

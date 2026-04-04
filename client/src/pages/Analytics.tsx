@@ -8,7 +8,7 @@ export function Analytics() {
   const { requests } = useData();
 
   return (
-    <RoleGuard allowed={['HOD', 'IT_INFRA']}>
+    <RoleGuard allowed={['HOD', 'IT']}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>

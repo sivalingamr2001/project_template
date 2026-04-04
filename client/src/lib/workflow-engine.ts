@@ -12,7 +12,7 @@ export class WorkflowEngine {
   static transitionItemStatus(
     item: AccessItem,
     newStatus: AccessItemStatus,
-    approverRole: 'HOD' | 'IT_INFRA',
+    approverRole: ApprovalType,
     approverId: number,
     approverName: string,
     comment?: string,
@@ -24,7 +24,7 @@ export class WorkflowEngine {
     }
 
     // Rule: IT cannot approve before HOD
-    if (approverRole === 'IT_INFRA' && item.status !== 'APPROVED_HOD') {
+    if (approverRole === 'IT' && item.status !== 'PendingHOD') {
       return { success: false, item, error: 'IT can only approve after HOD approval' };
     }
 
@@ -57,16 +57,16 @@ export class WorkflowEngine {
   /**
    * Calculate request status based on all items
    */
-  static calculateRequestStatus(request: AccessRequest): string {
+  static calculateRequestStatus(request: AccessRequest): AccessStatus {
     const itemStatuses = request.items.map(i => i.status);
 
-    if (itemStatuses.includes('REJECTED')) return 'REJECTED';
-    if (itemStatuses.every(s => s === 'ACTIVE')) return 'ACTIVE';
-    if (itemStatuses.every(s => ['ACTIVE', 'EXPIRED'].includes(s))) return 'ACTIVE';
-    if (itemStatuses.includes('APPROVED_IT')) return 'IT_APPROVED';
-    if (itemStatuses.includes('APPROVED_HOD')) return 'HOD_APPROVED';
-    if (itemStatuses.includes('REVOKED')) return 'REVOKED';
-    return 'PENDING';
+    if (itemStatuses.includes('Rejected')) return 'Rejected';
+    if (itemStatuses.every(s => s === 'Approved')) return 'Approved';
+    if (itemStatuses.every(s => ['Approved', 'Expired'].includes(s))) return 'Approved';
+    if (itemStatuses.includes('PendingIT')) return 'PendingIT';
+    if (itemStatuses.includes('PendingHOD')) return 'PendingHOD';
+    if (itemStatuses.includes('Revoked')) return 'Revoked';
+    return 'PendingHOD';
   }
 
   /**
@@ -74,7 +74,7 @@ export class WorkflowEngine {
    */
   static allItemsReviewedByHod(request: AccessRequest): boolean {
     return request.items.every(item =>
-      ['APPROVED_HOD', 'REJECTED', 'REVOKED'].includes(item.status)
+      ['PendingIT', 'Approved', 'Rejected', 'Revoked'].includes(item.status)
     );
   }
 
@@ -83,19 +83,19 @@ export class WorkflowEngine {
    */
   static allItemsReviewedByIT(request: AccessRequest): boolean {
     return request.items.every(item =>
-      ['APPROVED_IT', 'REJECTED', 'REVOKED'].includes(item.status)
+      ['Approved', 'Rejected', 'Revoked'].includes(item.status)
     );
   }
 
   /**
    * Check if request can progress to next stage
    */
-  static canProgressToNextStage(request: AccessRequest, currentRole: 'HOD' | 'IT_INFRA'): boolean {
+  static canProgressToNextStage(request: AccessRequest, currentRole: ApprovalType): boolean {
     if (currentRole === 'HOD') {
       return this.allItemsReviewedByHod(request);
     }
-    if (currentRole === 'IT_INFRA') {
-      return this.allItemsReviewedByIT(request) && request.items.every(i => i.status !== 'APPROVED_HOD');
+    if (currentRole === 'IT') {
+      return this.allItemsReviewedByIT(request) && request.items.every(i => i.status !== 'PendingHOD');
     }
     return false;
   }
@@ -103,12 +103,12 @@ export class WorkflowEngine {
   /**
    * Get pending items for a role
    */
-  static getPendingItemsForRole(request: AccessRequest, role: 'HOD' | 'IT_INFRA'): AccessItem[] {
+  static getPendingItemsForRole(request: AccessRequest, role: ApprovalType): AccessItem[] {
     if (role === 'HOD') {
-      return request.items.filter(i => i.status === 'PENDING');
+      return request.items.filter(i => i.status === 'PendingHOD');
     }
-    if (role === 'IT_INFRA') {
-      return request.items.filter(i => i.status === 'APPROVED_HOD');
+    if (role === 'IT') {
+      return request.items.filter(i => i.status === 'PendingIT');
     }
     return [];
   }
@@ -117,8 +117,8 @@ export class WorkflowEngine {
    * Activate an access item (make it ACTIVE from approved states)
    */
   static activateItem(item: AccessItem): AccessItem {
-    if (item.status === 'APPROVED_IT') {
-      item.status = 'ACTIVE';
+    if (item.status === 'PendingIT') {
+      item.status = 'Approved';
     }
     return item;
   }
@@ -127,8 +127,8 @@ export class WorkflowEngine {
    * Check and mark items as expired if past expiry date
    */
   static checkAndMarkExpired(item: AccessItem): AccessItem {
-    if (item.status === 'ACTIVE' && new Date(item.expiresAt) < new Date()) {
-      item.status = 'EXPIRED';
+    if (item.status === 'Approved' && new Date(item.expiresAt) < new Date()) {
+      item.status = 'Expired';
     }
     return item;
   }
@@ -137,7 +137,7 @@ export class WorkflowEngine {
    * Check if item is expiring soon (within 30 days)
    */
   static isExpiringWithin30Days(item: AccessItem): boolean {
-    if (item.status !== 'ACTIVE') return false;
+    if (item.status !== 'Approved') return false;
     const daysUntilExpiry = Math.ceil(
       (new Date(item.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
     );

@@ -34,12 +34,12 @@ export function Sidebar({ collapsed }: SidebarProps) {
 
   const getPendingCount = () => {
     if (currentRole === "HOD") {
-      return requests.filter((r) => r.items.some((i) => i.status === "PENDING"))
+      return requests.filter((r) => r.items.some((i) => i.status === "PendingHOD"))
         .length
     }
-    if (currentRole === "IT_INFRA") {
+    if (currentRole === "IT") {
       return requests.filter((r) =>
-        r.items.some((i) => i.status === "APPROVED_HOD")
+        r.items.some((i) => i.status === "PendingIT")
       ).length
     }
     return 0

@@ -79,7 +79,7 @@ export function revokeAccessItem(
   return {
     ...request,
     items: request.items.map((item) =>
-      item.id === itemId ? { ...item, status: "REVOKED" as const } : item
+      item.id === itemId ? { ...item, status: "Revoked" as const } : item
     ),
   }
 }
