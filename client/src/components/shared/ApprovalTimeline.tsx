@@ -8,6 +8,9 @@ interface ApprovalTimelineProps {
 }
 
 export function ApprovalTimeline({ timeline, compact = false }: ApprovalTimelineProps) {
+  const isApprovedAction = (action: ApprovalRecord["action"]) =>
+    action === 'HODApproved' || action === 'ITApproved' || action === 'AccessGranted'
+
   if (!timeline.length) {
     return (
       <div className="text-sm text-muted-foreground italic">
@@ -22,11 +25,11 @@ export function ApprovalTimeline({ timeline, compact = false }: ApprovalTimeline
         <div key={record.id} className="flex gap-4">
           <div className="flex flex-col items-center">
             <div className={`rounded-full p-2 ${
-              record.action === 'APPROVED'
+              isApprovedAction(record.action)
                 ? 'bg-green-100 text-green-700'
                 : 'bg-red-100 text-red-700'
             }`}>
-              {record.action === 'APPROVED' ? (
+              {isApprovedAction(record.action) ? (
                 <Check size={16} />
               ) : (
                 <X size={16} />
@@ -49,7 +52,7 @@ export function ApprovalTimeline({ timeline, compact = false }: ApprovalTimeline
               </div>
             )}
             <div className="text-xs text-muted-foreground mt-1">
-              {record.action === 'APPROVED' ? '✓ Approved' : '✗ Rejected'}
+              {isApprovedAction(record.action) ? '✓ Approved' : '✗ Rejected'}
               {record.previousStatus && ` from ${record.previousStatus}`}
             </div>
           </div>

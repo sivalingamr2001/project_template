@@ -1,4 +1,4 @@
-import type { AccessItemStatus, RequestStatus } from './types';
+import type { AccessItemStatus, RequestStatus, AccessTypes } from './types';
 
 // Status colors and labels
 export const STATUS_CONFIG: Record<RequestStatus | AccessItemStatus, { label: string; color: string; bgColor: string }> = {
@@ -26,47 +26,14 @@ export const SYSTEMS = [
 
 // Access types
 export const ACCESS_TYPES = [
-  'View Only',
-  'Editor',
-  'Admin',
-  'Developer',
-  'Project Lead',
-];
+  'NotApplicable',
+  'ReadOnly',
+  'ReadAndWrite',
+] as const satisfies readonly AccessTypes[];
 
 // Days until expiry warnings
 export const EXPIRY_WARNING_DAYS = 30;
 export const MAX_ACCESS_DAYS = 365;
-
-// Mock users
-export const MOCK_USERS = {
-  employee: {
-    id: 1001,
-    name: 'John Doe',
-    email: 'john.doe@company.com',
-    role: 'EMPLOYEE' as const,
-    department: 'Engineering',
-    location: 'New York',
-    phone: '555-1234',
-  },
-  hod: {
-    id: 1002,
-    name: 'Sarah Smith',
-    email: 'sarah.smith@company.com',
-    role: 'HOD' as const,
-    department: 'Engineering',
-    location: 'New York',
-    phone: '555-5678',
-  },
-  it: {
-    id: 1003,
-    name: 'Mike Johnson',
-    email: 'mike.johnson@company.com',
-    role: 'IT' as const,
-    department: 'IT Operations',
-    location: 'New York',
-    phone: '555-9012',
-  },
-};
 
 // Departments
 export const DEPARTMENTS = [

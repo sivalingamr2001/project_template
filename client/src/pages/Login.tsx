@@ -15,7 +15,7 @@ import { Lock } from "lucide-react"
 
 export function Login() {
   const { login } = useApp()
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -26,7 +26,7 @@ export function Login() {
     setIsLoading(true)
 
     try {
-      const success = await login(username, password)
+      const success = await login(email, password)
       if (!success) {
         setError("Invalid credentials")
       }
@@ -51,12 +51,12 @@ export function Login() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="employee, hod, or it"
                 required
               />

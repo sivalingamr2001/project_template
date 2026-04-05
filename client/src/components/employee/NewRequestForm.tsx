@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Plus, Trash2, ShieldAlert } from "lucide-react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -13,20 +13,10 @@ import {
   SelectValue,
 } from "../ui/select"
 import { useApp } from "@/hooks/useApp"
-
-interface AccessDetail {
-  folderName: string
-  accessType: string
-  reason: string
-  durationDays: number
-}
-
-interface CreateRequestPayload {
-  empId: number
-  itsrNumber: string
-  isAgreed: boolean
-  details: AccessDetail[]
-}
+import type {
+  AccessRequestFormDetail,
+  AccessRequestFormPayload,
+} from "@/lib/access-request-api"
 
 const accessOptions = ["Not Applicable", "Read only", "Read and Write"]
 
@@ -34,10 +24,10 @@ export function NewRequestForm({
   onSubmit,
   isPending,
 }: {
-  onSubmit: (values: CreateRequestPayload) => void
+  onSubmit: (values: AccessRequestFormPayload) => void
   isPending: boolean
 }) {
-  const [formData, setFormData] = useState<CreateRequestPayload>({
+  const [formData, setFormData] = useState<AccessRequestFormPayload>({
     empId: 0,
     itsrNumber: "",
     isAgreed: false,
@@ -46,10 +36,10 @@ export function NewRequestForm({
     ],
   })
 
-  const { currentRole } = useApp()
+  const { currentRole, currentUser } = useApp()
 
   const handleBaseChange = (
-    field: keyof CreateRequestPayload,
+    field: keyof AccessRequestFormPayload,
     value: string | boolean
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -57,7 +47,7 @@ export function NewRequestForm({
 
   const handleDetailChange = (
     index: number,
-    field: keyof AccessDetail,
+    field: keyof AccessRequestFormDetail,
     value: string | number
   ) => {
     const newDetails = [...formData.details]
@@ -89,6 +79,17 @@ export function NewRequestForm({
     onSubmit(formData)
   }
 
+  useEffect(() => {
+    const empId = currentUser?.employeeId
+
+    if (typeof empId === "number") {
+      setFormData((prev) => ({
+        ...prev,
+        empId,
+      }))
+    }
+  }, [currentUser])
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Header Info */}
@@ -100,6 +101,7 @@ export function NewRequestForm({
             placeholder="1234"
             value={formData.empId}
             onChange={(e) => handleBaseChange("empId", e.target.value)}
+            defaultValue={currentUser?.employeeId}
             required
           />
         </div>
@@ -199,7 +201,7 @@ export function NewRequestForm({
                       parseInt(e.target.value) || 1
                     )
                   }
-                  disabled={currentRole === "EMPLOYEE"}
+                  disabled={currentRole === "User"}
                 />
               </div>
             </div>

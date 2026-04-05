@@ -27,9 +27,16 @@ export interface User {
   name: string
   email: string
   role: UserRole
+  employeeId?: number
+  departmentId?: number
   department?: string
   location?: string
   phone?: string
+  hod?: {
+    employeeId: number
+    userName: string
+    email: string
+  }
 }
 
 // Request status types (mapped to backend AccessStatus)

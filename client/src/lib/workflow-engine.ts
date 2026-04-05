@@ -1,4 +1,12 @@
-import type { AccessRequest, AccessItem, AccessItemStatus, ApprovalRecord } from './types';
+import type {
+  AccessRequest,
+  AccessItem,
+  AccessItemStatus,
+  ApprovalRecord,
+  ApprovalType,
+  AccessTypes,
+  RequestStatus,
+} from './types';
 
 /**
  * Workflow Engine - Centralized state machine for request transitions
@@ -16,7 +24,7 @@ export class WorkflowEngine {
     approverId: number,
     approverName: string,
     comment?: string,
-    accessType?: string
+    accessType?: AccessTypes
   ): { success: boolean; item: AccessItem; error?: string } {
     // Rule: Cannot approve an already expired item
     if (new Date(item.expiresAt) < new Date()) {
@@ -24,12 +32,12 @@ export class WorkflowEngine {
     }
 
     // Rule: IT cannot approve before HOD
-    if (approverRole === 'IT' && item.status !== 'PendingHOD') {
+    if (approverRole === 'IT' && item.status !== 'PendingIT') {
       return { success: false, item, error: 'IT can only approve after HOD approval' };
     }
 
     // Rule: Cannot transition from rejected or revoked
-    if (item.status === 'REJECTED' || item.status === 'REVOKED') {
+    if (item.status === 'Rejected' || item.status === 'Revoked') {
       return { success: false, item, error: `Cannot transition from ${item.status} status` };
     }
 
@@ -38,7 +46,14 @@ export class WorkflowEngine {
       approverRole,
       approverId,
       approverName,
-      action: newStatus === 'REJECTED' ? 'REJECTED' : 'APPROVED',
+      action:
+        newStatus === 'Rejected'
+          ? approverRole === 'HOD'
+            ? 'HODRejected'
+            : 'ITRejected'
+          : approverRole === 'HOD'
+            ? 'HODApproved'
+            : 'ITApproved',
       comment,
       timestamp: new Date().toISOString(),
       previousStatus: item.status as AccessItemStatus,
@@ -57,7 +72,7 @@ export class WorkflowEngine {
   /**
    * Calculate request status based on all items
    */
-  static calculateRequestStatus(request: AccessRequest): AccessStatus {
+  static calculateRequestStatus(request: AccessRequest): RequestStatus {
     const itemStatuses = request.items.map(i => i.status);
 
     if (itemStatuses.includes('Rejected')) return 'Rejected';

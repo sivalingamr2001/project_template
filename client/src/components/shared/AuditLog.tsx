@@ -9,6 +9,8 @@ interface AuditLogProps {
 
 export function AuditLog({ request }: AuditLogProps) {
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null);
+  const isApprovedAction = (action: string) =>
+    action === 'HODApproved' || action === 'ITApproved' || action === 'AccessGranted';
 
   return (
     <div className="space-y-3">
@@ -46,12 +48,12 @@ export function AuditLog({ request }: AuditLogProps) {
                     {record.approverName} ({record.approverRole === 'HOD' ? 'HOD' : 'IT'})
                   </div>
                   <div className="text-muted-foreground">
-                    {record.action === 'APPROVED' ? '✓ Approved' : '✗ Rejected'}
+                    {isApprovedAction(record.action) ? '✓ Approved' : '✗ Rejected'}
                   </div>
                   <div className="text-muted-foreground">{formatDateTime(record.timestamp)}</div>
                   {record.previousStatus && (
                     <div className="text-muted-foreground">
-                      Status: {record.previousStatus} → {record.action === 'APPROVED' ? 'APPROVED' : 'REJECTED'}
+                      Status: {record.previousStatus} → {isApprovedAction(record.action) ? 'Approved' : 'Rejected'}
                     </div>
                   )}
                   {record.comment && (

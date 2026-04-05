@@ -6,7 +6,7 @@ export const useAuditLog = (filter: string) => {
   const data = requests.flatMap((request, requestIndex) =>
     request.approvalTimeline.map((entry, entryIndex) => ({
       id: requestIndex * 100 + entryIndex,
-      action: entry.action === 'APPROVED' ? `${entry.approverRole}Approved` : 'Revoked',
+      action: entry.action,
       actor: entry.approverName,
       createdOn: entry.timestamp,
     }))

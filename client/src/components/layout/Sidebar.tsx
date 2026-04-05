@@ -1,193 +1,89 @@
-import type { ReactNode } from "react"
-import { useApp } from "@/hooks/useApp"
-import { useData } from "../../context/DataContext"
-import {
-  LayoutDashboard,
-  ClipboardList,
-  CheckCircle,
-  History,
-  Users,
-  FileSearch,
-  ListChecks,
-
-} from "lucide-react"
-import type { Page } from "../../context/AppContext"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import { useApp } from '../../context/AppContext';
+import { useData } from '../../context/DataContext';
+import { LayoutDashboard, ClipboardList, CheckCircle, BarChart3, LogOut } from 'lucide-react';
+import type { Page } from '../../context/AppContext';
 
 interface NavItem {
-  label: string
-  icon: ReactNode
-  page: Page
+  label: string;
+  icon: React.ReactNode;
+  page: Page | 'LOGOUT';
+  roles: string[];
 }
 
-interface SidebarProps {
-  collapsed: boolean
-}
-
-export function Sidebar({ collapsed }: SidebarProps) {
-  const { currentRole, currentPage, setCurrentPage } = useApp()
-  const { requests } = useData()
+export function Sidebar() {
+  const { currentRole, currentPage, setCurrentPage, logout } = useApp();
+  const { requests } = useData();
 
   const getPendingCount = () => {
-    if (currentRole === "HOD") {
-      return requests.filter((r) => r.items.some((i) => i.status === "PendingHOD"))
-        .length
+    if (currentRole === 'HOD') {
+      return requests.filter(r => r.items.some(i => i.status === 'PENDING')).length;
     }
-    if (currentRole === "IT") {
-      return requests.filter((r) =>
-        r.items.some((i) => i.status === "PendingIT")
-      ).length
+    if (currentRole === 'IT_INFRA') {
+      return requests.filter(r => r.items.some(i => i.status === 'APPROVED_HOD')).length;
     }
-    return 0
-  }
+    return 0;
+  };
 
   const navItems: NavItem[] = [
-    ...(currentRole === "EMPLOYEE"
-      ? [
-          {
-            label: "Dashboard",
-            icon: <LayoutDashboard size={20} />,
-            page: "EMPLOYEE_DASHBOARD" as const,
-          },
-          // {
-          //   label: "My Requests",
-          //   icon: <ClipboardList size={20} />,
-          //   page: "EMPLOYEE_REQUESTS" as const,
-          // },
-        ]
-      : []),
-    ...(currentRole === "HOD"
-      ? [
-          {
-            label: "Pending Approvals",
-            icon: <CheckCircle size={20} />,
-            page: "HOD_APPROVALS" as const,
-          },
-          {
-            label: "Approval History",
-            icon: <History size={20} />,
-            page: "HOD_HISTORY" as const,
-          },
-          {
-            label: "Employee Lookup",
-            icon: <Users size={20} />,
-            page: "HOD_LOOKUP" as const,
-          },
-        ]
-      : []),
-    ...(currentRole === "IT_INFRA"
-      ? [
-          {
-            label: "Approval Queue",
-            icon: <ClipboardList size={20} />,
-            page: "IT_QUEUE" as const,
-          },
-          {
-            label: "Active Access",
-            icon: <ListChecks size={20} />,
-            page: "IT_ACTIVE_ACCESS" as const,
-          },
-          {
-            label: "Employee Lookup",
-            icon: <Users size={20} />,
-            page: "IT_LOOKUP" as const,
-          },
-          {
-            label: "Audit Log",
-            icon: <FileSearch size={20} />,
-            page: "IT_AUDIT_LOG" as const,
-          },
-        ]
-      : []),
-  ]
+    ...(currentRole === 'EMPLOYEE' ? [
+      { label: 'Dashboard', icon: <LayoutDashboard size={20} />, page: 'EMPLOYEE_DASHBOARD', roles: ['EMPLOYEE'] },
+      { label: 'My Requests', icon: <ClipboardList size={20} />, page: 'EMPLOYEE_REQUESTS', roles: ['EMPLOYEE'] },
+    ] : []),
+    ...(currentRole === 'HOD' ? [
+      { label: 'Approvals', icon: <CheckCircle size={20} />, page: 'HOD_APPROVALS', roles: ['HOD'] },
+    ] : []),
+    ...(currentRole === 'IT_INFRA' ? [
+      { label: 'Queue', icon: <ClipboardList size={20} />, page: 'IT_QUEUE', roles: ['IT_INFRA'] },
+      { label: 'Active Access', icon: <BarChart3 size={20} />, page: 'IT_ACTIVE_ACCESS', roles: ['IT_INFRA'] },
+    ] : []),
+    ...(currentRole !== 'EMPLOYEE' ? [
+      { label: 'Analytics', icon: <BarChart3 size={20} />, page: 'ANALYTICS', roles: ['HOD', 'IT_INFRA'] },
+    ] : []),
+    { label: 'Logout', icon: <LogOut size={20} />, page: 'LOGOUT', roles: ['EMPLOYEE', 'HOD', 'IT_INFRA'] },
+  ];
 
   return (
-    <aside
-      className={`flex shrink-0 flex-col border-r border-border bg-secondary transition-all duration-300 ease-in-out ${collapsed ? "w-16" : "w-64"} sticky top-0 h-screen`}
-    >
-      <div
-        className={`flex min-h-15 items-center border-b border-border px-2 ${collapsed ? "justify-center" : "justify-start"} `}
-      >
-        {collapsed ? (
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground shadow-sm">
-            A
-          </div>
-        ) : (
-          <div className="overflow-hidden">
-            <h1 className="truncate text-2xl font-bold text-primary">
-              Access Portal
-            </h1>
-          </div>
-        )}
+    <div className="w-64 bg-secondary border-r border-border flex flex-col p-[10px]">
+      <div className="p-4 border-b border-border">
+        <h1 className="text-xl font-bold text-primary">Access Portal</h1>
       </div>
 
-      <nav className="flex-1 space-y-2 p-2">
-        {/* Reduced padding for tighter look */}
-        {navItems.map((item) => {
-          const isActive = currentPage === item.page
-          const pendingCount =
-            item.page === "HOD_APPROVALS" || item.page === "IT_QUEUE"
-              ? getPendingCount()
-              : 0
+      <nav className="flex-1 p-4 space-y-2">
+        {navItems.map(item => {
+          const isActive = currentPage === item.page;
+          const pendingCount = (item.page === 'HOD_APPROVALS' || item.page === 'IT_QUEUE') ? getPendingCount() : 0;
 
-          const NavButton = (
+          return (
             <button
-              onClick={() => setCurrentPage(item.page)}
-              className={`group relative flex w-full items-center rounded-lg transition-colors ${collapsed ? "mx-auto h-10 w-10 justify-center" : "justify-between px-3 py-2"} ${
+              key={item.page}
+              onClick={() => item.page === 'LOGOUT' ? logout() : setCurrentPage(item.page)}
+              className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition ${
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground hover:bg-primary/10'
               }`}
             >
-              <div
-                className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}
-              >
-                <span className="shrink-0">{item.icon}</span>
-                {!collapsed && (
-                  <span className="truncate font-medium">{item.label}</span>
-                )}
-              </div>
-
-              {/* Badge: Simplified for both states */}
+              <span className="flex items-center gap-3">
+                {item.icon}
+                {item.label}
+              </span>
               {pendingCount > 0 && (
-                <span
-                  className={`flex items-center justify-center font-bold ${
-                    collapsed
-                      ? "text-destructive-foreground absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] ring-2 ring-secondary"
-                      : `ml-auto rounded-full px-2 py-0.5 text-xs ${isActive ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"}`
-                  } `}
-                >
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                  isActive ? 'bg-primary-foreground text-primary' : 'bg-accent text-accent-foreground'
+                }`}>
                   {pendingCount}
                 </span>
               )}
             </button>
-          )
-
-          return (
-            <Tooltip key={item.page}>
-              <TooltipTrigger asChild>{NavButton}</TooltipTrigger>
-              {collapsed && (
-                <TooltipContent
-                  side="right"
-                  sideOffset={10}
-                  className="flex items-center gap-2"
-                >
-                  {item.label}
-                  {pendingCount > 0 && (
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px]">
-                      {pendingCount}
-                    </span>
-                  )}
-                </TooltipContent>
-              )}
-            </Tooltip>
-          )
+          );
         })}
       </nav>
-    </aside>
-  )
+
+      <div className="p-4 border-t border-border">
+        <p className="text-xs text-muted-foreground text-center">
+          Access Request Portal v1.0
+        </p>
+      </div>
+    </div>
+  );
 }

@@ -1,16 +1,22 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useApp } from "@/hooks/useApp"
 import { useData } from "../context/DataContext"
-import type { AccessRequest } from "../lib/types"
-import { generateId } from "../lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { MyRequestsTable } from "../components/employee/MyRequestsTable"
 import { NewRequestModal } from "../components/employee/NewRequestModal"
 import { RequesterStats } from "../components/employee/RequesterStats"
+import {
+  createAccessRequest,
+  fetchAccessRequestsByUser,
+  type AccessRequestFormPayload,
+} from "../lib/access-request-api"
+import { toast } from "sonner"
 
 export function EmployeeDashboard() {
   const [createOpen, setCreateOpen] = useState(false)
-  const { requests, addRequest } = useData()
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false)
+  const [isCreatingRequest, setIsCreatingRequest] = useState(false)
+  const { requests, addRequest, setRequests } = useData()
   const { currentUser, setCurrentPage, setSelectedRequestId } = useApp()
 
   const userRequests = requests.filter((r) => r.requesterId === currentUser?.id)
@@ -22,7 +28,40 @@ export function EmployeeDashboard() {
     ).length,
   }
 
-  const handleCreateRequest = (data: any) => {
+  useEffect(() => {
+    if (!currentUser?.employeeId && !currentUser?.id) return
+
+    let cancelled = false
+
+    const loadRequests = async () => {
+      try {
+        setIsLoadingRequests(true)
+        const empId = currentUser.employeeId ?? currentUser.id
+        const apiRequests = await fetchAccessRequestsByUser(empId, currentUser)
+
+        if (!cancelled) {
+          setRequests(apiRequests)
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error("Failed to load access requests", error)
+          toast.error("Failed to load your access requests")
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingRequests(false)
+        }
+      }
+    }
+
+    loadRequests()
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentUser, setRequests])
+
+  const handleCreateRequest = async (data: AccessRequestFormPayload) => {
     console.log("Create request:", data)
 
     if (!currentUser || !data?.details?.length) {
@@ -30,33 +69,18 @@ export function EmployeeDashboard() {
       return
     }
 
-    const requestId = generateId()
-    const now = new Date().toISOString()
-    const items = data.details.map((detail: any) => ({
-      id: generateId(),
-      system: detail.folderName || "Unknown system",
-      accessType: detail.accessType || "Read only",
-      requestedAt: now,
-      expiresAt: new Date(
-        Date.now() + (detail.durationDays || 30) * 86400000
-      ).toISOString(),
-      status: "PendingHOD" as const,
-      approvalHistory: [],
-    }))
-
-    const newRequest: AccessRequest = {
-      id: requestId,
-      requesterId: currentUser.id,
-      requesterName: currentUser.name,
-      requesterDept: currentUser.department || "Unknown",
-      requestedAt: now,
-      items,
-      status: "PendingHOD",
-      approvalTimeline: [],
+    try {
+      setIsCreatingRequest(true)
+      const createdRequest = await createAccessRequest(data, currentUser)
+      addRequest(createdRequest)
+      toast.success("Access request created successfully")
+      setCreateOpen(false)
+    } catch (error) {
+      console.error("Failed to create request", error)
+      toast.error("Failed to create access request")
+    } finally {
+      setIsCreatingRequest(false)
     }
-
-    addRequest(newRequest)
-    setCreateOpen(false)
   }
 
   const handleViewDetail = (id: number) => {
@@ -87,7 +111,7 @@ export function EmployeeDashboard() {
         <CardContent>
           <MyRequestsTable
             data={userRequests}
-            isLoading={false}
+            isLoading={isLoadingRequests}
             onViewDetail={handleViewDetail}
             onNewRequest={() => setCreateOpen(true)}
           />
@@ -98,7 +122,7 @@ export function EmployeeDashboard() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onSubmit={handleCreateRequest}
-        isPending={false}
+        isPending={isCreatingRequest}
       />
     </div>
   )

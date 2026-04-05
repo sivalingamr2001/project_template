@@ -1,78 +1,59 @@
-import { ChevronDown, LogOut, PanelLeftClose, PanelLeftOpen, UserCircle2 } from 'lucide-react';
-import { useApp } from "@/hooks/useApp"
+import { useState } from 'react';
+import { useApp } from '../../context/AppContext';
 import { NotificationBell } from '../shared/NotificationBell';
-import { Button } from '../ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+import { LogOut, ChevronDown, UserCircle2 } from 'lucide-react';
 
-interface HeaderProps {
-  sidebarCollapsed: boolean;
-  onToggleSidebar: () => void;
-}
-
-export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
-  const { currentRole, setCurrentRole, setCurrentPage, logout } = useApp();
+export function Header() {
+  const { currentUser, logout } = useApp();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <div className="bg-background border-b border-border p-2 flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onToggleSidebar}
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {sidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </Button>
+    <div className="bg-background border-b border-border px-6 py-4 flex items-center justify-between">
+      <div>
+        <h2 className="font-semibold text-foreground">Welcome, {currentUser?.name || 'Guest'}</h2>
+        <p className="text-sm text-muted-foreground">{currentUser?.email || ''}</p>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-4 relative">
         <NotificationBell />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              Role: {currentRole === 'EMPLOYEE' ? 'Requester' : currentRole === 'HOD' ? 'HOD' : 'IT Rep'}
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuItem onClick={() => setCurrentRole('EMPLOYEE')}>
-              Requester / Employee
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCurrentRole('HOD')}>
-              Head of Department
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setCurrentRole('IT_INFRA')}>
-              IT Representative
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <button
+          onClick={() => setIsMenuOpen(prev => !prev)}
+          className="flex items-center gap-2 px-3 py-2 border border-border rounded-lg bg-secondary hover:bg-secondary/80 transition text-sm font-medium"
+          aria-expanded={isMenuOpen}
+          aria-controls="profile-menu"
+        >
+          <UserCircle2 size={16} />
+          Profile
+          <ChevronDown size={14} />
+        </button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <UserCircle2 className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => setCurrentPage('USER_PROFILE')}>
-              <UserCircle2 className="h-4 w-4" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout} variant="destructive">
-              <LogOut className="h-4 w-4" />
-              Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isMenuOpen && (
+          <div
+            id="profile-menu"
+            className="absolute right-0 mt-10 w-40 bg-background border border-border rounded-lg shadow-lg z-20"
+          >
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-primary/10"
+            >
+              View Profile
+            </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                logout();
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-primary/10"
+            >
+              <span className="flex items-center gap-2">
+                <LogOut size={14} /> Logout
+              </span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

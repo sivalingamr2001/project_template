@@ -1,22 +1,43 @@
-import { useData } from '../../context/DataContext';
+import { useEffect, useState } from 'react';
+import { useApp } from '@/hooks/useApp';
+import { fetchHodPendingApprovals } from '@/lib/access-request-api';
+import type { ApprovalItem } from './hod.types';
 
 export const useHODPending = () => {
-  const { requests } = useData();
+  const { currentUser } = useApp();
+  const [data, setData] = useState<ApprovalItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const data = requests
-    .flatMap((request) =>
-      request.items
-        .filter((item) => item.status === 'PENDING')
-        .map((item, index) => ({
-          id: request.id * 100 + index,
-          requestId: request.id,
-          employeeName: request.requesterName,
-          empId: request.requesterId,
-          folderName: item.system,
-          accessType: item.accessType,
-          status: 'PENDING',
-        }))
-    );
+  const load = async () => {
+    if (!currentUser?.employeeId && !currentUser?.id) return;
 
-  return { data, isLoading: false };
+    try {
+      setIsLoading(true);
+      const hodId = currentUser.employeeId ?? currentUser.id;
+      const rows = await fetchHodPendingApprovals(hodId);
+      setData(rows);
+    } catch (error) {
+      console.error('Failed to load HOD pending approvals', error);
+      setData([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const guardedLoad = async () => {
+      if (cancelled) return;
+      await load();
+    };
+
+    guardedLoad();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser]);
+
+  return { data, isLoading, reload: load };
 };

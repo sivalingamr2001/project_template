@@ -13,13 +13,13 @@ export function TrendChart() {
 
     const approvedCount = requests.filter(r =>
       r.approvalTimeline.some(a =>
-        new Date(a.timestamp).toDateString() === date.toDateString() && a.action === 'APPROVED'
+        new Date(a.timestamp).toDateString() === date.toDateString() && ['HODApproved', 'ITApproved', 'AccessGranted'].includes(a.action)
       )
     ).length;
 
     const rejectedCount = requests.filter(r =>
       r.approvalTimeline.some(a =>
-        new Date(a.timestamp).toDateString() === date.toDateString() && a.action === 'REJECTED'
+        new Date(a.timestamp).toDateString() === date.toDateString() && ['HODRejected', 'ITRejected'].includes(a.action)
       )
     ).length;
 

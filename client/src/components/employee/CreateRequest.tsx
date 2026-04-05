@@ -3,14 +3,14 @@ import { useData } from '../../context/DataContext';
 import { useApp } from "@/hooks/useApp"
 import { SYSTEMS, ACCESS_TYPES, MAX_ACCESS_DAYS } from '../../lib/constants';
 import { generateId, addDays } from '../../lib/utils';
-import type { AccessRequest } from '../../lib/types';
+import type { AccessRequest, AccessTypes } from '../../lib/types';
 import { Plus, X } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 
 interface AccessItemForm {
   id: number;
   system: string;
-  accessType: string;
+  accessType: AccessTypes | "";
 }
 
 export function CreateRequest() {
@@ -46,22 +46,24 @@ export function CreateRequest() {
 
     setSubmitting(true);
     const now = new Date().toISOString();
+    const requestItems = items.map(item => ({
+      id: generateId(),
+      system: item.system,
+      accessType: item.accessType as AccessTypes,
+      requestedAt: now,
+      expiresAt: addDays(now, MAX_ACCESS_DAYS),
+      status: 'PendingHOD' as const,
+      approvalHistory: [],
+    }));
+
     const request: AccessRequest = {
       id: generateId(),
       requesterId: currentUser.id,
       requesterName: currentUser.name,
       requesterDept: currentUser.department || 'Engineering',
       requestedAt: now,
-      items: items.map(item => ({
-        id: generateId(),
-        system: item.system,
-        accessType: item.accessType,
-        requestedAt: now,
-        expiresAt: addDays(now, MAX_ACCESS_DAYS),
-        status: 'PENDING' as const,
-        approvalHistory: [],
-      })),
-      status: 'PENDING' as const,
+      items: requestItems,
+      status: 'PendingHOD' as const,
       approvalTimeline: [],
     };
 

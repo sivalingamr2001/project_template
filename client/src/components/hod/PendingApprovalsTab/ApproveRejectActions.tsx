@@ -10,6 +10,8 @@ const accessOptions = ['View Only', 'Read Only', 'Read and Write'];
 
 export function ApproveRejectActions({
   requestId,
+  detailId,
+  approvalId,
   employeeName,
   empId,
   folderName,
@@ -21,14 +23,16 @@ export function ApproveRejectActions({
   isPending,
 }: {
   requestId: number;
+  detailId: number;
+  approvalId: number;
   employeeName: string;
   empId: number;
   folderName: string;
   accessType: string;
   status: string;
   mode: 'HOD' | 'IT';
-  onApprove: (id: number, options: { accessType: string; comment?: string }) => void;
-  onReject: (id: number, reason: string) => void;
+  onApprove: (args: { requestId: number; detailId: number; approvalId: number; accessType: string; comment?: string }) => void;
+  onReject: (args: { requestId: number; detailId: number; approvalId: number; reason: string }) => void;
   isPending: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -122,7 +126,7 @@ export function ApproveRejectActions({
               className="mr-2"
               disabled={isPending}
               onClick={() => {
-                onApprove(requestId, { accessType: confirmedAccessType, comment: comment.trim() });
+                onApprove({ requestId, detailId, approvalId, accessType: confirmedAccessType, comment: comment.trim() });
                 closeModal();
               }}
             >
@@ -132,7 +136,7 @@ export function ApproveRejectActions({
               variant="destructive"
               disabled={isPending || !comment.trim()}
               onClick={() => {
-                onReject(requestId, comment.trim());
+                onReject({ requestId, detailId, approvalId, reason: comment.trim() });
                 closeModal();
               }}
             >

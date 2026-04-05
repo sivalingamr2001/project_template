@@ -9,7 +9,7 @@ import { UserProfile } from './UserProfile';
 export function PageRouter() {
   const { currentPage, currentRole, selectedRequestId } = useApp();
 
-  if (currentRole === 'EMPLOYEE') {
+  if (currentRole === 'User') {
     switch (currentPage) {
       case 'EMPLOYEE_DASHBOARD':
         return <EmployeeDashboard />;

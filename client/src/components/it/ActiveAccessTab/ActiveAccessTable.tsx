@@ -27,12 +27,7 @@ export function ActiveAccessTable({ data, onRevoke }: { data: ActiveAccessItem[]
         },
         {
           header: 'Status',
-          cell: (row) => (
-            <StatusBadge
-              status={row.status === 'APPROVED' ? 'ACTIVE' : row.status === 'REJECTED' ? 'REJECTED' : 'PENDING'}
-              size="sm"
-            />
-          ),
+          cell: (row) => <StatusBadge status={row.status} size="sm" />,
         },
       ]}
       renderRowActions={(row) => (

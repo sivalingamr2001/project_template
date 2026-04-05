@@ -33,7 +33,7 @@ export function getExpiringItemsAcrossRequests(
 
   requests.forEach((request) => {
     request.items.forEach((item) => {
-      if (item.status === "ACTIVE") {
+      if (item.status === "Approved") {
         const daysUntilExpiry = Math.ceil(
           (new Date(item.expiresAt).getTime() - new Date().getTime()) /
             (1000 * 60 * 60 * 24)
@@ -62,7 +62,7 @@ export function getItemsExpiringToday(requests: AccessRequest[]): number {
       count +
       request.items.filter(
         (item) =>
-          item.status === "ACTIVE" &&
+          item.status === "Approved" &&
           new Date(item.expiresAt).toDateString() === today
       ).length
     )
@@ -95,7 +95,7 @@ export function extendAccessItem(
   return {
     ...request,
     items: request.items.map((item) => {
-      if (item.id === itemId && item.status === "ACTIVE") {
+      if (item.id === itemId && item.status === "Approved") {
         const newExpiryDate = new Date(item.expiresAt)
         newExpiryDate.setDate(newExpiryDate.getDate() + daysToAdd)
         return { ...item, expiresAt: newExpiryDate.toISOString() }
@@ -116,14 +116,14 @@ export function getExpiryAnalytics(requests: AccessRequest[]) {
 
   requests.forEach((request) => {
     request.items.forEach((item) => {
-      if (item.status === "ACTIVE") {
+      if (item.status === "Approved") {
         totalActive++
         if (WorkflowEngine.isExpiringWithin30Days(item)) {
           expiringWithin30++
         }
-      } else if (item.status === "EXPIRED") {
+      } else if (item.status === "Expired") {
         expiredCount++
-      } else if (item.status === "REVOKED") {
+      } else if (item.status === "Revoked") {
         revokedCount++
       }
     })

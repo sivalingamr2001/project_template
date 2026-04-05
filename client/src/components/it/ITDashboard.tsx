@@ -1,15 +1,26 @@
 import { useApp } from "@/hooks/useApp"
+import { useData } from "@/context/DataContext"
+import { getExpiringItemsAcrossRequests } from "@/lib/expiry-job"
 import { ActiveAccessTab } from "./ActiveAccessTab"
 import { AuditLogTab } from "./AuditLogTab"
 import { ITEmployeeLookupTab } from "./EmployeeLookupTab"
 import { ITApprovalQueueTab } from "./ITApprovalQueueTab"
 import { ITStats } from "./ITStats"
 
-const mockStats = { queue: 1, active: 16, expiringSoon: 4 }
-
 export function ITDashboard() {
   const { currentPage } = useApp()
   const { currentUser } = useApp()
+  const { requests } = useData()
+
+  const stats = {
+    queue: requests
+      .flatMap((request) => request.items)
+      .filter((item) => item.status === "PendingIT").length,
+    active: requests
+      .flatMap((request) => request.items)
+      .filter((item) => item.status === "Approved").length,
+    expiringSoon: getExpiringItemsAcrossRequests(requests).length,
+  }
 
   return (
     <div className="space-y-6">
@@ -25,7 +36,7 @@ export function ITDashboard() {
         </div>
       </div>
 
-      {currentPage === "IT_QUEUE" && <ITStats stats={mockStats} />}
+      {currentPage === "IT_QUEUE" && <ITStats stats={stats} />}
 
       {currentPage === "IT_QUEUE" && <ITApprovalQueueTab />}
       {currentPage === "IT_ACTIVE_ACCESS" && <ActiveAccessTab />}

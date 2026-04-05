@@ -25,6 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select"
+import type { AccessTypes } from "@/lib/types"
+
+const accessTypeOptions: Array<{ value: AccessTypes; label: string }> = [
+  { value: "NotApplicable", label: "Not Applicable" },
+  { value: "ReadOnly", label: "Read Only" },
+  { value: "ReadAndWrite", label: "Read and Write" },
+]
 
 export function RequestDetails() {
   const { requests, approveItem, rejectItem } = useData()
@@ -37,7 +44,7 @@ export function RequestDetails() {
 
   const request = requests.find((r) => r.id === selectedRequestId)
 
-  const [confirmedTypes, setConfirmedTypes] = useState<Record<number, string>>(
+  const [confirmedTypes, setConfirmedTypes] = useState<Record<number, AccessTypes>>(
     () => {
       if (!request) return {}
       return Object.fromEntries(
@@ -115,7 +122,7 @@ export function RequestDetails() {
           ? "failed"
           : hodStageCompleted
             ? "complete"
-            : request.status === "PENDING"
+            : request.status === "PendingHOD"
               ? "active"
               : "pending",
       description: "HOD reviews and approves the request.",
@@ -418,7 +425,7 @@ export function RequestDetails() {
                           onValueChange={(value) => {
                             setConfirmedTypes((prev) => ({
                               ...prev,
-                              [item.id]: value,
+                              [item.id]: value as AccessTypes,
                             }))
                           }}
                           disabled={currentRole === "IT"}
@@ -430,13 +437,11 @@ export function RequestDetails() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {["View Only", "Read Only", "Read and Write"].map(
-                              (option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
+                            {accessTypeOptions.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
                                 </SelectItem>
-                              )
-                            )}
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>

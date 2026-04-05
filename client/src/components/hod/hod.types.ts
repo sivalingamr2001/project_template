@@ -1,14 +1,20 @@
+import type { AccessItemStatus, AccessTypes } from '@/lib/types';
+
 export interface AccessListItem {
   id: number;
   employeeName: string;
   empId: number;
   folderName: string;
-  accessType: string;
-  status: string;
+  accessType: AccessTypes;
+  status: AccessItemStatus;
 }
 
 export interface ApprovalItem extends AccessListItem {
   requestId: number;
+  detailId: number;
+  approvalId: number;
+  reason?: string;
+  itsrNumber?: string;
 }
 
 export interface EmployeeLookupResult {

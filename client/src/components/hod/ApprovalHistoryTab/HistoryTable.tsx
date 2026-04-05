@@ -26,12 +26,7 @@ export function HistoryTable({ data, isLoading }: { data: AccessListItem[]; isLo
         },
         {
           header: 'Status',
-          cell: (row) => (
-            <StatusBadge
-              status={row.status === 'APPROVED' ? 'ACTIVE' : row.status === 'REJECTED' ? 'REJECTED' : 'PENDING'}
-              size="sm"
-            />
-          ),
+          cell: (row) => <StatusBadge status={row.status} size="sm" />,
         },
       ]}
       rowToSearchString={(row) => [row.employeeName, row.folderName, row.accessType, row.status].join(' ')}

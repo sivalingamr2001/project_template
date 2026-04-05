@@ -6,7 +6,7 @@ export const useActiveAccess = () => {
   const data = requests
     .flatMap((request) =>
       request.items
-        .filter((item) => item.status === 'ACTIVE')
+        .filter((item) => item.status === 'Approved')
         .map((item, index) => ({
           id: request.id * 100 + index,
           employeeName: request.requesterName,

@@ -1,14 +1,42 @@
 import { useApp } from "@/hooks/useApp"
+import { useData } from "@/context/DataContext"
 import { HODStats } from "./HODStats"
 import { ApprovalHistoryTab } from "./ApprovalHistoryTab"
 import { EmployeeLookupTab } from "./EmployeeLookupTab"
 import { PendingApprovalsTab } from "./PendingApprovalsTab"
 
-const mockStats = { pendingCount: 3, approvedMonth: 12, rejectedMonth: 2 }
-
 export function HODDashboard() {
   const { currentPage } = useApp()
   const { currentUser } = useApp()
+  const { requests } = useData()
+  const currentMonth = new Date().getMonth()
+  const currentYear = new Date().getFullYear()
+
+  const stats = {
+    pendingCount: requests
+      .flatMap((request) => request.items)
+      .filter((item) => item.status === "PendingHOD").length,
+    approvedMonth: requests
+      .flatMap((request) => request.approvalTimeline)
+      .filter((entry) => {
+        const date = new Date(entry.timestamp)
+        return (
+          entry.action === "HODApproved" &&
+          date.getMonth() === currentMonth &&
+          date.getFullYear() === currentYear
+        )
+      }).length,
+    rejectedMonth: requests
+      .flatMap((request) => request.approvalTimeline)
+      .filter((entry) => {
+        const date = new Date(entry.timestamp)
+        return (
+          entry.action === "HODRejected" &&
+          date.getMonth() === currentMonth &&
+          date.getFullYear() === currentYear
+        )
+      }).length,
+  }
 
   return (
     <div className="space-y-6">
@@ -24,7 +52,7 @@ export function HODDashboard() {
         </div>
       </div>
 
-      {currentPage === "HOD_APPROVALS" && <HODStats stats={mockStats} />}
+      {currentPage === "HOD_APPROVALS" && <HODStats stats={stats} />}
 
       {currentPage === "HOD_APPROVALS" && <PendingApprovalsTab />}
       {currentPage === "HOD_HISTORY" && <ApprovalHistoryTab />}

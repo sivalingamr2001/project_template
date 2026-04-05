@@ -4,7 +4,7 @@ import { useHODPending } from '../useHODPending';
 import { useApp } from '@/hooks/useApp';
 
 export function PendingApprovalsTab() {
-  const { data = [], isLoading } = useHODPending();
+  const { data = [], isLoading, reload } = useHODPending();
   const { setSelectedRequestId, setCurrentPage } = useApp();
 
   return (
@@ -13,6 +13,7 @@ export function PendingApprovalsTab() {
         <PendingTable
           data={data}
           isLoading={isLoading}
+          onReload={reload}
           onView={(requestId) => {
             setSelectedRequestId(requestId);
             setCurrentPage('EMPLOYEE_REQUEST_DETAIL');

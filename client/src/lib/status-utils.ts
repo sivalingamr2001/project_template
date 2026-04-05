@@ -49,21 +49,21 @@ export function getDaysUntilExpiry(item: AccessItem): number {
  * Check if an item is active
  */
 export function isItemActive(item: AccessItem): boolean {
-  return getAccessItemStatus(item) === 'ACTIVE';
+  return getAccessItemStatus(item) === 'Approved';
 }
 
 /**
  * Check if an item is expired
  */
 export function isItemExpired(item: AccessItem): boolean {
-  return getAccessItemStatus(item) === 'EXPIRED';
+  return getAccessItemStatus(item) === 'Expired';
 }
 
 /**
  * Check if request can be edited (only if pending)
  */
 export function canEditRequest(request: AccessRequest): boolean {
-  return getRequestStatus(request) === 'PENDING';
+  return getRequestStatus(request) === 'PendingHOD';
 }
 
 /**
@@ -72,7 +72,7 @@ export function canEditRequest(request: AccessRequest): boolean {
 export function getApprovalProgress(request: AccessRequest): number {
   const total = request.items.length;
   const approved = request.items.filter(i => 
-    i.status === 'ACTIVE' || i.status === 'APPROVED_IT'
+    i.status === 'Approved'
   ).length;
   return Math.round((approved / total) * 100);
 }
@@ -81,14 +81,14 @@ export function getApprovalProgress(request: AccessRequest): number {
  * Check if HOD approval is needed
  */
 export function needsHodApproval(request: AccessRequest): boolean {
-  return request.items.some(i => i.status === 'PENDING');
+  return request.items.some(i => i.status === 'PendingHOD');
 }
 
 /**
  * Check if IT approval is needed
  */
 export function needsITApproval(request: AccessRequest): boolean {
-  return request.items.some(i => i.status === 'APPROVED_HOD');
+  return request.items.some(i => i.status === 'PendingIT');
 }
 
 /**
@@ -96,12 +96,12 @@ export function needsITApproval(request: AccessRequest): boolean {
  */
 export function getStatusSummary(request: AccessRequest): string {
   const total = request.items.length;
-  const pending = request.items.filter(i => i.status === 'PENDING').length;
-  const hodApproved = request.items.filter(i => i.status === 'APPROVED_HOD').length;
-  const itApproved = request.items.filter(i => i.status === 'APPROVED_IT').length;
+  const pending = request.items.filter(i => i.status === 'PendingHOD').length;
+  const pendingIt = request.items.filter(i => i.status === 'PendingIT').length;
+  const approved = request.items.filter(i => i.status === 'Approved').length;
 
   if (pending > 0) return `Pending HOD approval: ${pending}/${total} items`;
-  if (hodApproved > 0) return `Pending IT approval: ${hodApproved}/${total} items`;
-  if (itApproved > 0) return `Activating access: ${itApproved}/${total} items`;
+  if (pendingIt > 0) return `Pending IT approval: ${pendingIt}/${total} items`;
+  if (approved > 0) return `Approved: ${approved}/${total} items`;
   return `All items approved`;
 }

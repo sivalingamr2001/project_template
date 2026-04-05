@@ -8,10 +8,10 @@ export function StatsCards() {
 
   const getPendingCount = () => {
     if (currentRole === 'HOD') {
-      return requests.filter(r => r.items.some(i => i.status === 'PENDING')).length;
+      return requests.filter(r => r.items.some(i => i.status === 'PendingHOD')).length;
     }
-    if (currentRole === 'IT_INFRA') {
-      return requests.filter(r => r.items.some(i => i.status === 'APPROVED_HOD')).length;
+    if (currentRole === 'IT') {
+      return requests.filter(r => r.items.some(i => i.status === 'PendingIT')).length;
     }
     return 0;
   };
@@ -20,14 +20,14 @@ export function StatsCards() {
     const today = new Date().toDateString();
     return requests.filter(r =>
       r.approvalTimeline.some(a =>
-        new Date(a.timestamp).toDateString() === today && a.action === 'APPROVED'
+        new Date(a.timestamp).toDateString() === today && ['HODApproved', 'ITApproved', 'AccessGranted'].includes(a.action)
       )
     ).length;
   };
 
   const getExpiringCount = () => {
     return requests.flatMap(r => r.items).filter(item => {
-      if (item.status !== 'ACTIVE') return false;
+      if (item.status !== 'Approved') return false;
       const daysLeft = Math.ceil(
         (new Date(item.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
       );
@@ -36,7 +36,7 @@ export function StatsCards() {
   };
 
   const getRevokedCount = () => {
-    return requests.flatMap(r => r.items).filter(i => i.status === 'REVOKED').length;
+    return requests.flatMap(r => r.items).filter(i => i.status === 'Revoked').length;
   };
 
   const stats = [

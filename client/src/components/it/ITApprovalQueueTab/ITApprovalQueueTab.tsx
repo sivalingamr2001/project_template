@@ -4,7 +4,7 @@ import { useITQueue } from '../useITQueue';
 import { useApp } from '@/hooks/useApp';
 
 export function ITApprovalQueueTab() {
-  const { data = [], isLoading } = useITQueue();
+  const { data = [], isLoading, reload } = useITQueue();
   const { setSelectedRequestId, setCurrentPage } = useApp();
 
   return (
@@ -13,6 +13,7 @@ export function ITApprovalQueueTab() {
         <QueueTable
           data={data}
           isLoading={isLoading}
+          onReload={reload}
           onView={(requestId) => {
             setSelectedRequestId(requestId);
             setCurrentPage('EMPLOYEE_REQUEST_DETAIL');

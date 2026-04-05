@@ -1,20 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 import { NewRequestForm } from "./NewRequestForm"
-
-// Updated interface to match the new multi-item structure
-interface AccessDetail {
-  folderName: string
-  accessType: string
-  reason: string
-  durationDays: number
-}
-
-interface CreateRequestPayload {
-  empId: number
-  itsrNumber: string
-  isAgreed: boolean
-  details: AccessDetail[]
-}
+import type { AccessRequestFormPayload } from "@/lib/access-request-api"
 
 export function NewRequestModal({
   open,
@@ -24,7 +10,7 @@ export function NewRequestModal({
 }: {
   open: boolean
   onClose: () => void
-  onSubmit: (values: CreateRequestPayload) => void
+  onSubmit: (values: AccessRequestFormPayload) => void
   isPending: boolean
 }) {
   return (

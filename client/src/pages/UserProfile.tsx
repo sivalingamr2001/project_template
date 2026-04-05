@@ -6,14 +6,24 @@ import { Label } from '../components/ui/label';
 export function UserProfile() {
   const { currentUser, currentRole } = useApp();
 
+  const roleLabel =
+    currentRole === "User"
+      ? "Requester"
+      : currentRole === "HOD"
+        ? "HOD"
+        : currentRole === "IT"
+          ? "IT"
+          : "-"
+
   const profileRows = [
-    { id: 'employee-id', label: 'Employee ID', value: currentUser?.id ?? '-' },
+    { id: 'employee-id', label: 'Employee ID', value: currentUser?.employeeId ?? currentUser?.id ?? '-' },
     { id: 'name', label: 'Full Name', value: currentUser?.name ?? '-' },
+    { id: 'department-id', label: 'Department ID', value: currentUser?.departmentId ?? '-' },
     { id: 'department', label: 'Department', value: currentUser?.department ?? '-' },
     { id: 'location', label: 'Location', value: currentUser?.location ?? '-' },
     { id: 'phone', label: 'Phone Number', value: currentUser?.phone ?? '-' },
     { id: 'email', label: 'Email Address', value: currentUser?.email ?? '-' },
-    { id: 'role', label: 'Role', value: currentRole?.replace('_', ' ') ?? '-' },
+    { id: 'role', label: 'Role', value: roleLabel },
   ];
 
   return (

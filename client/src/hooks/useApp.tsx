@@ -8,9 +8,8 @@ interface AppContextType {
   currentPage: Page
   isAuthenticated: boolean
   selectedRequestId?: number
-  login: (username: string, password: string) => boolean
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
-  setCurrentRole: (role: UserRole) => void
   setCurrentPage: (page: Page) => void
   setSelectedRequestId: (id?: number) => void
 }
