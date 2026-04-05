@@ -1,9 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { AccessRequest, AccessItem, AccessItemStatus, Notification } from '../lib/types';
-import { generateMockRequests, getMockUserByRole } from '../lib/mock-data';
-import { useApp } from './AppContext';
+import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
+import type { AccessRequest, AccessItemStatus, Notification } from '../lib/types';
 import { WorkflowEngine } from '../lib/workflow-engine';
-import { processExpirations } from '../lib/expiry-job';
+import { useApp } from '@/hooks/useApp';
 
 interface DataContextType {
   requests: AccessRequest[];
@@ -64,21 +62,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setNotifications(notifs);
   };
 
-  // Initialize mock data on mount
-  useEffect(() => {
-    const mockRequests = generateMockRequests();
-    const processedRequests = processExpirations(mockRequests);
-    setRequests(processedRequests);
-  }, []);
-
-  // Generate notifications when user changes
+  // Generate notifications from live request state when the user context changes
   useEffect(() => {
     if (currentUser && currentRole) {
-      const mockRequests = generateMockRequests();
-      const processedRequests = processExpirations(mockRequests);
-      generateNotifications(processedRequests, currentRole, currentUser.id);
+      generateNotifications(requests, currentRole, currentUser.id);
+    } else {
+      setNotifications([]);
     }
-  }, [currentUser, currentRole]);
+  }, [currentUser, currentRole, requests]);
 
   const addRequest = (request: AccessRequest) => {
     setRequests([...requests, request]);

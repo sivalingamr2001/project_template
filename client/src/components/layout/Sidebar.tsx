@@ -1,4 +1,4 @@
-import { useApp } from '../../context/AppContext';
+import { useApp } from '@/hooks/useApp';
 import { useData } from '../../context/DataContext';
 import { LayoutDashboard, ClipboardList, CheckCircle, BarChart3, LogOut } from 'lucide-react';
 import type { Page } from '../../context/AppContext';

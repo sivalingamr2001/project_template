@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useApp } from '../../context/AppContext';
 import { NotificationBell } from '../shared/NotificationBell';
 import { LogOut, ChevronDown, UserCircle2 } from 'lucide-react';
+import { useApp } from '@/hooks/useApp';
 
 export function Header() {
   const { currentUser, logout } = useApp();
