@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  id="Definitions_FileAccessApproval"
+                  targetNamespace="http://fileaccessportal/workflow">
+  <bpmn:process id="file-access-approval" name="File Access Approval" isExecutable="true">
+    <bpmn:startEvent id="Start_Request" name="User Request Init">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_HodApproval" name="HOD Approval">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+      <bpmn:incoming>Flow_RejectToHod</bpmn:incoming>
+      <bpmn:outgoing>Flow_2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_HodDecision" name="HOD Decision">
+      <bpmn:incoming>Flow_2</bpmn:incoming>
+      <bpmn:outgoing>Flow_HodApproved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_HodRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_ItReview" name="IT Infra Review">
+      <bpmn:incoming>Flow_HodApproved</bpmn:incoming>
+      <bpmn:incoming>Flow_RenewalToIt</bpmn:incoming>
+      <bpmn:outgoing>Flow_3</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_ItDecision" name="IT Decision">
+      <bpmn:incoming>Flow_3</bpmn:incoming>
+      <bpmn:outgoing>Flow_ItApproved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_ItRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="Task_UserResubmit" name="User Resubmit">
+      <bpmn:incoming>Flow_HodRejected</bpmn:incoming>
+      <bpmn:incoming>Flow_ItRejected</bpmn:incoming>
+      <bpmn:incoming>Flow_RequestExpired</bpmn:incoming>
+      <bpmn:outgoing>Flow_RejectToHod</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="Task_Granted" name="Grant Access For 365 Days">
+      <bpmn:incoming>Flow_ItApproved</bpmn:incoming>
+      <bpmn:outgoing>Flow_GrantedToExpiry</bpmn:outgoing>
+      <bpmn:outgoing>Flow_GrantedToRevoke</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateCatchEvent id="Event_Expiry" name="Access Expiry">
+      <bpmn:incoming>Flow_GrantedToExpiry</bpmn:incoming>
+      <bpmn:outgoing>Flow_RequestExpired</bpmn:outgoing>
+      <bpmn:timerEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Task_Revoke" name="Revoke Any Time By IT">
+      <bpmn:incoming>Flow_GrantedToRevoke</bpmn:incoming>
+      <bpmn:outgoing>Flow_RevokeEnd</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:endEvent id="End_Revoked" name="Revoked">
+      <bpmn:incoming>Flow_RevokeEnd</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_RequestComplete" name="Granted">
+      <bpmn:incoming>Flow_GrantedComplete</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="Start_Request" targetRef="Task_HodApproval" />
+    <bpmn:sequenceFlow id="Flow_2" sourceRef="Task_HodApproval" targetRef="Gateway_HodDecision" />
+    <bpmn:sequenceFlow id="Flow_HodApproved" sourceRef="Gateway_HodDecision" targetRef="Task_ItReview" />
+    <bpmn:sequenceFlow id="Flow_HodRejected" sourceRef="Gateway_HodDecision" targetRef="Task_UserResubmit" />
+    <bpmn:sequenceFlow id="Flow_3" sourceRef="Task_ItReview" targetRef="Gateway_ItDecision" />
+    <bpmn:sequenceFlow id="Flow_ItApproved" sourceRef="Gateway_ItDecision" targetRef="Task_Granted" />
+    <bpmn:sequenceFlow id="Flow_ItRejected" sourceRef="Gateway_ItDecision" targetRef="Task_UserResubmit" />
+    <bpmn:sequenceFlow id="Flow_RejectToHod" sourceRef="Task_UserResubmit" targetRef="Task_HodApproval" />
+    <bpmn:sequenceFlow id="Flow_GrantedToExpiry" sourceRef="Task_Granted" targetRef="Event_Expiry" />
+    <bpmn:sequenceFlow id="Flow_RequestExpired" sourceRef="Event_Expiry" targetRef="Task_UserResubmit" />
+    <bpmn:sequenceFlow id="Flow_RenewalToIt" sourceRef="Task_ItReview" targetRef="Gateway_ItDecision" />
+    <bpmn:sequenceFlow id="Flow_GrantedToRevoke" sourceRef="Task_Granted" targetRef="Task_Revoke" />
+    <bpmn:sequenceFlow id="Flow_RevokeEnd" sourceRef="Task_Revoke" targetRef="End_Revoked" />
+    <bpmn:sequenceFlow id="Flow_GrantedComplete" sourceRef="Task_Granted" targetRef="End_RequestComplete" />
+  </bpmn:process>
+</bpmn:definitions>
