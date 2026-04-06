@@ -41,7 +41,7 @@ export default function DetailItem({
   onRemove,
   onChange,
 }: DetailItemProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
 
   return (
     <div className="relative overflow-hidden rounded-xl border bg-card shadow-sm transition-all">
