@@ -33,7 +33,7 @@ export function ActiveAccessTable({ data, onRevoke, onView }: { data: ActiveAcce
       ]}
       renderRowActions={(row) => (
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => onView(row.requestId)}>
+          <Button size="sm" variant="default" onClick={() => onView(row.requestId)}>
             View
           </Button>
           <RevokeButton onConfirm={() => onRevoke(row.requestId, row.id)} />

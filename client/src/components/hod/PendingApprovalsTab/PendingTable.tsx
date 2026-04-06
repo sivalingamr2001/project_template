@@ -57,13 +57,14 @@ export function PendingTable(props: {
         },
       ]}
       renderRowActions={(row) => (
-        <Button size="sm" variant="outline" onClick={() => props.onView(row.requestId, row.id)}>
+        <Button size="sm" variant="default" onClick={() => props.onView(row.requestId, row.id)}>
           View
         </Button>
       )}
       rowToSearchString={(row) => [row.employeeName, row.folderName, row.accessType, row.status].join(' ')}
       onRefresh={refreshData}
       emptyMessage="No pending requests"
+      enablePagination
       searchPlaceholder="Search approvals"
     />
   )

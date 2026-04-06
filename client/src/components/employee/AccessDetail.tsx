@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils"
 const accessOptions = ["Not Applicable", "Read only", "Read and Write"]
 
 // Assuming UserRole is a string or specific type from your hook
-type UserRole = string | any
+type UserRole = string | unknown
 
 interface DetailItemProps {
   detail: {

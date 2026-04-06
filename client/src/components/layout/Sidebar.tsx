@@ -12,7 +12,11 @@ import {
   ListChecks,
 } from "lucide-react"
 import type { Page } from "../../context/AppContext"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface NavItem {
   label: string
@@ -51,7 +55,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
             label: "Dashboard",
             icon: <LayoutDashboard size={20} />,
             page: "EMPLOYEE_DASHBOARD" as const,
-          }
+          },
         ]
       : []),
     ...(currentRole === "HOD"
@@ -70,11 +74,6 @@ export function Sidebar({ collapsed }: SidebarProps) {
             label: "All Requests",
             icon: <FileText size={20} />,
             page: "HOD_ALL_REQUESTS" as const,
-          },
-          {
-            label: "Employee",
-            icon: <Users size={20} />,
-            page: "HOD_LOOKUP" as const,
           },
         ]
       : []),
@@ -122,7 +121,9 @@ export function Sidebar({ collapsed }: SidebarProps) {
           </div>
         ) : (
           <div className="overflow-hidden">
-            <h1 className="truncate text-2xl font-bold text-primary">Access Portal</h1>
+            <h1 className="truncate text-2xl font-bold text-primary">
+              Access Portal
+            </h1>
           </div>
         )}
       </div>
@@ -144,16 +145,20 @@ export function Sidebar({ collapsed }: SidebarProps) {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               }`}
             >
-              <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
+              <div
+                className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}
+              >
                 <span className="shrink-0">{item.icon}</span>
-                {!collapsed && <span className="truncate font-medium">{item.label}</span>}
+                {!collapsed && (
+                  <span className="truncate font-medium">{item.label}</span>
+                )}
               </div>
 
               {pendingCount > 0 && (
                 <span
                   className={`flex items-center justify-center font-bold ${
                     collapsed
-                      ? "absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground ring-2 ring-secondary"
+                      ? "text-destructive-foreground absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] ring-2 ring-secondary"
                       : `ml-auto rounded-full px-2 py-0.5 text-xs ${isActive ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground"}`
                   }`}
                 >
@@ -167,7 +172,11 @@ export function Sidebar({ collapsed }: SidebarProps) {
             <Tooltip key={item.page}>
               <TooltipTrigger asChild>{navButton}</TooltipTrigger>
               {collapsed && (
-                <TooltipContent side="right" sideOffset={10} className="flex items-center gap-2">
+                <TooltipContent
+                  side="right"
+                  sideOffset={10}
+                  className="flex items-center gap-2"
+                >
                   {item.label}
                   {pendingCount > 0 && (
                     <span className="rounded bg-muted px-1.5 py-0.5 text-[10px]">

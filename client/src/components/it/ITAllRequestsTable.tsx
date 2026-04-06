@@ -40,7 +40,7 @@ export function ITAllRequestsTable({ data, isLoading, onView }: ITAllRequestsTab
       header: "Actions",
       cell: (request: AccessRequest) => (
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           onClick={() => onView(request)}
         >

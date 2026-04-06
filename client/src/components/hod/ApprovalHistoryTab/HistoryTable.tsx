@@ -31,7 +31,7 @@ export function HistoryTable({ data, isLoading, onView }: { data: ApprovalItem[]
         },
       ]}
       renderRowActions={(row) => (
-        <Button size="sm" variant="outline" onClick={() => onView(row.requestId, row.id)}>
+        <Button size="sm" variant="default" onClick={() => onView(row.requestId, row.id)}>
           View
         </Button>
       )}

@@ -54,7 +54,7 @@ export function HODAllRequestsTable({ data, isLoading, onView }: { data: Approva
         },
       ]}
       renderRowActions={(row) => (
-        <Button size="sm" variant="outline" onClick={() => onView(row.requestId, row.detailId)}>
+        <Button size="sm" variant="default" onClick={() => onView(row.requestId, row.detailId)}>
           View
         </Button>
       )}

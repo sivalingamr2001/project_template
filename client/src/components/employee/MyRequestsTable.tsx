@@ -4,6 +4,7 @@ import { StatusBadge } from '../shared/StatusBadge'
 import { formatDate } from '../../lib/utils'
 import type { AccessRequest, AccessItem } from '../../lib/types'
 import { useData } from '../../context/DataContext'
+import { Button } from '../ui/button'
 
 type AccessItemRow = {
   request: AccessRequest
@@ -58,14 +59,15 @@ export function MyRequestsTable({
         },
       ]}
       renderRowActions={(row) => (
-        <button
+        <Button
           className="inline-flex items-center rounded-lg border border-border bg-transparent px-3 py-1 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
           onClick={() => onViewDetail(row.request.id, row.item.id)}
           type="button"
+          variant="default"
         >
           <Eye className="mr-2 h-4 w-4" />
           View
-        </button>
+        </Button>
       )}
       rowToSearchString={(row) =>
         [

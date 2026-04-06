@@ -19,8 +19,12 @@ export const useApprovalHistory = () => {
         hodName: undefined,
         hodEmail: undefined,
         requestedAt: item.requestedAt,
-        approvedBy: item.approvalHistory.find((entry) => entry.action === "HODApproved")?.approverName,
-        itApprovedBy: item.approvalHistory.find((entry) => entry.action === "ITApproved")?.approverName,
+        approvedBy: item.approvalHistory.find(
+          (entry) => entry.action === "HODApproved"
+        )?.approverName,
+        itApprovedBy: item.approvalHistory.find(
+          (entry) => entry.action === "ITApproved"
+        )?.approverName,
         requestId: request.id,
         detailId: item.id,
         approvalId: item.id,

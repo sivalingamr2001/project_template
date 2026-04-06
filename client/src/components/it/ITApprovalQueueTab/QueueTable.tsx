@@ -53,7 +53,7 @@ export function QueueTable(props: {
         },
       ]}
       renderRowActions={(row) => (
-        <Button size="sm" variant="outline" onClick={() => props.onView(row.requestId, row.id)}>
+        <Button size="sm" variant="default" onClick={() => props.onView(row.requestId, row.id)}>
           View
         </Button>
       )}

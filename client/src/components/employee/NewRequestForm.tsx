@@ -114,7 +114,7 @@ export function NewRequestForm({
           </h3>
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={addDetail}
             className="h-8 gap-1"

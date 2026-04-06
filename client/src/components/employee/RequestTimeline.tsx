@@ -9,17 +9,14 @@ const statusSteps = [
   { key: "PendingHOD", label: "Submitted" },
   { key: "PendingIT", label: "HOD Review" },
   { key: "Approved", label: "IT Review" },
-  { key: "Expired", label: "Expired/Revoked" },
+  { key: "Expired", label: "Expired" },
+  { key: "Revoked", label: "Revoked" },
 ]
 
 export function RequestTimeline({ request }: { request?: AccessRequest }) {
   if (!request) return null
 
-  const normalizedStatus =
-    request.status === "Revoked" || request.status === "Rejected"
-      ? "Expired"
-      : request.status
-  let currentStepIndex = statusSteps.findIndex((step) => step.key === normalizedStatus)
+  let currentStepIndex = statusSteps.findIndex((step) => step.key === request.status)
   if (currentStepIndex < 0) currentStepIndex = 0
 
   return (
@@ -79,7 +76,7 @@ export function RequestTimeline({ request }: { request?: AccessRequest }) {
             </div>
             <div>
               <Label className="text-sm font-medium">Status</Label>
-              <Badge variant="outline">{request.status}</Badge>
+              <Badge variant="default">{request.status}</Badge>
             </div>
           </div>
           {request.rejectionReason && (

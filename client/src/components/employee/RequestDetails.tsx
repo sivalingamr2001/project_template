@@ -22,7 +22,9 @@ export function RequestDetails() {
     setCurrentPage,
   } = useApp()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [dialogActionType, setDialogActionType] = useState<"APPROVE" | "REJECT" | null>(null)
+  const [dialogActionType, setDialogActionType] = useState<
+    "APPROVE" | "REJECT" | null
+  >(null)
   const [reportOpen, setReportOpen] = useState(false)
   const [isResubmitting, setIsResubmitting] = useState(false)
 
@@ -47,9 +49,14 @@ export function RequestDetails() {
         isAgreed: true,
         details: request.items.map((item) => ({
           folderName: item.system,
-          accessType: item.accessType === "ReadAndWrite" ? "Read and Write" : "Read only",
-          reason: item.reason ?? request.rejectionReason ?? "Resubmitted request",
-          durationDays: Math.max(30, daysBetween(request.requestedAt, item.expiresAt)),
+          accessType:
+            item.accessType === "ReadAndWrite" ? "Read and Write" : "Read only",
+          reason:
+            item.reason ?? request.rejectionReason ?? "Resubmitted request",
+          durationDays: Math.max(
+            30,
+            daysBetween(request.requestedAt, item.expiresAt)
+          ),
         })),
       })
       toast.success("Request resubmitted successfully")
@@ -87,10 +94,11 @@ export function RequestDetails() {
           </button>
         </div>
 
-        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm text-center">
+        <div className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm">
           <p className="text-lg font-semibold">No access item selected</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            This detail page requires a single access item selection. Please open a request from the item-level list.
+            This detail page requires a single access item selection. Please
+            open a request from the item-level list.
           </p>
         </div>
       </div>
@@ -120,11 +128,24 @@ export function RequestDetails() {
     rejectedAtIT,
   } = getWorkflowStatus(selectedItem)
 
+  const isExpired = selectedItem.status === "Expired"
+  const isRevoked = selectedItem.status === "Revoked"
+  const finalStatusCard =
+    isExpired || isRevoked
+      ? {
+          label: isExpired ? "Expired" : "Revoked",
+          status: "failed",
+          description: isExpired
+            ? "Access item has expired and needs renewal."
+            : "Access item was revoked by IT.",
+        }
+      : undefined
+
   const stepCards = [
     {
-      label: "Request Submitted",
+      label: "Submitted",
       status: "complete",
-      description: "Request created and submitted for approval.",
+      description: "Request created and sent for review.",
     },
     {
       label: "HOD Approval",
@@ -135,7 +156,7 @@ export function RequestDetails() {
           : selectedItem.status === "PendingHOD"
             ? "active"
             : "pending",
-      description: "HOD reviews and approves the access item.",
+      description: "HOD checks the business need.",
     },
     {
       label: "IT Approval",
@@ -148,11 +169,12 @@ export function RequestDetails() {
             : "pending",
       description: "IT finalizes infrastructure access.",
     },
+    ...(finalStatusCard ? [finalStatusCard] : []),
   ]
 
   const getStepClasses = (status: string) => {
     if (status === "complete")
-      return "border-primary bg-primary text-primary-foreground"
+      return "border-primary bg-primary/10 text-primary"
     if (status === "active") return "border border-primary text-primary"
     if (status === "failed")
       return "border-destructive bg-destructive/10 text-destructive"
@@ -177,9 +199,8 @@ export function RequestDetails() {
           <ArrowLeft size={18} />
           Back to Requests
         </button>
-
         <Button
-          variant="outline"
+          variant="secondary"
           onClick={() => setReportOpen(true)}
           className="w-full sm:w-auto"
         >
@@ -192,7 +213,8 @@ export function RequestDetails() {
         open={reportOpen}
         onOpenChange={setReportOpen}
         onResubmit={
-          request.requesterId === currentUser?.id && request.status === "Rejected"
+          request.requesterId === currentUser?.id &&
+          request.status === "Rejected"
             ? handleResubmit
             : undefined
         }
@@ -209,7 +231,8 @@ export function RequestDetails() {
             </div>
             <h1 className="text-3xl font-bold">{selectedItem.system}</h1>
             <p className="text-sm text-muted-foreground">
-              {selectedItem.accessType} • Requested on {formatDate(selectedItem.requestedAt)}
+              {selectedItem.accessType} • Requested on{" "}
+              {formatDate(selectedItem.requestedAt)}
             </p>
           </div>
 
@@ -221,28 +244,28 @@ export function RequestDetails() {
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stepCards.map((step, index) => (
             <div
               key={step.label}
-              className={`rounded-2xl border p-4 shadow-sm transition ${getStepClasses(step.status)}`}
+              className={`rounded-2xl border p-3 transition ${getStepClasses(step.status)}`}
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-current text-sm font-semibold">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-current text-sm font-semibold">
                   {index + 1}
                 </span>
-                <span className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                <span className="text-[11px] tracking-[0.3em] uppercase">
                   {step.status === "complete"
-                    ? "Completed"
+                    ? "Complete"
                     : step.status === "active"
-                      ? "In progress"
+                      ? "Active"
                       : step.status === "failed"
-                        ? "Failed"
+                        ? "Issue"
                         : "Pending"}
                 </span>
               </div>
-              <h2 className="mt-4 text-base font-semibold">{step.label}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <h2 className="mt-3 text-sm font-semibold">{step.label}</h2>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">
                 {step.description}
               </p>
             </div>
@@ -276,7 +299,9 @@ export function RequestDetails() {
                 <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
                   Submitted
                 </p>
-                <p className="font-semibold">{formatDate(request.requestedAt)}</p>
+                <p className="font-semibold">
+                  {formatDate(request.requestedAt)}
+                </p>
               </div>
               <div>
                 <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
@@ -292,10 +317,11 @@ export function RequestDetails() {
               <div>
                 <h2 className="text-lg font-semibold">Access items</h2>
                 <p className="text-sm text-muted-foreground">
-                  Each access item is managed independently. Select one to view its full details and approval history.
+                  Each access item is managed independently. Select one to view
+                  its full details and approval history.
                 </p>
               </div>
-              <span className="w-30 rounded-full border border-border bg-muted px-3 py-1 text-xs uppercase text-muted-foreground">
+              <span className="w-30 rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground uppercase">
                 {request.items.length} items
               </span>
             </div>
@@ -314,11 +340,13 @@ export function RequestDetails() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-semibold">{item.system}</p>
-                      <p className="text-sm text-muted-foreground">{item.accessType}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.accessType}
+                      </p>
                     </div>
                     <StatusBadge status={item.status} size="sm" />
                   </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 text-xs text-muted-foreground">
+                  <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                     <div>
                       <span className="font-medium">Item ID</span>
                       <p>#{item.id}</p>
@@ -332,6 +360,11 @@ export function RequestDetails() {
               ))}
             </div>
           </div>
+
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold">Audit Log</h2>
+            <AuditLog request={request} selectedItemId={selectedItem.id} />
+          </div>
         </div>
 
         <div className="space-y-6">
@@ -341,8 +374,12 @@ export function RequestDetails() {
                 <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
                   Selected access item
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold">{selectedItem.system}</h2>
-                <p className="text-sm text-muted-foreground">{selectedItem.accessType}</p>
+                <h2 className="mt-2 text-2xl font-semibold">
+                  {selectedItem.system}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {selectedItem.accessType}
+                </p>
               </div>
               <StatusBadge status={selectedItem.status} size="lg" />
             </div>
@@ -376,13 +413,17 @@ export function RequestDetails() {
                 <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
                   Expiry
                 </p>
-                <p className="font-semibold">{formatDate(selectedItem.expiresAt)}</p>
+                <p className="font-semibold">
+                  {formatDate(selectedItem.expiresAt)}
+                </p>
               </div>
               <div>
                 <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
                   Requested
                 </p>
-                <p className="font-semibold">{formatDate(selectedItem.requestedAt)}</p>
+                <p className="font-semibold">
+                  {formatDate(selectedItem.requestedAt)}
+                </p>
               </div>
             </div>
 
@@ -392,7 +433,8 @@ export function RequestDetails() {
                   Requested Reason
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {selectedItem.reason || "No reason provided for this access item."}
+                  {selectedItem.reason ||
+                    "No reason provided for this access item."}
                 </p>
               </div>
               <div>
@@ -407,16 +449,6 @@ export function RequestDetails() {
             (currentRole === "IT" && selectedItem.status === "PendingIT") ? (
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSelectedAccessItemId(selectedItem.id)
-                    setDialogActionType("REJECT")
-                    setIsDialogOpen(true)
-                  }}
-                >
-                  Reject
-                </Button>
-                <Button
                   onClick={() => {
                     setSelectedAccessItemId(selectedItem.id)
                     setDialogActionType("APPROVE")
@@ -424,6 +456,16 @@ export function RequestDetails() {
                   }}
                 >
                   Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setSelectedAccessItemId(selectedItem.id)
+                    setDialogActionType("REJECT")
+                    setIsDialogOpen(true)
+                  }}
+                >
+                  Reject
                 </Button>
               </div>
             ) : null}
@@ -436,11 +478,6 @@ export function RequestDetails() {
               compact
               itemsMap={itemsMap}
             />
-          </div>
-
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">Audit Log</h2>
-            <AuditLog request={request} selectedItemId={selectedItem.id} />
           </div>
         </div>
       </div>

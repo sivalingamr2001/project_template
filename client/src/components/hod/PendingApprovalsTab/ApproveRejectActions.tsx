@@ -6,7 +6,7 @@ import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 
-const accessOptions = ['View Only', 'Read Only', 'Read and Write'];
+const accessOptions = ["Not Applicable", "Read only", "Read and Write"]
 
 export function ApproveRejectActions({
   requestId,
@@ -51,7 +51,7 @@ export function ApproveRejectActions({
 
   return (
     <>
-      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <Button size="sm" variant="default" onClick={() => setOpen(true)}>
         View
       </Button>
 
@@ -133,7 +133,7 @@ export function ApproveRejectActions({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeModal} disabled={isPending}>
+            <Button variant="default" onClick={closeModal} disabled={isPending}>
               Cancel
             </Button>
             <Button
