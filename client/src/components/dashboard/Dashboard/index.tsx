@@ -1,0 +1,5 @@
+export { StatsCards } from "./StatsCards"
+export { TrendChart } from "./TrendChart"
+export { useDashboardStats } from "./hooks/useDashboardStats"
+export { useTrendChartData } from "./TrendChart"
+export type { DashboardStats } from "./hooks/useDashboardStats"
