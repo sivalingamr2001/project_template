@@ -2,9 +2,10 @@ import type { ActiveAccessItem } from '../it.types'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { CommonTable } from '../../shared/CommonTable'
 import { RevokeButton } from './RevokeButton'
+import { Button } from '../../ui/button'
 import { useData } from '../../../context/DataContext'
 
-export function ActiveAccessTable({ data, onRevoke }: { data: ActiveAccessItem[]; onRevoke: (id: number) => void }) {
+export function ActiveAccessTable({ data, onRevoke, onView }: { data: ActiveAccessItem[]; onRevoke: (requestId: number, itemId: number) => void; onView: (requestId: number) => void }) {
   const { refreshData } = useData()
 
   return (
@@ -31,7 +32,12 @@ export function ActiveAccessTable({ data, onRevoke }: { data: ActiveAccessItem[]
         },
       ]}
       renderRowActions={(row) => (
-        <RevokeButton onConfirm={() => onRevoke(row.id)} />
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => onView(row.requestId)}>
+            View
+          </Button>
+          <RevokeButton onConfirm={() => onRevoke(row.requestId, row.id)} />
+        </div>
       )}
       rowToSearchString={(row) => [row.employeeName, row.folderName, row.expiresAt ?? '', row.status].join(' ')}
       onRefresh={refreshData}

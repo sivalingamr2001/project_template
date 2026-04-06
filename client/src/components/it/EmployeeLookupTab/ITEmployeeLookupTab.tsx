@@ -26,7 +26,7 @@ export function ITEmployeeLookupTab() {
               <AccessTableFilters onChange={setFilter} />
             </CardHeader>
             <CardContent>
-              <ITEmployeeAccessTable data={rows} onRevoke={(id) => revoke.mutate(id)} />
+              <ITEmployeeAccessTable data={rows} onRevoke={(requestId, itemId) => revoke.mutate(requestId, itemId)} />
             </CardContent>
           </Card>
         </>

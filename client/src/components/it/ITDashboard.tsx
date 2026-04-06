@@ -3,13 +3,14 @@ import { useData } from "@/context/DataContext"
 import { getExpiringItemsAcrossRequests } from "@/lib/expiry-job"
 import { ActiveAccessTab } from "./ActiveAccessTab"
 import { AuditLogTab } from "./AuditLogTab"
-import { ITEmployeeLookupTab } from "./EmployeeLookupTab"
+import { ITAllRequestsTab } from "./ITAllRequestsTab"
 import { ITApprovalQueueTab } from "./ITApprovalQueueTab"
 import { ITStats } from "./ITStats"
+import { UserTable } from "../shared/UserTable"
 
 export function ITDashboard() {
   const { currentPage, currentUser } = useApp()
-  const { requests } = useData()
+  const { requests, users } = useData()
 
   const stats = {
     queue: requests
@@ -36,7 +37,13 @@ export function ITDashboard() {
       {currentPage === "IT_QUEUE" && <ITStats stats={stats} />}
       {currentPage === "IT_QUEUE" && <ITApprovalQueueTab />}
       {currentPage === "IT_ACTIVE_ACCESS" && <ActiveAccessTab />}
-      {currentPage === "IT_LOOKUP" && <ITEmployeeLookupTab />}
+      {currentPage === "IT_ALL_REQUESTS" && <ITAllRequestsTab />}
+      {currentPage === "IT_LOOKUP" && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">All Users</h2>
+          <UserTable data={users} isLoading={false} />
+        </div>
+      )}
       {currentPage === "IT_AUDIT_LOG" && <AuditLogTab />}
     </div>
   )

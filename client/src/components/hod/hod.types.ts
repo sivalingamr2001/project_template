@@ -36,7 +36,7 @@ export interface EmployeeLookupResult {
   active: number
   pending: number
   expired: number
-  accesses: AccessListItem[]
+  accesses: (AccessListItem & { requestId: number })[]
 }
 
 export const hodKeys = {

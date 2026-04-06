@@ -8,6 +8,7 @@ import {
   History,
   Users,
   FileSearch,
+  FileText,
   ListChecks,
 } from "lucide-react"
 import type { Page } from "../../context/AppContext"
@@ -50,7 +51,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
             label: "Dashboard",
             icon: <LayoutDashboard size={20} />,
             page: "EMPLOYEE_DASHBOARD" as const,
-          },
+          }
         ]
       : []),
     ...(currentRole === "HOD"
@@ -66,7 +67,12 @@ export function Sidebar({ collapsed }: SidebarProps) {
             page: "HOD_HISTORY" as const,
           },
           {
-            label: "Employee Lookup",
+            label: "All Requests",
+            icon: <FileText size={20} />,
+            page: "HOD_ALL_REQUESTS" as const,
+          },
+          {
+            label: "Employee",
             icon: <Users size={20} />,
             page: "HOD_LOOKUP" as const,
           },
@@ -85,7 +91,12 @@ export function Sidebar({ collapsed }: SidebarProps) {
             page: "IT_ACTIVE_ACCESS" as const,
           },
           {
-            label: "Employee Lookup",
+            label: "All Requests",
+            icon: <FileText size={20} />,
+            page: "IT_ALL_REQUESTS" as const,
+          },
+          {
+            label: "Employee",
             icon: <Users size={20} />,
             page: "IT_LOOKUP" as const,
           },
@@ -103,7 +114,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
       className={`sticky top-0 flex h-screen shrink-0 flex-col border-r border-border bg-secondary transition-all duration-300 ease-in-out ${collapsed ? "w-16" : "w-64"}`}
     >
       <div
-        className={`flex min-h-15 items-center border-b border-border px-2 ${collapsed ? "justify-center" : "justify-start"}`}
+        className={`flex h-12.5 items-center border-b border-border px-2 ${collapsed ? "justify-center" : "justify-start"}`}
       >
         {collapsed ? (
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground shadow-sm">

@@ -8,6 +8,7 @@ export const useActiveAccess = () => {
       .filter((item) => item.status === "Approved")
       .map((item) => ({
         id: item.id,
+        requestId: request.id,
         employeeName: request.requesterName,
         empId: request.requesterId,
         folderName: item.system,

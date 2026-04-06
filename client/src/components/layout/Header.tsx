@@ -21,7 +21,7 @@ interface HeaderProps {
 }
 
 export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
-  const { currentRole, currentUser, setCurrentPage, logout } = useApp()
+  const { currentUser, setCurrentPage, logout } = useApp()
 
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border bg-background p-2">
@@ -42,16 +42,13 @@ export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
 
       <div className="flex items-center gap-3">
         <NotificationBell />
-
-        <div className="hidden rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground md:block">
-          {currentRole === "User" ? "Requester" : currentRole === "HOD" ? "HOD" : "IT"}
-        </div>
-
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="gap-2">
               <UserCircle2 className="h-4 w-4" />
-              <span className="hidden sm:inline">{currentUser?.name ?? "Profile"}</span>
+              <span className="hidden sm:inline">
+                {currentUser?.name ?? "Profile"}
+              </span>
             </Button>
           </DropdownMenuTrigger>
 

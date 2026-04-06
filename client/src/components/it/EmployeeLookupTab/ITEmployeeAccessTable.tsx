@@ -4,17 +4,19 @@ import { CommonTable } from '../../shared/CommonTable'
 import { RevokeButton } from '../ActiveAccessTab/RevokeButton'
 import { useData } from '../../../context/DataContext'
 
+type EmployeeAccessItem = AccessListItem & { requestId: number }
+
 export function ITEmployeeAccessTable({
   data,
   onRevoke,
 }: {
-  data: AccessListItem[]
-  onRevoke: (id: number) => void
+  data: EmployeeAccessItem[]
+  onRevoke: (requestId: number, itemId: number) => void
 }) {
   const { refreshData } = useData()
 
   return (
-    <CommonTable<AccessListItem>
+    <CommonTable<EmployeeAccessItem>
       data={data}
       isLoading={false}
       rowKey={(row) => row.id}
@@ -41,7 +43,7 @@ export function ITEmployeeAccessTable({
         },
       ]}
       renderRowActions={(row) => (
-        <RevokeButton onConfirm={() => onRevoke(row.id)} />
+        <RevokeButton onConfirm={() => onRevoke(row.requestId, row.id)} />
       )}
       rowToSearchString={(row) => [row.folderName, row.accessType, row.status].join(' ')}
       onRefresh={refreshData}

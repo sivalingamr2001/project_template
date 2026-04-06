@@ -298,6 +298,7 @@ function mapApprovalRecord(audit: AuditResponseDto): ApprovalRecord | null {
     action,
     comment: audit.comments ?? undefined,
     timestamp: audit.happenedAtUtc,
+    accessItemId: audit.accessItemId ?? undefined,
   }
 }
 
@@ -347,6 +348,7 @@ export function mapApiRequestToClient(
         item.hodReviewedAtUtc ??
         request.requestedAtUtc,
       status: mapRequestStatus(item.status),
+      reason: item.businessReason ?? undefined,
       approvalHistory: approvalTimeline.filter((record) =>
         request.auditTrail.some(
           (audit) => audit.id === record.id && audit.accessItemId === item.accessItemId
@@ -461,19 +463,31 @@ export async function updateAccessApproval(params: {
   approvalLevel: "HOD" | "IT"
   status: "Approved" | "Rejected"
   comments?: string
+  approvedType?: string
+  durationDays?: number
 }) {
   const path =
     params.approvalLevel === "HOD"
       ? `/api/requests/${params.requestId}/items/${params.detailId}/hod-review`
       : `/api/requests/${params.requestId}/items/${params.detailId}/it-review`
 
+  const body: Record<string, unknown> = {
+    approved: params.status === "Approved",
+    note: params.comments ?? "",
+  }
+
+  if (params.approvedType) {
+    body.approvedType = params.approvedType
+  }
+
+  if (typeof params.durationDays === "number") {
+    body.durationDays = params.durationDays
+  }
+
   const response = await fetch(getApiUrl(path), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({
-      approved: params.status === "Approved",
-      note: params.comments ?? "",
-    }),
+    body: JSON.stringify(body),
   })
 
   return parseJson<RequestResponseDto>(response)
@@ -516,4 +530,49 @@ export async function revokeAccessItem(
 
   const data = await parseJson<RequestResponseDto>(response)
   return mapApiRequestToClient(data)
+}
+
+/**
+ * Send notification to requester about approval/rejection
+ * The backend typically creates these automatically, but this ensures they're sent
+ */
+export async function sendNotificationToRequester(
+  requestId: number,
+  itemId: number,
+  eventType: "approved" | "rejected",
+  stage: "HOD" | "IT",
+  message: string
+): Promise<void> {
+  try {
+    const response = await fetch(
+      getApiUrl(`/api/notifications/send`),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({
+          requestId,
+          itemId,
+          eventType,
+          stage,
+          message,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      console.warn("Failed to send notification:", response.statusText)
+    }
+  } catch (error) {
+    console.warn("Error sending notification:", error)
+    // Don't throw - notifications are secondary to the main approval/rejection flow
+  }
+}
+
+export async function getAllRequests(): Promise<AccessRequest[]> {
+  const response = await fetch(getApiUrl("/api/requests"), {
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+  })
+
+  const data = await parseJson<RequestResponseDto[]>(response)
+  return data.map((request) => mapApiRequestToClient(request))
 }

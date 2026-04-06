@@ -2,8 +2,13 @@ import { Plus, Eye } from 'lucide-react'
 import { CommonTable } from '../shared/CommonTable'
 import { StatusBadge } from '../shared/StatusBadge'
 import { formatDate } from '../../lib/utils'
-import type { AccessRequest } from '../../lib/types'
+import type { AccessRequest, AccessItem } from '../../lib/types'
 import { useData } from '../../context/DataContext'
+
+type AccessItemRow = {
+  request: AccessRequest
+  item: AccessItem
+}
 
 export function MyRequestsTable({
   data,
@@ -13,54 +18,62 @@ export function MyRequestsTable({
 }: {
   data: AccessRequest[]
   isLoading: boolean
-  onViewDetail: (id: number) => void
+  onViewDetail: (requestId: number, itemId: number) => void
   onNewRequest: () => void
 }) {
   const { refreshData } = useData()
+  const rows: AccessItemRow[] = data.flatMap((request) =>
+    request.items.map((item) => ({ request, item }))
+  )
 
   return (
-    <CommonTable<AccessRequest>
-      data={data}
+    <CommonTable<AccessItemRow>
+      data={rows}
       isLoading={isLoading}
-      rowKey={(request) => request.id}
+      rowKey={(row) => row.item.id}
       columns={[
         {
           header: 'Request ID',
-          cell: (request) => request.id,
+          cell: (row) => row.request.id,
+        },
+        {
+          header: 'Access Item ID',
+          cell: (row) => `#${row.item.id}`,
         },
         {
           header: 'Systems',
-          cell: (request) => request.items.map((item) => item.system).join(', '),
+          cell: (row) => row.item.system,
         },
         {
           header: 'Access Types',
-          cell: (request) => request.items.map((item) => item.accessType).join(', '),
+          cell: (row) => row.item.accessType,
         },
         {
           header: 'Created',
-          cell: (request) => formatDate(request.requestedAt),
+          cell: (row) => formatDate(row.item.requestedAt),
         },
         {
           header: 'Status',
-          cell: (request) => <StatusBadge status={request.status} />,
+          cell: (row) => <StatusBadge status={row.item.status} />,
         },
       ]}
-      renderRowActions={(request) => (
+      renderRowActions={(row) => (
         <button
           className="inline-flex items-center rounded-lg border border-border bg-transparent px-3 py-1 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
-          onClick={() => onViewDetail(request.id)}
+          onClick={() => onViewDetail(row.request.id, row.item.id)}
           type="button"
         >
           <Eye className="mr-2 h-4 w-4" />
           View
         </button>
       )}
-      rowToSearchString={(request) =>
+      rowToSearchString={(row) =>
         [
-          request.id,
-          request.items.map((item) => item.system).join(' '),
-          request.items.map((item) => item.accessType).join(' '),
-          request.status,
+          row.request.id,
+          row.item.id,
+          row.item.system,
+          row.item.accessType,
+          row.item.status,
         ].join(' ')
       }
       onRefresh={refreshData}

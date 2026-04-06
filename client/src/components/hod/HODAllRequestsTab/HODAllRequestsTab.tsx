@@ -1,14 +1,14 @@
 import { Card, CardContent } from '../../ui/card';
-import { HistoryTable } from './HistoryTable';
-import { useApprovalHistory } from '../useApprovalHistory';
+import { useHODAllRequests } from '../useHODAllRequests';
 import { useApp } from '@/hooks/useApp';
 import { useData } from '../../../context/DataContext';
 import { Button } from '../../ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
+import { HODAllRequestsTable } from './HODAllRequestsTable';
 
-export function ApprovalHistoryTab() {
-  const { data = [], isLoading } = useApprovalHistory();
+export function HODAllRequestsTab() {
+  const { data = [], isLoading } = useHODAllRequests();
   const { setSelectedRequestId, setSelectedAccessItemId, setCurrentPage } = useApp();
   const { refreshData } = useData();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -26,7 +26,7 @@ export function ApprovalHistoryTab() {
     <Card>
       <CardContent className="pt-4">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold">Approval History</h2>
+          <h2 className="text-2xl font-bold">All Requests</h2>
           <Button
             variant="outline"
             onClick={handleRefresh}
@@ -36,7 +36,7 @@ export function ApprovalHistoryTab() {
             Refresh
           </Button>
         </div>
-        <HistoryTable
+        <HODAllRequestsTable
           data={data}
           isLoading={isLoading}
           onView={(requestId, itemId) => {

@@ -1,19 +1,16 @@
-import type { ITQueueItem } from '../it.types'
+import type { ApprovalItem } from '../hod.types'
+import { StatusBadge } from '../../shared/StatusBadge'
 import { CommonTable } from '../../shared/CommonTable'
 import { Button } from '../../ui/button'
 import { useData } from '../../../context/DataContext'
 
-export function QueueTable(props: {
-  data: ITQueueItem[]
-  isLoading: boolean
-  onView: (requestId: number, accessItemId?: number) => void
-}) {
+export function HODAllRequestsTable({ data, isLoading, onView }: { data: ApprovalItem[]; isLoading: boolean; onView: (requestId: number, itemId: number) => void }) {
   const { refreshData } = useData()
 
   return (
-    <CommonTable<ITQueueItem>
-      data={props.data}
-      isLoading={props.isLoading}
+    <CommonTable<ApprovalItem>
+      data={data}
+      isLoading={isLoading}
       rowKey={(row) => row.id}
       columns={[
         {
@@ -48,19 +45,23 @@ export function QueueTable(props: {
           cell: (row) => row.accessType,
         },
         {
-          header: 'Approved By',
-          cell: (row) => row.approvedBy ?? '-',
+          header: 'Status',
+          cell: (row) => <StatusBadge status={row.status} size="sm" />,
+        },
+        {
+          header: 'Requested',
+          cell: (row) => row.requestedAt ? new Date(row.requestedAt).toLocaleString() : '-',
         },
       ]}
       renderRowActions={(row) => (
-        <Button size="sm" variant="outline" onClick={() => props.onView(row.requestId, row.id)}>
+        <Button size="sm" variant="outline" onClick={() => onView(row.requestId, row.detailId)}>
           View
         </Button>
       )}
-      rowToSearchString={(row) => [row.employeeName, row.folderName, row.accessType].join(' ')}
+      rowToSearchString={(row) => [row.employeeName, row.folderName, row.accessType, row.status].join(' ')}
       onRefresh={refreshData}
-      emptyMessage="No queue items"
-      searchPlaceholder="Search queue"
+      emptyMessage="No requests found"
+      searchPlaceholder="Search all requests"
     />
   )
 }

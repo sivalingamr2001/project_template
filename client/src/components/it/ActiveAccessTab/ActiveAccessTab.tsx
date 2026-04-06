@@ -2,14 +2,55 @@ import { Card, CardContent } from '../../ui/card';
 import { ActiveAccessTable } from './ActiveAccessTable';
 import { useActiveAccess } from '../useActiveAccess';
 import { useRevokeAccess } from '../useRevokeAccess';
+import { useApp } from '@/hooks/useApp';
+import { useData } from '../../../context/DataContext';
+import { Button } from '../../ui/button';
+import { RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 
 export function ActiveAccessTab() {
   const { data = [] } = useActiveAccess();
   const revoke = useRevokeAccess();
+  const { setSelectedRequestId, setSelectedAccessItemId, setCurrentPage } = useApp();
+  const { refreshData } = useData();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshData();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   return (
     <Card>
       <CardContent className="pt-4">
-        <ActiveAccessTable data={data} onRevoke={(id) => revoke.mutate(id)} />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold">Active Access</h2>
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+        <ActiveAccessTable
+          data={data}
+          onRevoke={(requestId, itemId) => revoke.mutate(requestId, itemId)}
+          onView={(requestId) => {
+            setSelectedRequestId(requestId);
+            // Find the item in the data and set it as selected
+            const item = data.find(item => item.requestId === requestId && item.id);
+            if (item) {
+              setSelectedAccessItemId(item.id);
+            }
+            setCurrentPage('EMPLOYEE_REQUEST_DETAIL');
+          }}
+        />
       </CardContent>
     </Card>
   );

@@ -1,51 +1,32 @@
-import { useState } from "react"
-import { useData } from "../../context/DataContext"
 import { useApp } from "@/hooks/useApp"
-import { StatusBadge } from "../shared/StatusBadge"
-import { AuditLog } from "../shared/AuditLog"
+import { ArrowLeft } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
+import { useData } from "../../context/DataContext"
+import { daysBetween, formatDate } from "../../lib/utils"
 import { ApprovalTimeline } from "../shared/ApprovalTimeline"
-import { formatDate, getDaysUntilExpiry } from "../../lib/utils"
-import { ArrowLeft, AlertCircle } from "lucide-react"
+import { AuditLog } from "../shared/AuditLog"
+import { StatusBadge } from "../shared/StatusBadge"
 import { Button } from "../ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../ui/dialog"
-import { Textarea } from "../ui/textarea"
-import { Label } from "../ui/label"
-import { Input } from "../ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select"
-import type { AccessTypes } from "@/lib/types"
-
-const accessTypeOptions: Array<{ value: AccessTypes; label: string }> = [
-  { value: "NotApplicable", label: "Not Applicable" },
-  { value: "ReadOnly", label: "Read Only" },
-  { value: "ReadAndWrite", label: "Read and Write" },
-]
+import DialogPage from "./DialogPage"
+import RequestReport from "../shared/Report"
 
 export function RequestDetails() {
-  const { requests, approveItem, rejectItem } = useData()
-  const { currentRole, selectedRequestId, setCurrentPage } = useApp()
+  const { requests, addRequest } = useData()
+  const {
+    currentUser,
+    currentRole,
+    selectedRequestId,
+    selectedAccessItemId,
+    setSelectedAccessItemId,
+    setCurrentPage,
+  } = useApp()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [actionType, setActionType] = useState<"APPROVE" | "REJECT" | null>(null)
-  const [comment, setComment] = useState("")
+  const [dialogActionType, setDialogActionType] = useState<"APPROVE" | "REJECT" | null>(null)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [isResubmitting, setIsResubmitting] = useState(false)
 
   const request = requests.find((item) => item.id === selectedRequestId)
-
-  const [confirmedTypes, setConfirmedTypes] = useState<Record<number, AccessTypes>>(() => {
-    if (!request) return {}
-    return Object.fromEntries(request.items.map((item) => [item.id, item.accessType]))
-  })
 
   if (!request) {
     return (
@@ -55,41 +36,89 @@ export function RequestDetails() {
     )
   }
 
-  const hodStageCompleted = ["PendingIT", "Approved"].includes(request.status)
-  const itStageCompleted = ["Approved"].includes(request.status)
-  const isRejected = request.status === "Rejected"
+  const handleResubmit = async () => {
+    if (!request) return
 
-  const actionableItems = request.items.filter((item) => {
-    if (currentRole === "HOD") return item.status === "PendingHOD"
-    if (currentRole === "IT") return item.status === "PendingIT"
-    return false
-  })
-
-  const canTakeAction = actionableItems.length > 0
-
-  const closeActionDialog = () => {
-    setIsDialogOpen(false)
-    setActionType(null)
-    setComment("")
+    setIsResubmitting(true)
+    try {
+      await addRequest({
+        empId: request.requesterId,
+        itsrNumber: request.ticketNumber ?? "",
+        isAgreed: true,
+        details: request.items.map((item) => ({
+          folderName: item.system,
+          accessType: item.accessType === "ReadAndWrite" ? "Read and Write" : "Read only",
+          reason: item.reason ?? request.rejectionReason ?? "Resubmitted request",
+          durationDays: Math.max(30, daysBetween(request.requestedAt, item.expiresAt)),
+        })),
+      })
+      toast.success("Request resubmitted successfully")
+      setReportOpen(false)
+    } catch (error) {
+      console.error("Resubmit failed", error)
+      toast.error("Unable to resubmit the request")
+    } finally {
+      setIsResubmitting(false)
+    }
   }
 
-  const handleActionSubmit = async () => {
-    if (!actionType) return
+  const selectedItem = selectedAccessItemId
+    ? request.items.find((item) => item.id === selectedAccessItemId)
+    : undefined
 
-    if (actionType === "APPROVE") {
-      for (const item of actionableItems) {
-        await approveItem(request.id, item.id, comment.trim(), confirmedTypes[item.id])
-      }
-    }
+  if (!selectedItem) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            onClick={() =>
+              setCurrentPage(
+                currentRole === "HOD"
+                  ? "HOD_APPROVALS"
+                  : currentRole === "IT"
+                    ? "IT_QUEUE"
+                    : "EMPLOYEE_DASHBOARD"
+              )
+            }
+            className="flex items-center gap-2 text-primary hover:underline"
+          >
+            <ArrowLeft size={18} />
+            Back to Requests
+          </button>
+        </div>
 
-    if (actionType === "REJECT") {
-      for (const item of actionableItems) {
-        await rejectItem(request.id, item.id, comment.trim())
-      }
-    }
-
-    closeActionDialog()
+        <div className="rounded-3xl border border-border bg-card p-6 shadow-sm text-center">
+          <p className="text-lg font-semibold">No access item selected</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This detail page requires a single access item selection. Please open a request from the item-level list.
+          </p>
+        </div>
+      </div>
+    )
   }
+
+  const selectedItemTimeline = request.approvalTimeline.filter(
+    (record) => record.accessItemId === selectedItem.id
+  )
+  const itemsMap = new Map(request.items.map((item) => [item.id, item.system]))
+
+  const getWorkflowStatus = (item: typeof selectedItem) => {
+    const itemStatuses = item.approvalHistory.map((h) => h.action)
+
+    return {
+      hodStageCompleted: item.status !== "PendingHOD",
+      itStageCompleted: item.status === "Approved",
+      rejectedAtHOD: itemStatuses.includes("HODRejected"),
+      rejectedAtIT: itemStatuses.includes("ITRejected"),
+    }
+  }
+
+  const {
+    hodStageCompleted: hodComplete,
+    itStageCompleted: itComplete,
+    rejectedAtHOD,
+    rejectedAtIT,
+  } = getWorkflowStatus(selectedItem)
 
   const stepCards = [
     {
@@ -99,82 +128,96 @@ export function RequestDetails() {
     },
     {
       label: "HOD Approval",
-      status:
-        isRejected && !hodStageCompleted
-          ? "failed"
-          : hodStageCompleted
-            ? "complete"
-            : request.status === "PendingHOD"
-              ? "active"
-              : "pending",
-      description: "HOD reviews and approves the request.",
+      status: rejectedAtHOD
+        ? "failed"
+        : hodComplete
+          ? "complete"
+          : selectedItem.status === "PendingHOD"
+            ? "active"
+            : "pending",
+      description: "HOD reviews and approves the access item.",
     },
     {
       label: "IT Approval",
-      status:
-        isRejected && hodStageCompleted
-          ? "failed"
-          : itStageCompleted
-            ? "complete"
-            : request.status === "PendingIT"
-              ? "active"
-              : "pending",
+      status: rejectedAtIT
+        ? "failed"
+        : itComplete
+          ? "complete"
+          : selectedItem.status === "PendingIT"
+            ? "active"
+            : "pending",
       description: "IT finalizes infrastructure access.",
     },
   ]
 
   const getStepClasses = (status: string) => {
-    if (status === "complete") return "border-primary bg-primary text-primary-foreground"
+    if (status === "complete")
+      return "border-primary bg-primary text-primary-foreground"
     if (status === "active") return "border border-primary text-primary"
-    if (status === "failed") return "border-destructive bg-destructive/10 text-destructive"
+    if (status === "failed")
+      return "border-destructive bg-destructive/10 text-destructive"
     return "border border-border text-muted-foreground"
   }
 
   return (
     <div className="space-y-6">
-      <button
-        onClick={() =>
-          setCurrentPage(
-            currentRole === "HOD"
-              ? "HOD_APPROVALS"
-              : currentRole === "IT"
-                ? "IT_QUEUE"
-                : "EMPLOYEE_DASHBOARD"
-          )
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button
+          onClick={() =>
+            setCurrentPage(
+              currentRole === "HOD"
+                ? "HOD_APPROVALS"
+                : currentRole === "IT"
+                  ? "IT_QUEUE"
+                  : "EMPLOYEE_DASHBOARD"
+            )
+          }
+          className="flex items-center gap-2 text-primary hover:underline"
+        >
+          <ArrowLeft size={18} />
+          Back to Requests
+        </button>
+
+        <Button
+          variant="outline"
+          onClick={() => setReportOpen(true)}
+          className="w-full sm:w-auto"
+        >
+          View Report
+        </Button>
+      </div>
+
+      <RequestReport
+        request={request}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        onResubmit={
+          request.requesterId === currentUser?.id && request.status === "Rejected"
+            ? handleResubmit
+            : undefined
         }
-        className="flex items-center gap-2 text-primary hover:underline"
-      >
-        <ArrowLeft size={18} />
-        Back to Requests
-      </button>
+        isResubmitting={isResubmitting}
+      />
 
       <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground">
-              <span>Employee Request</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs tracking-[0.25em] text-muted-foreground uppercase">
+              <span>Request ID #{request.id}</span>
               <span className="inline-flex h-1 w-1 rounded-full bg-muted-foreground" />
-              <span>File Server Folder Access</span>
+              <span>Access Item #{selectedItem.id}</span>
             </div>
-            <h1 className="text-3xl font-bold">Access Request #{request.id}</h1>
+            <h1 className="text-3xl font-bold">{selectedItem.system}</h1>
             <p className="text-sm text-muted-foreground">
-              Requested on {formatDate(request.requestedAt)} by {request.requesterName}
+              {selectedItem.accessType} • Requested on {formatDate(selectedItem.requestedAt)}
             </p>
-            <p className="text-sm text-muted-foreground">Department: {request.requesterDept}</p>
           </div>
 
-          <div className="space-y-4">
-            <StatusBadge status={request.status} size="lg" />
-            {canTakeAction && (
-              <div className="flex flex-wrap gap-3">
-                <Button variant="outline" onClick={() => { setActionType("REJECT"); setIsDialogOpen(true) }}>
-                  Reject
-                </Button>
-                <Button onClick={() => { setActionType("APPROVE"); setIsDialogOpen(true) }}>
-                  Approve
-                </Button>
-              </div>
-            )}
+          <div className="space-y-4 text-right">
+            <StatusBadge status={selectedItem.status} size="lg" />
+            <p className="text-sm text-muted-foreground">
+              {request.requesterName} • {request.requesterDept}
+            </p>
           </div>
         </div>
 
@@ -188,7 +231,7 @@ export function RequestDetails() {
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-current text-sm font-semibold">
                   {index + 1}
                 </span>
-                <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                <span className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
                   {step.status === "complete"
                     ? "Completed"
                     : step.status === "active"
@@ -199,74 +242,93 @@ export function RequestDetails() {
                 </span>
               </div>
               <h2 className="mt-4 text-base font-semibold">{step.label}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.description}</p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {step.description}
+              </p>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
-        <div className="space-y-6 rounded-3xl border border-border bg-card p-6 shadow-sm">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Request ID</p>
-              <p className="font-semibold">{request.id}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Status</p>
-              <p className="font-semibold">{request.status}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Requester</p>
-              <p className="font-semibold">{request.requesterName}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Department</p>
-              <p className="font-semibold">{request.requesterDept}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Total Items</p>
-              <p className="font-semibold">{request.items.length}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Requested</p>
-              <p className="font-semibold">{formatDate(request.requestedAt)}</p>
+      <div className="grid gap-6 xl:grid-cols-[460px_minmax(0,1fr)]">
+        <div className="space-y-6">
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Request ID
+                </p>
+                <p className="font-semibold">{request.id}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Requester
+                </p>
+                <p className="font-semibold">{request.requesterName}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Department
+                </p>
+                <p className="font-semibold">{request.requesterDept}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Submitted
+                </p>
+                <p className="font-semibold">{formatDate(request.requestedAt)}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Item count
+                </p>
+                <p className="font-semibold">{request.items.length}</p>
+              </div>
             </div>
           </div>
 
-          <div>
-            <h2 className="mb-4 text-lg font-semibold">Access Items</h2>
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">Access items</h2>
+                <p className="text-sm text-muted-foreground">
+                  Each access item is managed independently. Select one to view its full details and approval history.
+                </p>
+              </div>
+              <span className="w-30 rounded-full border border-border bg-muted px-3 py-1 text-xs uppercase text-muted-foreground">
+                {request.items.length} items
+              </span>
+            </div>
             <div className="space-y-3">
               {request.items.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-border p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setSelectedAccessItemId(item.id)}
+                  className={`group w-full rounded-3xl border p-4 text-left transition ${
+                    selectedItem.id === item.id
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-background hover:border-primary/60 hover:bg-primary/5"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-semibold">{item.system}</p>
                       <p className="text-sm text-muted-foreground">{item.accessType}</p>
                     </div>
-                    <StatusBadge status={item.status} />
+                    <StatusBadge status={item.status} size="sm" />
                   </div>
-                  <div className="mt-4 grid gap-4 text-sm text-muted-foreground sm:grid-cols-2">
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 text-xs text-muted-foreground">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em]">Requested At</p>
-                      <p className="mt-1 text-foreground">{formatDate(item.requestedAt)}</p>
+                      <span className="font-medium">Item ID</span>
+                      <p>#{item.id}</p>
                     </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.2em]">Expiry</p>
-                      <p className="mt-1 text-foreground">{formatDate(item.expiresAt)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.2em]">Days Left</p>
-                      <p className="mt-1 text-foreground">{getDaysUntilExpiry(item)}</p>
+                      <span className="font-medium">Requested</span>
+                      <p>{formatDate(item.requestedAt)}</p>
                     </div>
                   </div>
-                  {getDaysUntilExpiry(item) < 30 && getDaysUntilExpiry(item) > 0 && (
-                    <div className="mt-4 flex items-center gap-2 rounded-xl bg-yellow-50 p-3 text-sm text-yellow-700">
-                      <AlertCircle size={16} />
-                      This access expires soon.
-                    </div>
-                  )}
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -274,122 +336,121 @@ export function RequestDetails() {
 
         <div className="space-y-6">
           <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold">Approval Timeline</h2>
-            <ApprovalTimeline timeline={request.approvalTimeline} compact />
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Selected access item
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold">{selectedItem.system}</h2>
+                <p className="text-sm text-muted-foreground">{selectedItem.accessType}</p>
+              </div>
+              <StatusBadge status={selectedItem.status} size="lg" />
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Request ID
+                </p>
+                <p className="font-semibold">{request.id}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Access Item
+                </p>
+                <p className="font-semibold">#{selectedItem.id}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Requester
+                </p>
+                <p className="font-semibold">{request.requesterName}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Department
+                </p>
+                <p className="font-semibold">{request.requesterDept}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Expiry
+                </p>
+                <p className="font-semibold">{formatDate(selectedItem.expiresAt)}</p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Requested
+                </p>
+                <p className="font-semibold">{formatDate(selectedItem.requestedAt)}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Requested Reason
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {selectedItem.reason || "No reason provided for this access item."}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
+                  Item Status
+                </p>
+                <p className="mt-2 font-semibold">{selectedItem.status}</p>
+              </div>
+            </div>
+
+            {(currentRole === "HOD" && selectedItem.status === "PendingHOD") ||
+            (currentRole === "IT" && selectedItem.status === "PendingIT") ? (
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedAccessItemId(selectedItem.id)
+                    setDialogActionType("REJECT")
+                    setIsDialogOpen(true)
+                  }}
+                >
+                  Reject
+                </Button>
+                <Button
+                  onClick={() => {
+                    setSelectedAccessItemId(selectedItem.id)
+                    setDialogActionType("APPROVE")
+                    setIsDialogOpen(true)
+                  }}
+                >
+                  Approve
+                </Button>
+              </div>
+            ) : null}
           </div>
+
+          <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold">Approval Timeline</h2>
+            <ApprovalTimeline
+              timeline={selectedItemTimeline}
+              compact
+              itemsMap={itemsMap}
+            />
+          </div>
+
           <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold">Audit Log</h2>
-            <AuditLog request={request} />
+            <AuditLog request={request} selectedItemId={selectedItem.id} />
           </div>
         </div>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={(value) => (value ? setIsDialogOpen(true) : closeActionDialog())}>
-        <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-6 sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{actionType === "APPROVE" ? "Approve Request" : "Reject Request"}</DialogTitle>
-            <DialogDescription>
-              {actionType === "APPROVE"
-                ? currentRole === "HOD"
-                  ? "Confirm the request details and approve the access request."
-                  : "Add comments and approve the request for IT activation."
-                : "Provide a reason for rejecting this request."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="dialog-request-id">Request ID</Label>
-                <Input id="dialog-request-id" value={request.id} disabled />
-              </div>
-              <div>
-                <Label htmlFor="dialog-requester">Requester</Label>
-                <Input id="dialog-requester" value={request.requesterName} disabled />
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="dialog-department">Department</Label>
-                <Input id="dialog-department" value={request.requesterDept} disabled />
-              </div>
-              <div>
-                <Label htmlFor="dialog-status">Current Status</Label>
-                <Input id="dialog-status" value={request.status} disabled />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-sm font-semibold">Access Items</p>
-              <div className="space-y-3">
-                {request.items.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-border p-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <Label htmlFor={`dialog-item-system-${item.id}`}>System</Label>
-                        <Input id={`dialog-item-system-${item.id}`} value={item.system} disabled />
-                      </div>
-                      <div>
-                        <Label htmlFor={`dialog-item-access-${item.id}`}>Access Type</Label>
-                        <Select
-                          value={confirmedTypes[item.id] ?? item.accessType}
-                          onValueChange={(value) =>
-                            setConfirmedTypes((prev) => ({
-                              ...prev,
-                              [item.id]: value as AccessTypes,
-                            }))
-                          }
-                          disabled={currentRole === "IT"}
-                        >
-                          <SelectTrigger id={`dialog-item-access-${item.id}`} className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {accessTypeOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="dialog-comments">Comments</Label>
-              <Textarea
-                id="dialog-comments"
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                rows={4}
-                placeholder={
-                  actionType === "REJECT" ? "Add rejection reason..." : "Add approval comments..."
-                }
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={closeActionDialog}>
-              Cancel
-            </Button>
-            <Button
-              variant={actionType === "REJECT" ? "destructive" : "default"}
-              disabled={actionType === "REJECT" && !comment.trim()}
-              onClick={() => {
-                void handleActionSubmit()
-              }}
-            >
-              {actionType === "REJECT" ? "Reject" : "Approve"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogPage
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        actionType={dialogActionType}
+        onActionTypeChange={setDialogActionType}
+      />
 
       {request.rejectionReason && (
         <div className="rounded-3xl border border-destructive/20 bg-destructive/10 p-6 text-destructive shadow-sm">

@@ -2,12 +2,13 @@ import { useApp } from "@/hooks/useApp"
 import { useData } from "@/context/DataContext"
 import { HODStats } from "./HODStats"
 import { ApprovalHistoryTab } from "./ApprovalHistoryTab"
-import { EmployeeLookupTab } from "./EmployeeLookupTab"
 import { PendingApprovalsTab } from "./PendingApprovalsTab"
+import { UserTable } from "../shared/UserTable"
+import { HODAllRequestsTab } from "./HODAllRequestsTab/HODAllRequestsTab"
 
 export function HODDashboard() {
   const { currentPage, currentUser } = useApp()
-  const { requests } = useData()
+  const { requests, users } = useData()
   const currentMonth = new Date().getMonth()
   const currentYear = new Date().getFullYear()
 
@@ -52,7 +53,13 @@ export function HODDashboard() {
       {currentPage === "HOD_APPROVALS" && <HODStats stats={stats} />}
       {currentPage === "HOD_APPROVALS" && <PendingApprovalsTab />}
       {currentPage === "HOD_HISTORY" && <ApprovalHistoryTab />}
-      {currentPage === "HOD_LOOKUP" && <EmployeeLookupTab />}
+      {currentPage === "HOD_ALL_REQUESTS" && <HODAllRequestsTab />}
+      {currentPage === "HOD_LOOKUP" && (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold">All Users</h2>
+          <UserTable data={users} isLoading={false} />
+        </div>
+      )}
     </div>
   )
 }

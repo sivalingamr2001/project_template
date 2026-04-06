@@ -1,13 +1,14 @@
-import type { AccessListItem } from '../hod.types'
+import type { ApprovalItem } from '../hod.types'
 import { StatusBadge } from '../../shared/StatusBadge'
 import { CommonTable } from '../../shared/CommonTable'
+import { Button } from '../../ui/button'
 import { useData } from '../../../context/DataContext'
 
-export function HistoryTable({ data, isLoading }: { data: AccessListItem[]; isLoading: boolean }) {
+export function HistoryTable({ data, isLoading, onView }: { data: ApprovalItem[]; isLoading: boolean; onView: (requestId: number, itemId: number) => void }) {
   const { refreshData } = useData()
 
   return (
-    <CommonTable<AccessListItem>
+    <CommonTable<ApprovalItem>
       data={data}
       isLoading={isLoading}
       rowKey={(row) => row.id}
@@ -29,6 +30,11 @@ export function HistoryTable({ data, isLoading }: { data: AccessListItem[]; isLo
           cell: (row) => <StatusBadge status={row.status} size="sm" />,
         },
       ]}
+      renderRowActions={(row) => (
+        <Button size="sm" variant="outline" onClick={() => onView(row.requestId, row.id)}>
+          View
+        </Button>
+      )}
       rowToSearchString={(row) => [row.employeeName, row.folderName, row.accessType, row.status].join(' ')}
       onRefresh={refreshData}
       emptyMessage="No approval history"

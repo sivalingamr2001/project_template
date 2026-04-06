@@ -5,7 +5,7 @@ import { useApp } from '@/hooks/useApp';
 
 export function ITApprovalQueueTab() {
   const { data = [], isLoading } = useITQueue();
-  const { setSelectedRequestId, setCurrentPage } = useApp();
+  const { setSelectedRequestId, setSelectedAccessItemId, setCurrentPage } = useApp();
 
   return (
     <Card>
@@ -13,8 +13,9 @@ export function ITApprovalQueueTab() {
         <QueueTable
           data={data}
           isLoading={isLoading}
-          onView={(requestId) => {
+          onView={(requestId, accessItemId) => {
             setSelectedRequestId(requestId);
+            setSelectedAccessItemId(accessItemId);
             setCurrentPage('EMPLOYEE_REQUEST_DETAIL');
           }}
         />

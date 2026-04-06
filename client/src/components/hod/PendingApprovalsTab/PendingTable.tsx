@@ -6,7 +6,7 @@ import { useData } from '../../../context/DataContext'
 export function PendingTable(props: {
   data: ApprovalItem[]
   isLoading: boolean
-  onView: (id: number) => void
+  onView: (requestId: number, accessItemId?: number) => void
 }) {
   const { refreshData } = useData()
 
@@ -57,7 +57,7 @@ export function PendingTable(props: {
         },
       ]}
       renderRowActions={(row) => (
-        <Button size="sm" variant="outline" onClick={() => props.onView(row.requestId)}>
+        <Button size="sm" variant="outline" onClick={() => props.onView(row.requestId, row.id)}>
           View
         </Button>
       )}

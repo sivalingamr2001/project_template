@@ -27,6 +27,7 @@ export function PageRouter() {
       case "HOD_APPROVALS":
       case "HOD_HISTORY":
       case "HOD_LOOKUP":
+      case "HOD_ALL_REQUESTS":
         return <HODDashboard />
       case "EMPLOYEE_REQUEST_DETAIL":
         return <RequestDetails key={selectedRequestId ?? "hod-request-detail"} />
@@ -43,6 +44,7 @@ export function PageRouter() {
       case "IT_ACTIVE_ACCESS":
       case "IT_LOOKUP":
       case "IT_AUDIT_LOG":
+      case "IT_ALL_REQUESTS":
         return <ITDashboard />
       case "EMPLOYEE_REQUEST_DETAIL":
         return <RequestDetails key={selectedRequestId ?? "it-request-detail"} />

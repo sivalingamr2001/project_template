@@ -1,15 +1,32 @@
 using FileAccessPortal.Api.Common.Extensions;
 using Microsoft.OpenApi.Models;
 
-var builder = WebApplication.CreateBuilder(args);
-var spaDistPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "Artifact", "client"));
+//var builder = WebApplication.CreateBuilder(args);
+//var spaDistPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "..", "Artifact", "client"));
 
-if (Directory.Exists(spaDistPath))
+//if (Directory.Exists(spaDistPath))
+//{
+//    builder.WebHost.UseWebRoot(spaDistPath);
+//}
+
+//builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+//builder.Services.AddPortalApi(builder.Configuration);
+
+var contentRoot = Directory.GetCurrentDirectory();
+var spaDistPath = Path.GetFullPath(Path.Combine(contentRoot, "..", "..", "Artifact", "client"));
+
+// 2. Configure WebApplicationOptions to handle the WebRoot change
+var options = new WebApplicationOptions
 {
-    builder.WebHost.UseWebRoot(spaDistPath);
-}
+    Args = args,
+    // If the folder exists, set it as the WebRoot immediately
+    WebRootPath = Directory.Exists(spaDistPath) ? spaDistPath : null
+};
 
-builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+var builder = WebApplication.CreateBuilder(options);
+
+// 3. Configure services (No more builder.WebHost.UseWebRoot call)
+builder.WebHost.ConfigureKestrel(kestrelOptions => kestrelOptions.AddServerHeader = false);
 builder.Services.AddPortalApi(builder.Configuration);
 
 // Add Swagger services

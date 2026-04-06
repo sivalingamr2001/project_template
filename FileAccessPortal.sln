@@ -7,21 +7,28 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C874FEAA-947
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileAccessPortal.Api", "src\FileAccessPortal.Api\FileAccessPortal.Api.csproj", "{78994D52-52A5-441F-9BAD-F46FCEB43E69}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileAccessPortal.Domain", "src\FileAccessPortal.Domain\FileAccessPortal.Domain.csproj", "{53FC5BCD-7BB4-61DD-B4D6-3D5CAD65C123}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{78994D52-52A5-441F-9BAD-F46FCEB43E69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{78994D52-52A5-441F-9BAD-F46FCEB43E69}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{78994D52-52A5-441F-9BAD-F46FCEB43E69}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{78994D52-52A5-441F-9BAD-F46FCEB43E69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53FC5BCD-7BB4-61DD-B4D6-3D5CAD65C123}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53FC5BCD-7BB4-61DD-B4D6-3D5CAD65C123}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53FC5BCD-7BB4-61DD-B4D6-3D5CAD65C123}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53FC5BCD-7BB4-61DD-B4D6-3D5CAD65C123}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{78994D52-52A5-441F-9BAD-F46FCEB43E69} = {C874FEAA-9477-4EA6-AC61-A7A266DCE064}
+		{53FC5BCD-7BB4-61DD-B4D6-3D5CAD65C123} = {C874FEAA-9477-4EA6-AC61-A7A266DCE064}
 	EndGlobalSection
 EndGlobal

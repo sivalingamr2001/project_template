@@ -8,10 +8,12 @@ interface AppContextType {
   currentPage: Page
   isAuthenticated: boolean
   selectedRequestId?: number
+  selectedAccessItemId?: number
   login: (employeeCode: string, password: string) => Promise<boolean>
   logout: () => void
   setCurrentPage: (page: Page) => void
   setSelectedRequestId: (id?: number) => void
+  setSelectedAccessItemId: (id?: number) => void
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined)

@@ -10,6 +10,7 @@ const accessOptions = ['View Only', 'Read Only', 'Read and Write'];
 
 export function ApproveRejectActions({
   requestId,
+  itemId,
   employeeName,
   empId,
   folderName,
@@ -21,27 +22,31 @@ export function ApproveRejectActions({
   isPending,
 }: {
   requestId: number;
+  itemId?: number;
   employeeName: string;
   empId: number;
   folderName: string;
   accessType: string;
   status: string;
   mode: 'HOD' | 'IT';
-  onApprove: (id: number, options: { accessType: string; comment?: string }) => void;
-  onReject: (id: number, reason: string) => void;
+  onApprove: (id: number, itemId: number, options: { accessType?: string; comment?: string; durationDays?: number }) => void;
+  onReject: (id: number, itemId: number, reason: string) => void;
   isPending: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [comment, setComment] = useState('');
   const [confirmedAccessType, setConfirmedAccessType] = useState(accessType);
+  const [durationDays, setDurationDays] = useState(365);
 
   const isIT = mode === 'IT';
   const title = mode === 'HOD' ? 'HOD Review' : 'IT Review';
+  const actualItemId = itemId || requestId;
 
   const closeModal = () => {
     setOpen(false);
     setComment('');
     setConfirmedAccessType(accessType);
+    setDurationDays(365);
   };
 
   return (
@@ -55,7 +60,7 @@ export function ApproveRejectActions({
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>
-              Review requested access details and {isIT ? 'add comments before approving or rejecting.' : 'confirm the requested access type and add comments if needed.'}
+              Review requested access details and {isIT ? 'add comments before approving or rejecting.' : 'confirm the requested access type, duration and add comments if needed.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -97,13 +102,26 @@ export function ApproveRejectActions({
               </div>
             </div>
 
-            <div>
-              <Label htmlFor={`status-${requestId}`}>Current Status</Label>
-              <Input id={`status-${requestId}`} value={status} disabled />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor={`status-${requestId}`}>Current Status</Label>
+                <Input id={`status-${requestId}`} value={status} disabled />
+              </div>
+              <div>
+                <Label htmlFor={`duration-${requestId}`}>Duration (Days)</Label>
+                <Input
+                  id={`duration-${requestId}`}
+                  type="number"
+                  min={1}
+                  value={durationDays}
+                  onChange={(e) => setDurationDays(parseInt(e.target.value, 10) || 365)}
+                  disabled={isPending}
+                />
+              </div>
             </div>
 
             <div>
-              <Label htmlFor={`comments-${requestId}`}>Comments</Label>
+              <Label htmlFor={`comments-${requestId}`}>Comments/Notes</Label>
               <Textarea
                 id={`comments-${requestId}`}
                 value={comment}
@@ -115,14 +133,18 @@ export function ApproveRejectActions({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeModal}>
+            <Button variant="outline" onClick={closeModal} disabled={isPending}>
               Cancel
             </Button>
             <Button
               className="mr-2"
               disabled={isPending}
               onClick={() => {
-                onApprove(requestId, { accessType: confirmedAccessType, comment: comment.trim() });
+                onApprove(requestId, actualItemId, { 
+                  accessType: confirmedAccessType, 
+                  comment: comment.trim(),
+                  durationDays 
+                });
                 closeModal();
               }}
             >
@@ -132,7 +154,7 @@ export function ApproveRejectActions({
               variant="destructive"
               disabled={isPending || !comment.trim()}
               onClick={() => {
-                onReject(requestId, comment.trim());
+                onReject(requestId, actualItemId, comment.trim());
                 closeModal();
               }}
             >

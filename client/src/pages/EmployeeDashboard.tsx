@@ -12,7 +12,7 @@ export function EmployeeDashboard() {
   const [createOpen, setCreateOpen] = useState(false)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
   const { requests, addRequest } = useData()
-  const { currentUser, setCurrentPage, setSelectedRequestId } = useApp()
+  const { currentUser, currentPage, setCurrentPage, setSelectedRequestId, setSelectedAccessItemId } = useApp()
 
   const userRequests = requests.filter((request) => request.requesterId === currentUser?.id)
   const stats = {
@@ -42,28 +42,33 @@ export function EmployeeDashboard() {
     }
   }
 
-  const handleViewDetail = (id: number) => {
-    setSelectedRequestId(id)
+  const handleViewDetail = (requestId: number, itemId: number) => {
+    setSelectedRequestId(requestId)
+    setSelectedAccessItemId(itemId)
     setCurrentPage("EMPLOYEE_REQUEST_DETAIL")
   }
 
+  const isMyAccessPage = currentPage === "EMPLOYEE_REQUESTS"
+
   return (
     <div className="space-y-6">
-      <div className="space-y-3">
-        <h1 className="text-3xl font-bold">Employee Dashboard</h1>
-        <div className="space-y-1 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
-          <p className="text-lg font-semibold text-foreground">
-            Welcome, {currentUser?.name || "Guest"}
-          </p>
-          <p className="text-sm text-muted-foreground">{currentUser?.email || ""}</p>
+      {!isMyAccessPage && (
+        <div className="space-y-3">
+          <h1 className="text-3xl font-bold">Employee Dashboard</h1>
+          <div className="space-y-1 rounded-2xl border border-border bg-card px-5 py-4 shadow-sm">
+            <p className="text-lg font-semibold text-foreground">
+              Welcome, {currentUser?.name || "Guest"}
+            </p>
+            <p className="text-sm text-muted-foreground">{currentUser?.email || ""}</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      <RequesterStats stats={stats} />
+      {!isMyAccessPage && <RequesterStats stats={stats} />}
 
       <Card>
         <CardHeader>
-          <CardTitle>My Requests</CardTitle>
+          <CardTitle>{isMyAccessPage ? "My Access" : "My Requests"}</CardTitle>
         </CardHeader>
         <CardContent>
           <MyRequestsTable

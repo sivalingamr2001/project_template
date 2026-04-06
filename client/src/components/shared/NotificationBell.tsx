@@ -55,7 +55,11 @@ export function NotificationBell() {
               {roleNotifications.map(notif => (
                 <button
                   key={notif.id}
-                  onClick={() => markNotificationAsRead(notif.id)}
+                  type="button"
+                  onClick={() => {
+                    markNotificationAsRead(notif.id)
+                    setOpen(false)
+                  }}
                   className="w-full text-left p-4 hover:bg-secondary/60 transition"
                 >
                   <div className="flex items-start justify-between gap-3">

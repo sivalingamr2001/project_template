@@ -1,10 +1,10 @@
 import { useState } from "react"
 import type { AccessRequest, AuditAction } from "../../lib/types"
 import { formatDateTime } from "../../lib/utils"
-import { ChevronDown, ChevronUp } from "lucide-react"
 
 interface AuditLogProps {
   request: AccessRequest
+  selectedItemId?: number
 }
 
 function getActionLabel(action: AuditAction) {
@@ -25,29 +25,36 @@ function getActionLabel(action: AuditAction) {
   }
 }
 
-export function AuditLog({ request }: AuditLogProps) {
+export function AuditLog({ request, selectedItemId }: AuditLogProps) {
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null)
+
+  const filteredItems = selectedItemId
+    ? request.items.filter((item) => item.id === selectedItemId)
+    : request.items
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-semibold">Audit Log</h3>
 
       <div className="rounded border border-border bg-secondary/50 p-3">
         <div className="mb-2 text-xs font-medium text-muted-foreground">Request Created</div>
         <div className="text-sm">{formatDateTime(request.requestedAt)}</div>
       </div>
 
-      {request.items.map((item) => (
+      {filteredItems.map((item) => (
         <div key={item.id} className="rounded border border-border">
           <button
             onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}
             className="flex w-full items-center justify-between p-3 transition hover:bg-secondary/50"
           >
             <div className="text-left">
-              <div className="text-sm font-medium">{item.system}</div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-sm font-medium">{item.system}</div>
+                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  AccessID #{item.id}
+                </span>
+              </div>
               <div className="text-xs text-muted-foreground">{item.accessType}</div>
             </div>
-            {expandedItemId === item.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
 
           {expandedItemId === item.id && item.approvalHistory.length > 0 && (

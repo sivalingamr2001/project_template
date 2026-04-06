@@ -58,10 +58,11 @@ public sealed class PortalStore(
         var requester = await FindUserOrThrowAsync(requestedByEmployeeId, cancellationToken);
         var requestId = await NextRequestIdAsync(cancellationToken);
         var ticketNumber = $"FAR-{requestId:0000}";
+        var nextAccessItemId = await NextAccessItemIdAsync(cancellationToken);
         var requestItems = items.Select(item =>
         {
             ValidateDraft(item);
-            return AccessRequestItem.Create(NextAccessItemId(), item.FileName.Trim(), item.FolderPath.Trim(), item.AccessType.Trim(), item.BusinessReason.Trim());
+            return AccessRequestItem.Create(nextAccessItemId++, item.FileName.Trim(), item.FolderPath.Trim(), item.AccessType.Trim(), item.BusinessReason.Trim());
         }).ToArray();
 
         var request = FileAccessRequest.Create(requestId, ticketNumber, requester.ToDomain(), requestItems, clock.GetUtcNow());
@@ -202,9 +203,10 @@ public sealed class PortalStore(
             throw new ForbiddenException("Only the original requester can create renewals.");
         }
 
+        var nextAccessItemId = await NextAccessItemIdAsync(cancellationToken);
         var renewableItems = sourceRequest.Items
             .Where(item => accessItemIds.Contains(item.AccessItemId))
-            .Select(item => item.CreateRenewal(NextAccessItemId()))
+            .Select(item => item.CreateRenewal(nextAccessItemId++))
             .ToArray();
 
         if (renewableItems.Length == 0)
@@ -329,9 +331,9 @@ public sealed class PortalStore(
         return max + 1;
     }
 
-    private int NextAccessItemId()
+    private async Task<int> NextAccessItemIdAsync(CancellationToken cancellationToken)
     {
-        var documents = dbContext.Requests.AsNoTracking().Select(request => request.JsonContent).ToArray();
+        var documents = await dbContext.Requests.AsNoTracking().Select(request => request.JsonContent).ToArrayAsync(cancellationToken);
         var max = 5000;
         foreach (var json in documents)
         {

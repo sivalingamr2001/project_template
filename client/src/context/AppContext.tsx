@@ -16,10 +16,12 @@ export type Page =
   | "HOD_APPROVALS"
   | "HOD_HISTORY"
   | "HOD_LOOKUP"
+  | "HOD_ALL_REQUESTS"
   | "IT_QUEUE"
   | "IT_ACTIVE_ACCESS"
   | "IT_LOOKUP"
   | "IT_AUDIT_LOG"
+  | "IT_ALL_REQUESTS"
 
 function getDefaultPageForRole(role: UserRole): Page {
   return role === "User"
@@ -70,6 +72,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentPage, setCurrentPageState] = useState<Page>("LOGIN")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [selectedRequestId, setSelectedRequestId] = useState<number>()
+  const [selectedAccessItemId, setSelectedAccessItemId] = useState<number>()
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -114,6 +117,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     void restoreSession()
   }, [])
 
+  useEffect(() => {
+    if (currentPage !== "EMPLOYEE_REQUEST_DETAIL") {
+      setSelectedAccessItemId(undefined)
+    }
+  }, [currentPage])
+
   const login = async (employeeCode: string, password: string) => {
     try {
       const data = await loginWithEmployeeCode(employeeCode, password)
@@ -156,10 +165,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         currentPage,
         isAuthenticated,
         selectedRequestId,
+        selectedAccessItemId,
         login,
         logout,
         setCurrentPage: setCurrentPageState,
         setSelectedRequestId,
+        setSelectedAccessItemId,
       }}
     >
       {children}

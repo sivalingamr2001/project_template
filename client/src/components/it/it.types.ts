@@ -18,7 +18,7 @@ export interface AuditLogItem {
 }
 
 export type ITQueueItem = ApprovalItem
-export type ActiveAccessItem = AccessListItem & { expiresAt?: string }
+export type ActiveAccessItem = AccessListItem & { expiresAt?: string; requestId: number }
 export type ITEmployeeLookupResult = EmployeeLookupResult
 
 export const itKeys = {

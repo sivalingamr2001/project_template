@@ -12,6 +12,7 @@ export type RequestStatus = AccessStatus
 export type AccessItemStatus = AccessStatus
 
 export type AccessTypes = "NotApplicable" | "ReadOnly" | "ReadAndWrite"
+export type HODAccessTypes = AccessTypes | "HodOnly"
 export type ApprovalType = "HOD" | "IT"
 
 export type AuditAction =
@@ -46,6 +47,7 @@ export interface ApprovalRecord {
   comment?: string
   timestamp: string
   previousStatus?: AccessItemStatus
+  accessItemId?: number
 }
 
 export interface AccessItem {
@@ -55,6 +57,7 @@ export interface AccessItem {
   requestedAt: string
   expiresAt: string
   status: AccessItemStatus
+  reason?: string
   approvalHistory: ApprovalRecord[]
 }
 
