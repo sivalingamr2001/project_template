@@ -429,7 +429,7 @@ export function RequestReport({
                           </td>
                           <td className="px-4 py-3 font-mono text-zinc-300">
                             {value || (
-                              <span className="text-zinc-700 italic not-italic">
+                              <span className="text-zinc-700 italic">
                                 —
                               </span>
                             )}
