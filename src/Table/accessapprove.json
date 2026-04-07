@@ -1,0 +1,56 @@
+[
+  {
+    "jan_accessrequest": {
+      "accessreq_id": "",
+      "emp_id": "",
+      "req_to": "",
+      "status": "",
+      "aggregate_status": "",
+      "is_agreed": "",
+      "itsr_no": "",
+      "is_active": "",
+      "created_on": "",
+      "modified_on": "",
+      "created_by": "",
+      "modified_by": ""
+    },
+    "jan_accessitems": {
+      "accessitem_id": "",
+      "accessreq_id": "",
+      "folder_path": "",
+      "access_type": "",
+      "reason": "",
+      "created_on": "",
+      "modified_on": "",
+      "created_by": "",
+      "modified_by": ""
+    },
+    "jan_accessapproval": {
+      "accessapprove_id": "",
+      "accessreq_id": "",
+      "approver_id": "",
+      "approval_status": "",
+      "comments": "",
+      "created_on": "",
+      "modified_on": "",
+      "created_by": "",A
+      "modified_by": ""
+    },
+    "jan_accessreqaudit": {
+      "audit_id": "",
+      "accessreq_id": "",
+      "accessitem_id": "",
+      "accessapprove_id": "",
+      "event_type": "",
+      "message": "",
+      "recipient_emp_id": "",
+      "recipient_name": "",
+      "recipient_role": "",
+      "is_read": "",
+      "created_on": "",
+      "created_by": "",
+      "modified_on": "",
+      "modified_by": ""
+    }
+  }
+]

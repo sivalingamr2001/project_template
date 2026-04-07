@@ -514,6 +514,38 @@ export async function createAccessRequest(
   return mapApiRequestToClient(data, currentUser)
 }
 
+export async function updateAccessRequest(
+  requestId: number,
+  accessItemId: number,
+  selectedItem: AccessRequest,
+  payload: AccessRequestFormPayload,
+  currentUser?: User | null
+): Promise<AccessRequest> {
+  const response = await fetch(getApiUrl(`/api/requests/${requestId}/items/${accessItemId}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({
+      items: payload.details.map((detail) => ({
+        fileName: getFileName(detail.folderName),
+        folderPath: detail.folderName,
+        accessType: detail.accessType,
+        businessReason: detail.reason,
+      })),
+      selectedItem: {
+        id: selectedItem.id,
+        requesterId: selectedItem.requesterId,
+        requesterName: selectedItem.requesterName,
+        requesterDept: selectedItem.requesterDept,
+        requestedAt: selectedItem.requestedAt,
+        status: selectedItem.status,
+      },
+    }),
+  })
+
+  const data = await parseJson<RequestResponseDto>(response)
+  return mapApiRequestToClient(data, currentUser)
+}
+
 export async function revokeAccessItem(
   requestId: number,
   itemId: number,

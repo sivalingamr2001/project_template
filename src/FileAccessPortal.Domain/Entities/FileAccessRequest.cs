@@ -159,6 +159,36 @@ public sealed class FileAccessRequest
         return item;
     }
 
+    public void UpdateItems(IReadOnlyList<AccessRequestItem> updatedItems, AppUser requester, DateTimeOffset updatedAtUtc)
+    {
+        if (requester.EmployeeId != RequestedByEmployeeId)
+        {
+            throw new InvalidOperationException("Only the original requester can update the request.");
+        }
+
+        if (updatedItems.Count == 0)
+        {
+            throw new InvalidOperationException("At least one access item is required.");
+        }
+
+        if (Items.Any(item => item.Status == FileAccessRequestStatus.Granted || item.Status == FileAccessRequestStatus.Revoked))
+        {
+            throw new InvalidOperationException("Only requests with pending or rejected access items can be updated.");
+        }
+
+        Items = updatedItems.ToList();
+
+        AddAudit(
+            null,
+            updatedAtUtc,
+            AccessReviewStage.Requester,
+            "request.updated",
+            $"Request {TicketNumber} updated.",
+            requester.EmployeeId,
+            requester.Name,
+            null);
+    }
+
     public AccessRequestItem RevokeItem(int accessItemId, AppUser reviewer, string? note, DateTimeOffset revokedAtUtc)
     {
         var item = FindItem(accessItemId);

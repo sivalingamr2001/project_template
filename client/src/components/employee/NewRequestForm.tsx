@@ -1,7 +1,7 @@
 import { useApp } from "@/hooks/useApp"
 import type { AccessRequestFormPayload } from "@/lib/access-request-api"
 import { Plus, ShieldAlert } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "../ui/button"
 import { Checkbox } from "../ui/checkbox"
 import { Input } from "../ui/input"
@@ -11,13 +11,17 @@ import DetailItem from "./AccessDetail"
 export function NewRequestForm({
   onSubmit,
   isPending,
+  mode = "create",
+  initialData,
 }: {
   onSubmit: (values: AccessRequestFormPayload) => void
   isPending: boolean
+  mode?: "create" | "edit"
+  initialData?: AccessRequestFormPayload
 }) {
   const { currentRole, currentUser } = useApp()
 
-  const [formData, setFormData] = useState<AccessRequestFormPayload>({
+  const defaultFormData: AccessRequestFormPayload = {
     empId: currentUser?.employeeId ?? currentUser?.id ?? 0,
     itsrNumber: "",
     isAgreed: false,
@@ -29,7 +33,19 @@ export function NewRequestForm({
         durationDays: 365,
       },
     ],
-  })
+  }
+
+  const [formData, setFormData] = useState<AccessRequestFormPayload>(
+    initialData ?? defaultFormData
+  )
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData)
+    } else if (mode === "create") {
+      setFormData(defaultFormData)
+    }
+  }, [initialData, mode])
 
   const handleBaseChange = (
     field: keyof AccessRequestFormPayload,

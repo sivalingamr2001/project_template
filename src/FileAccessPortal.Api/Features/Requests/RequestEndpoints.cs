@@ -35,6 +35,22 @@ public sealed class RequestEndpoints : IEndpointModule
             return TypedResults.Created($"/api/requests/{created.RequestId}", created.ToResponse());
         });
 
+        group.MapPut("/{requestId:int}/items/{accessItemId:int}", async Task<IResult> (HttpContext httpContext, int requestId, int accessItemId, UpdateRequest request, PortalStore store, CancellationToken cancellationToken) =>
+        {
+            var updated = await store.UpdateRequestAsync(
+                requestId,
+                accessItemId,
+                httpContext.User.GetEmployeeId(),
+                request.Items.Select(item => new PortalStore.AccessItemDraft(
+                    item.FileName,
+                    item.FolderPath,
+                    item.AccessType,
+                    item.BusinessReason)).ToArray(),
+                cancellationToken);
+
+            return TypedResults.Ok(updated.ToResponse());
+        });
+
         group.MapPost("/{requestId:int}/items/{accessItemId:int}/hod-review", async Task<IResult> (HttpContext httpContext, int requestId, int accessItemId, HodReviewRequest request, PortalStore store, CancellationToken cancellationToken) =>
         {
             var updated = await store.ReviewAccessItemByHodAsync(requestId, accessItemId, httpContext.User.GetEmployeeId(), request.Approved, request.Note, cancellationToken);
@@ -75,6 +91,10 @@ public sealed class RequestEndpoints : IEndpointModule
     private sealed record CreateRequest(IReadOnlyList<CreateAccessItem> Items);
 
     private sealed record CreateAccessItem(string FileName, string FolderPath, string AccessType, string BusinessReason);
+
+    private sealed record UpdateRequest(IReadOnlyList<UpdateAccessItem> Items);
+
+    private sealed record UpdateAccessItem(string FileName, string FolderPath, string AccessType, string BusinessReason);
 
     private sealed record HodReviewRequest(bool Approved, string? Note);
 

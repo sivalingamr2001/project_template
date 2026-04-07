@@ -10,11 +10,13 @@ import { StatusBadge } from "../shared/StatusBadge"
 import { Button } from "../ui/button"
 import DialogPage from "./DialogPage"
 import RequestReport from "../shared/Report"
+import { NewRequestModal } from "../employee/NewRequest/NewRequestModal"
+import type { AccessRequestFormPayload } from "../../lib/access-request-api"
+import type { AccessItem, AccessRequest } from "@/lib/types"
 
 export function RequestDetails() {
-  const { requests, addRequest } = useData()
+  const { requests, updateRequest } = useData()
   const {
-    currentUser,
     currentRole,
     selectedRequestId,
     selectedAccessItemId,
@@ -26,6 +28,7 @@ export function RequestDetails() {
     "APPROVE" | "REJECT" | null
   >(null)
   const [reportOpen, setReportOpen] = useState(false)
+  const [requestModalOpen, setRequestModalOpen] = useState(false)
   const [isResubmitting, setIsResubmitting] = useState(false)
 
   const request = requests.find((item) => item.id === selectedRequestId)
@@ -38,38 +41,32 @@ export function RequestDetails() {
     )
   }
 
-  const handleResubmit = async () => {
-    if (!request) return
+  const handleEditRequest = () => {
+    setRequestModalOpen(true)
+  }
+
+  const handleUpdateRequest = async (formData: AccessRequestFormPayload) => {
+    if (!request || selectedAccessItemId === undefined) return
 
     setIsResubmitting(true)
     try {
-      await addRequest({
-        empId: request.requesterId,
-        itsrNumber: request.ticketNumber ?? "",
-        isAgreed: true,
-        details: request.items.map((item) => ({
-          folderName: item.system,
-          accessType:
-            item.accessType === "ReadAndWrite" ? "Read and Write" : "Read only",
-          reason:
-            item.reason ?? request.rejectionReason ?? "Resubmitted request",
-          durationDays: Math.max(
-            30,
-            daysBetween(request.requestedAt, item.expiresAt)
-          ),
-        })),
-      })
-      toast.success("Request resubmitted successfully")
-      setReportOpen(false)
+      await updateRequest(
+        request.id,
+        selectedAccessItemId,
+        selectedItem,
+        formData
+      )
+      toast.success("Request updated successfully")
+      setRequestModalOpen(false)
     } catch (error) {
-      console.error("Resubmit failed", error)
-      toast.error("Unable to resubmit the request")
+      console.error("Update failed", error)
+      toast.error("Unable to update the request")
     } finally {
       setIsResubmitting(false)
     }
   }
 
-  const selectedItem = selectedAccessItemId
+  const selectedItem: any = selectedAccessItemId
     ? request.items.find((item) => item.id === selectedAccessItemId)
     : undefined
 
@@ -111,7 +108,7 @@ export function RequestDetails() {
   const itemsMap = new Map(request.items.map((item) => [item.id, item.system]))
 
   const getWorkflowStatus = (item: typeof selectedItem) => {
-    const itemStatuses = item.approvalHistory.map((h) => h.action)
+    const itemStatuses = item.approvalHistory.map((h: { action: any }) => h.action)
 
     return {
       hodStageCompleted: item.status !== "PendingHOD",
@@ -199,26 +196,32 @@ export function RequestDetails() {
           <ArrowLeft size={18} />
           Back to Requests
         </button>
-        <Button
-          variant="secondary"
-          onClick={() => setReportOpen(true)}
-          className="w-full sm:w-auto"
-        >
-          View Report
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {request.status === "Rejected" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleEditRequest}
+              disabled={isResubmitting}
+              className="h-7 px-3"
+            >
+              {isResubmitting ? "Updating..." : "Edit & Resubmit"}
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            onClick={() => setReportOpen(true)}
+            className="w-full sm:w-auto"
+          >
+            View Report
+          </Button>
+        </div>
       </div>
 
       <RequestReport
         request={request}
         open={reportOpen}
         onOpenChange={setReportOpen}
-        onResubmit={
-          request.requesterId === currentUser?.id &&
-          request.status === "Rejected"
-            ? handleResubmit
-            : undefined
-        }
-        isResubmitting={isResubmitting}
       />
 
       <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
@@ -495,6 +498,38 @@ export function RequestDetails() {
           <p className="text-sm">{request.rejectionReason}</p>
         </div>
       )}
+
+      <NewRequestModal
+        open={requestModalOpen}
+        onClose={() => setRequestModalOpen(false)}
+        onSubmit={handleUpdateRequest}
+        isPending={isResubmitting}
+        mode="edit"
+        initialData={
+          selectedItem
+            ? {
+                empId: request.requesterId,
+                itsrNumber: request.ticketNumber ?? "",
+                isAgreed: true,
+                details: [
+                  {
+                    folderName: selectedItem.system,
+                    accessType:
+                      selectedItem.accessType === "ReadAndWrite"
+                        ? "Read and Write"
+                        : "Read only",
+                    reason:
+                      selectedItem.reason ?? request.rejectionReason ?? "",
+                    durationDays: Math.max(
+                      30,
+                      daysBetween(request.requestedAt, selectedItem.expiresAt)
+                    ),
+                  },
+                ],
+              }
+            : undefined
+        }
+      />
     </div>
   )
 }

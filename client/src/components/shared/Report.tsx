@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
-import { Button } from "../ui/button"
 import { formatDate } from "@/lib/utils"
 import type { AccessRequest, AccessTypes } from "@/lib/types"
 import { Check, Disc, Notebook, User, type LucideIcon } from "lucide-react"
@@ -142,16 +141,12 @@ interface RequestReportProps {
   request: AccessRequest
   open: boolean
   onOpenChange: (open: boolean) => void
-  onResubmit?: () => void
-  isResubmitting?: boolean
 }
 
 export function RequestReport({
   request,
   open,
   onOpenChange,
-  onResubmit,
-  isResubmitting,
 }: RequestReportProps) {
   const [tab, setTab] = useState("details")
   const primaryItem = request.items[0]
@@ -223,19 +218,7 @@ export function RequestReport({
                       {request.status}
                     </Badge>
 
-                    {onResubmit && request.status === "Rejected" && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={onResubmit}
-                        disabled={isResubmitting}
-                        className="h-7 px-3"
-                      >
-                        {isResubmitting
-                          ? "Resubmitting..."
-                          : "Resubmit Request"}
-                      </Button>
-                    )}
+                    
                   </div>
                 </div>
               </div>

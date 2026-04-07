@@ -86,6 +86,114 @@ public sealed class PortalStore(
         return request;
     }
 
+    public async Task<FileAccessRequest> UpdateRequestAsync(
+        int requestId,
+        int accessItemId,
+        int requestedByEmployeeId,
+        IReadOnlyList<AccessItemDraft> items,
+        CancellationToken cancellationToken)
+    {
+        if (items.Count == 0)
+        {
+            throw new ValidationException("At least one access item is required.");
+        }
+
+        var requester = await FindUserOrThrowAsync(requestedByEmployeeId, cancellationToken);
+        var entity = await FindRequestDocumentOrThrowAsync(requestId, cancellationToken);
+        var request = Deserialize(entity);
+
+        if (request.RequestedByEmployeeId != requestedByEmployeeId)
+        {
+            throw new ForbiddenException("Only the original requester can update the request.");
+        }
+
+        if (request.Items.Any(item => item.Status == FileAccessRequestStatus.Granted || item.Status == FileAccessRequestStatus.Revoked))
+        {
+            throw new ValidationException("Only requests with pending or rejected access items can be updated.");
+        }
+
+        var nextAccessItemId = await NextAccessItemIdAsync(cancellationToken);
+        var updatedItems = new List<AccessRequestItem>(items.Count);
+
+        for (var index = 0; index < items.Count; index++)
+        {
+            var itemDraft = items[index];
+            ValidateDraft(itemDraft);
+
+            if (index < request.Items.Count)
+            {
+                var existing = request.Items[index];
+
+                var updatedItem = new AccessRequestItem
+                {
+                    AccessItemId = existing.AccessItemId,
+                    FileName = itemDraft.FileName.Trim(),
+                    FolderPath = itemDraft.FolderPath.Trim(),
+                    AccessType = itemDraft.AccessType.Trim(),
+                    BusinessReason = itemDraft.BusinessReason.Trim(),
+                    Status = existing.Status,
+                    ResubmissionCount = existing.ResubmissionCount,
+                    ApprovedUntilUtc = existing.ApprovedUntilUtc,
+                    RevokedAtUtc = existing.RevokedAtUtc,
+                    RejectionReason = existing.RejectionReason,
+                    RejectedByStage = existing.RejectedByStage,
+                    HodReviewerEmployeeId = existing.HodReviewerEmployeeId,
+                    HodReviewerName = existing.HodReviewerName,
+                    HodReviewedAtUtc = existing.HodReviewedAtUtc,
+                    HodNote = existing.HodNote,
+                    ItReviewerEmployeeId = existing.ItReviewerEmployeeId,
+                    ItReviewerName = existing.ItReviewerName,
+                    ItReviewedAtUtc = existing.ItReviewedAtUtc,
+                    ItNote = existing.ItNote,
+                };
+
+                if (updatedItem.Status == FileAccessRequestStatus.PendingUserResubmission || updatedItem.Status == FileAccessRequestStatus.Expired)
+                {
+                    updatedItem.Status = FileAccessRequestStatus.PendingHodApproval;
+                    updatedItem.ResubmissionCount++;
+                    updatedItem.RejectionReason = null;
+                    updatedItem.RejectedByStage = null;
+                    updatedItem.HodReviewerEmployeeId = null;
+                    updatedItem.HodReviewerName = null;
+                    updatedItem.HodReviewedAtUtc = null;
+                    updatedItem.HodNote = null;
+                    updatedItem.ItReviewerEmployeeId = null;
+                    updatedItem.ItReviewerName = null;
+                    updatedItem.ItReviewedAtUtc = null;
+                    updatedItem.ItNote = null;
+                    updatedItem.ApprovedUntilUtc = null;
+                    updatedItem.RevokedAtUtc = null;
+                }
+
+                updatedItems.Add(updatedItem);
+            }
+            else
+            {
+                updatedItems.Add(AccessRequestItem.Create(
+                    nextAccessItemId++,
+                    itemDraft.FileName.Trim(),
+                    itemDraft.FolderPath.Trim(),
+                    itemDraft.AccessType.Trim(),
+                    itemDraft.BusinessReason.Trim()));
+            }
+        }
+
+        request.UpdateItems(updatedItems, requester.ToDomain(), clock.GetUtcNow());
+
+        await CreateNotificationsAsync(
+            request.RequestId,
+            request.Items.Select(item => item.AccessItemId).ToArray(),
+            "request.updated",
+            $"{requester.Name} updated request {request.TicketNumber}.",
+            await dbContext.Employees.Where(user => user.Role == "Hod" && user.DepartmentId == requester.DepartmentId).ToArrayAsync(cancellationToken),
+            AccessReviewStage.Hod,
+            cancellationToken);
+
+        ApplyDocumentState(entity, request);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return request;
+    }
+
     public async Task<FileAccessRequest> ReviewAccessItemByHodAsync(
         int requestId,
         int accessItemId,

@@ -24,6 +24,7 @@ import {
   sendNotificationToRequester,
   type AccessRequestFormPayload,
   updateAccessApproval,
+  updateAccessRequest,
 } from "../lib/access-request-api"
 
 interface DataContextType {
@@ -35,7 +36,12 @@ interface DataContextType {
   addRequest: (
     request: AccessRequest | AccessRequestFormPayload
   ) => Promise<void>
-  updateRequest: (request: AccessRequest) => void
+  updateRequest: (
+    requestId: number,
+    accessItemId: number,
+    selectedItem: AccessRequest,
+    payload: AccessRequestFormPayload
+  ) => Promise<void>
   approveItem: (
     requestId: number,
     itemId: number,
@@ -105,11 +111,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
     ])
   }
 
-  const updateRequest = (updatedRequest: AccessRequest) => {
+  const updateRequest = async (
+    requestId: number,
+    accessItemId: number,
+    selectedItem: AccessRequest,
+    payload: AccessRequestFormPayload
+  ) => {
+    const updated = await updateAccessRequest(
+      requestId,
+      accessItemId,
+      selectedItem,
+      payload,
+      currentUser
+    )
     setRequests((current) =>
-      current.map((request) =>
-        request.id === updatedRequest.id ? updatedRequest : request
-      )
+      current.map((request) => (request.id === requestId ? updated : request))
     )
   }
 
@@ -214,7 +230,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
     note?: string
   ) => {
     const updated = await revokeAccessItem(requestId, itemId, note)
-    updateRequest(updated)
+    setRequests((current) =>
+      current.map((request) => (request.id === updated.id ? updated : request))
+    )
   }
 
   const extendItemExpiry = (
