@@ -1,5 +1,5 @@
 import { useData } from "@/context/DataContext"
-import { useApp } from "@/hooks/useApp"
+import { useApp } from "@/context/AppContext"
 
 export interface DashboardStats {
   pendingApprovals: number

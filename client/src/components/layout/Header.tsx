@@ -4,7 +4,7 @@ import {
   PanelLeftOpen,
   UserCircle2,
 } from "lucide-react"
-import { useApp } from "@/hooks/useApp"
+import { useApp } from "@/context/AppContext"
 import { NotificationBell } from "../shared/NotificationBell"
 import { Button } from "../ui/button"
 import {
@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
+import { useLegacyNavigation } from "@/routes/useLegacyNavigation"
 
 interface HeaderProps {
   sidebarCollapsed: boolean
@@ -21,7 +22,8 @@ interface HeaderProps {
 }
 
 export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
-  const { currentUser, setCurrentPage, logout } = useApp()
+  const { currentUser, logout } = useApp()
+  const { goTo } = useLegacyNavigation()
 
   return (
     <div className="flex items-center justify-between gap-4 border-b border-border bg-background p-2">
@@ -53,7 +55,7 @@ export function Header({ sidebarCollapsed, onToggleSidebar }: HeaderProps) {
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => setCurrentPage("USER_PROFILE")}>
+            <DropdownMenuItem onClick={() => goTo("USER_PROFILE")}>
               <UserCircle2 className="h-4 w-4" />
               Profile
             </DropdownMenuItem>

@@ -1,18 +1,20 @@
 import { useState } from "react"
 import { toast } from "sonner"
-import { useApp } from "@/hooks/useApp"
+import { useApp } from "@/context/AppContext"
 import { useData } from "../context/DataContext"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { MyRequestsTable } from "../components/employee/MyRequestsTable"
-import { NewRequestModal } from "../components/employee/NewRequestModal"
+import { NewRequestModal } from "../components/employee"
 import { RequesterStats } from "../components/employee/RequesterStats"
 import type { AccessRequestFormPayload } from "../lib/access-request-api"
+import { useLegacyNavigation } from "@/routes/useLegacyNavigation"
 
 export function EmployeeDashboard() {
   const [createOpen, setCreateOpen] = useState(false)
   const [isCreatingRequest, setIsCreatingRequest] = useState(false)
   const { requests, addRequest } = useData()
-  const { currentUser, currentPage, setCurrentPage, setSelectedRequestId, setSelectedAccessItemId } = useApp()
+  const { currentUser, currentPage } = useApp()
+  const { goToRequestDetail } = useLegacyNavigation()
 
   const userRequests = requests.filter((request) => request.requesterId === currentUser?.id)
   const stats = {
@@ -43,9 +45,7 @@ export function EmployeeDashboard() {
   }
 
   const handleViewDetail = (requestId: number, itemId: number) => {
-    setSelectedRequestId(requestId)
-    setSelectedAccessItemId(itemId)
-    setCurrentPage("EMPLOYEE_REQUEST_DETAIL")
+    goToRequestDetail(requestId, itemId)
   }
 
   const isMyAccessPage = currentPage === "EMPLOYEE_REQUESTS"

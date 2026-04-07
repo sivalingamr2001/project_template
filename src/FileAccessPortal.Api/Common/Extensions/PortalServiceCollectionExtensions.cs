@@ -47,6 +47,19 @@ public static class PortalServiceCollectionExtensions
             options.UseSqlite(databaseOptions.SqliteConnectionString);
         });
 
+        services.AddDbContext<AccessManagementDbContext>(options =>
+        {
+            if (string.Equals(databaseOptions.Provider, "MySql", StringComparison.OrdinalIgnoreCase))
+            {
+                options.UseMySQL(databaseOptions.MySqlConnectionString);
+                return;
+            }
+
+            options.UseSqlite(databaseOptions.SqliteConnectionString);
+        });
+
+        services.AddScoped<AccessWorkflowService>();
+
         services.AddProblemDetails();
         services.AddResponseCompression(options =>
         {

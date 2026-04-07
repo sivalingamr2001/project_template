@@ -6,18 +6,34 @@ namespace FileAccessPortal.Api.Common.Persistence;
 
 public sealed class DatabaseInitializer(
     AppDbContext dbContext,
+    AccessManagementDbContext accessDbContext,
     PasswordHasher passwordHasher)
 {
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await dbContext.Database.EnsureCreatedAsync(cancellationToken);
+        await accessDbContext.Database.EnsureCreatedAsync(cancellationToken);
 
         if (await dbContext.Employees.AnyAsync(cancellationToken))
         {
             return;
         }
 
+        await SeedDepartmentsAsync(cancellationToken);
         await SeedEmployeesAsync(cancellationToken);
+    }
+
+    private async Task SeedDepartmentsAsync(CancellationToken cancellationToken)
+    {
+        var departments = new[]
+        {
+            new DepartmentEntity { DepartmentId = 10, Name = "Finance", HodEmployeeId = 2001 },
+            new DepartmentEntity { DepartmentId = 20, Name = "Human Resources", HodEmployeeId = 2002 },
+            new DepartmentEntity { DepartmentId = 30, Name = "Operations" }
+        };
+
+        await dbContext.Departments.AddRangeAsync(departments, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task SeedEmployeesAsync(CancellationToken cancellationToken)

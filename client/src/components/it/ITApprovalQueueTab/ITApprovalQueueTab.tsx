@@ -1,7 +1,7 @@
 import { Card, CardContent } from '../../ui/card';
 import { QueueTable } from './QueueTable';
 import { useITQueue } from '../useITQueue';
-import { useApp } from '@/hooks/useApp';
+import { useApp } from '@/context/AppContext';
 
 export function ITApprovalQueueTab() {
   const { data = [], isLoading } = useITQueue();

@@ -1,7 +1,7 @@
 import { Card, CardContent } from '../../ui/card';
 import { PendingTable } from './PendingTable';
 import { useHODPending } from '../useHODPending';
-import { useApp } from '@/hooks/useApp';
+import { useApp } from '@/context/AppContext';
 
 export function PendingApprovalsTab() {
   const { data = [], isLoading } = useHODPending();

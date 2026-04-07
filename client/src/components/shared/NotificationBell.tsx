@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useCallback, useState, type MouseEvent } from 'react';
 import { Bell } from 'lucide-react';
 import { useData } from '../../context/DataContext';
-import { useApp } from "@/hooks/useApp"
+import { useApp } from "@/context/AppContext"
 import { formatDateTime } from '../../lib/utils';
 import { Button } from '../ui/button';
 import {
@@ -20,13 +20,26 @@ export function NotificationBell() {
   const roleNotifications = notifications.filter(n => n.role === currentRole);
   const unreadCount = roleNotifications.filter(n => !n.read).length;
 
+  const handleOpen = useCallback(() => {
+    setOpen(true)
+  }, [])
+
+  const handleNotificationClick = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const notificationId = Number(event.currentTarget.value)
+      markNotificationAsRead(notificationId)
+      setOpen(false)
+    },
+    [markNotificationAsRead]
+  )
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <Button
         variant="outline"
         size="icon"
         className="relative"
-        onClick={() => setOpen(true)}
+        onClick={handleOpen}
         aria-label="Notifications"
       >
         <Bell className="h-4 w-4" />
@@ -56,10 +69,8 @@ export function NotificationBell() {
                 <button
                   key={notif.id}
                   type="button"
-                  onClick={() => {
-                    markNotificationAsRead(notif.id)
-                    setOpen(false)
-                  }}
+                  value={notif.id}
+                  onClick={handleNotificationClick}
                   className="w-full text-left p-4 hover:bg-secondary/60 transition"
                 >
                   <div className="flex items-start justify-between gap-3">

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { useApp } from "@/hooks/useApp"
+import { useApp } from "@/context/AppContext"
 import { useData } from "../../context/DataContext"
 import {
   LayoutDashboard,
@@ -17,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { useLegacyNavigation } from "@/routes/useLegacyNavigation"
 
 interface NavItem {
   label: string
@@ -29,8 +30,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed }: SidebarProps) {
-  const { currentRole, currentPage, setCurrentPage } = useApp()
+  const { currentRole, currentPage } = useApp()
   const { requests } = useData()
+  const { goTo } = useLegacyNavigation()
 
   const getPendingCount = () => {
     if (currentRole === "HOD") {
@@ -138,7 +140,7 @@ export function Sidebar({ collapsed }: SidebarProps) {
 
           const navButton = (
             <button
-              onClick={() => setCurrentPage(item.page)}
+              onClick={() => goTo(item.page)}
               className={`group relative flex w-full items-center rounded-lg transition-colors ${collapsed ? "mx-auto h-10 w-10 justify-center" : "justify-between px-3 py-2"} ${
                 isActive
                   ? "bg-primary text-primary-foreground shadow-sm"

@@ -2,7 +2,7 @@ import { ITAllRequestsTable } from "./ITAllRequestsTable";
 import { useITAllRequests } from "./useITAllRequests";
 import { Button } from "../ui/button";
 import { RefreshCw } from "lucide-react";
-import { useApp } from "../../hooks/useApp";
+import { useApp } from '@/context/AppContext';
 import { useData } from "../../context/DataContext";
 import { useState } from "react";
 

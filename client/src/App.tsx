@@ -1,9 +1,9 @@
-import { AppProvider } from "./context/AppContext"
+import { AppProvider, useApp } from "./context/AppContext"
 import { DataProvider } from "./context/DataContext"
 import { Layout } from "./components/layout/Layout"
-import { PageRouter } from "./pages/PageRouter"
 import { Login } from "./pages/Login"
-import { useApp } from "./hooks/useApp"
+import { AppRoutes } from "./routes/AppRoutes"
+import { NavigationSync } from "./routes/NavigationSync"
 
 function AppContent() {
   const { isAuthenticated } = useApp()
@@ -14,7 +14,8 @@ function AppContent() {
 
   return (
     <Layout>
-      <PageRouter />
+      <NavigationSync />
+      <AppRoutes />
     </Layout>
   )
 }

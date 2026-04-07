@@ -1,4 +1,4 @@
-import { useApp } from "@/hooks/useApp"
+import { useApp } from "@/context/AppContext"
 import { useData } from "@/context/DataContext"
 import { getExpiringItemsAcrossRequests } from "@/lib/expiry-job"
 import { ActiveAccessTab } from "./ActiveAccessTab"

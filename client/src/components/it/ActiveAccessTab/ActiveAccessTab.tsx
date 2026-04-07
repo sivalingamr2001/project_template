@@ -2,7 +2,7 @@ import { Card, CardContent } from '../../ui/card';
 import { ActiveAccessTable } from './ActiveAccessTable';
 import { useActiveAccess } from '../useActiveAccess';
 import { useRevokeAccess } from '../useRevokeAccess';
-import { useApp } from '@/hooks/useApp';
+import { useApp } from '@/context/AppContext';
 import { useData } from '../../../context/DataContext';
 import { Button } from '../../ui/button';
 import { RefreshCw } from 'lucide-react';

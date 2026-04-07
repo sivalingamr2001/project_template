@@ -1,4 +1,4 @@
-import { useApp } from "@/hooks/useApp"
+import { useApp } from "@/context/AppContext"
 import { RequestDetails } from "../components/employee/RequestDetails"
 import { HODDashboard } from "../components/hod"
 import { ITDashboard } from "../components/it"

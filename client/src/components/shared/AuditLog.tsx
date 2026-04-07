@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useCallback, useState, type MouseEvent } from "react"
 import type { AccessRequest, AuditAction } from "../../lib/types"
 import { formatDateTime } from "../../lib/utils"
 
@@ -28,6 +28,14 @@ function getActionLabel(action: AuditAction) {
 export function AuditLog({ request, selectedItemId }: AuditLogProps) {
   const [expandedItemId, setExpandedItemId] = useState<number | null>(null)
 
+  const handleToggleItem = useCallback(
+    (event: MouseEvent<HTMLButtonElement>) => {
+      const itemId = Number(event.currentTarget.value)
+      setExpandedItemId((current) => (current === itemId ? null : itemId))
+    },
+    []
+  )
+
   const filteredItems = selectedItemId
     ? request.items.filter((item) => item.id === selectedItemId)
     : request.items
@@ -43,7 +51,8 @@ export function AuditLog({ request, selectedItemId }: AuditLogProps) {
       {filteredItems.map((item) => (
         <div key={item.id} className="rounded border border-border">
           <button
-            onClick={() => setExpandedItemId(expandedItemId === item.id ? null : item.id)}
+            value={item.id}
+            onClick={handleToggleItem}
             className="flex w-full items-center justify-between p-3 transition hover:bg-secondary/50"
           >
             <div className="text-left">

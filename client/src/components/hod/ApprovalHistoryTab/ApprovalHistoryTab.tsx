@@ -1,11 +1,11 @@
 import { Card, CardContent } from '../../ui/card';
 import { HistoryTable } from './HistoryTable';
 import { useApprovalHistory } from '../useApprovalHistory';
-import { useApp } from '@/hooks/useApp';
 import { useData } from '../../../context/DataContext';
 import { Button } from '../../ui/button';
 import { RefreshCw } from 'lucide-react';
 import { useState } from 'react';
+import { useApp } from '@/context/AppContext';
 
 export function ApprovalHistoryTab() {
   const { data = [], isLoading } = useApprovalHistory();
