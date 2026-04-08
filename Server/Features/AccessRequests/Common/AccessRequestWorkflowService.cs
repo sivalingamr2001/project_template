@@ -72,6 +72,7 @@ public sealed class AccessRequestWorkflowService(
         {
             accessRequest.AccessItems.Add(new AccessItemEntity
             {
+                AccessReqId = accessRequest.AccessReqId, // This will be set correctly by EF for new or existing parent
                 FolderPath = item.FolderPath.Trim(),
                 AccessType = (AccessTypes)item.AccessType,
                 Reason = item.Reason.Trim(),

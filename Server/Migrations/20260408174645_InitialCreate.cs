@@ -6,14 +6,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Server.Migrations
 {
     /// <inheritdoc />
-    public partial class SyncModelChanges : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Users");
-
             migrationBuilder.CreateTable(
                 name: "jan_accessapproval",
                 columns: table => new
@@ -32,26 +29,6 @@ namespace Server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_jan_accessapproval", x => x.accessapprove_id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "jan_accessitems",
-                columns: table => new
-                {
-                    accessitem_id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    accessreq_id = table.Column<int>(type: "INTEGER", nullable: false),
-                    folder_path = table.Column<string>(type: "TEXT", nullable: false),
-                    access_type = table.Column<int>(type: "INTEGER", nullable: false),
-                    reason = table.Column<string>(type: "TEXT", nullable: false),
-                    created_on = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    created_by = table.Column<string>(type: "TEXT", nullable: false),
-                    modified_on = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    modified_by = table.Column<string>(type: "TEXT", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_jan_accessitems", x => x.accessitem_id);
                 });
 
             migrationBuilder.CreateTable(
@@ -110,6 +87,7 @@ namespace Server.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     full_name = table.Column<string>(type: "varchar(100)", nullable: false),
                     email_address = table.Column<string>(type: "varchar(255)", nullable: false),
+                    phone_number = table.Column<int>(type: "INTEGER", nullable: false),
                     dept_id = table.Column<int>(type: "INTEGER", nullable: false),
                     dept_name = table.Column<string>(type: "varchar(50)", nullable: false),
                     user_role = table.Column<string>(type: "varchar(20)", nullable: false),
@@ -120,6 +98,38 @@ namespace Server.Migrations
                 {
                     table.PrimaryKey("PK_jan_employees", x => x.emp_id);
                 });
+
+            migrationBuilder.CreateTable(
+                name: "jan_accessitems",
+                columns: table => new
+                {
+                    accessitem_id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    accessreq_id = table.Column<int>(type: "INTEGER", nullable: false),
+                    folder_path = table.Column<string>(type: "TEXT", nullable: false),
+                    access_type = table.Column<int>(type: "INTEGER", nullable: false),
+                    confirm_access_type = table.Column<int>(type: "INTEGER", nullable: false),
+                    reason = table.Column<string>(type: "TEXT", nullable: false),
+                    created_on = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    created_by = table.Column<string>(type: "TEXT", nullable: false),
+                    modified_on = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    modified_by = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_jan_accessitems", x => x.accessitem_id);
+                    table.ForeignKey(
+                        name: "FK_jan_accessitems_jan_accessrequest_accessreq_id",
+                        column: x => x.accessreq_id,
+                        principalTable: "jan_accessrequest",
+                        principalColumn: "accessreq_id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_jan_accessitems_accessreq_id",
+                table: "jan_accessitems",
+                column: "accessreq_id");
         }
 
         /// <inheritdoc />
@@ -135,25 +145,10 @@ namespace Server.Migrations
                 name: "jan_accessreqaudit");
 
             migrationBuilder.DropTable(
-                name: "jan_accessrequest");
-
-            migrationBuilder.DropTable(
                 name: "jan_employees");
 
-            migrationBuilder.CreateTable(
-                name: "Users",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Email = table.Column<string>(type: "longtext", nullable: false),
-                    Password = table.Column<string>(type: "longtext", nullable: false),
-                    UserName = table.Column<string>(type: "longtext", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Users", x => x.Id);
-                });
+            migrationBuilder.DropTable(
+                name: "jan_accessrequest");
         }
     }
 }

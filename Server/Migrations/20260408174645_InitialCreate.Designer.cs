@@ -11,8 +11,8 @@ using Server.Infrastructure.Db;
 namespace Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260408093045_SyncModelChanges_v3")]
-    partial class SyncModelChanges_v3
+    [Migration("20260408174645_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -77,12 +77,13 @@ namespace Server.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("accessreq_id");
 
-                    b.Property<int?>("AccessRequestEntityAccessReqId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("AccessType")
                         .HasColumnType("INTEGER")
                         .HasColumnName("access_type");
+
+                    b.Property<int>("ConfirmAccessType")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("confirm_access_type");
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
@@ -113,7 +114,7 @@ namespace Server.Migrations
 
                     b.HasKey("AccessItemId");
 
-                    b.HasIndex("AccessRequestEntityAccessReqId");
+                    b.HasIndex("AccessReqId");
 
                     b.ToTable("jan_accessitems", (string)null);
                 });
@@ -298,7 +299,9 @@ namespace Server.Migrations
                 {
                     b.HasOne("Server.Domain.Entities.AccessRequestEntity", null)
                         .WithMany("AccessItems")
-                        .HasForeignKey("AccessRequestEntityAccessReqId");
+                        .HasForeignKey("AccessReqId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Server.Domain.Entities.AccessRequestEntity", b =>

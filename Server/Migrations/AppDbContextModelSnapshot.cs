@@ -74,9 +74,6 @@ namespace Server.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("accessreq_id");
 
-                    b.Property<int?>("AccessRequestEntityAccessReqId")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("AccessType")
                         .HasColumnType("INTEGER")
                         .HasColumnName("access_type");
@@ -114,7 +111,7 @@ namespace Server.Migrations
 
                     b.HasKey("AccessItemId");
 
-                    b.HasIndex("AccessRequestEntityAccessReqId");
+                    b.HasIndex("AccessReqId");
 
                     b.ToTable("jan_accessitems", (string)null);
                 });
@@ -299,7 +296,9 @@ namespace Server.Migrations
                 {
                     b.HasOne("Server.Domain.Entities.AccessRequestEntity", null)
                         .WithMany("AccessItems")
-                        .HasForeignKey("AccessRequestEntityAccessReqId");
+                        .HasForeignKey("AccessReqId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Server.Domain.Entities.AccessRequestEntity", b =>
