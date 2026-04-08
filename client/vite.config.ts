@@ -12,6 +12,6 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: path.resolve(__dirname, '../Artifact/client'),
+    outDir: path.resolve(__dirname, "../Artifact/client"),
   },
 })

@@ -121,11 +121,14 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  }
   html {
-    @apply font-sans;
-    }
+    @apply h-screen font-sans;
+  }
+  body {
+    @apply h-screen overflow-hidden bg-background text-foreground;
+  }
+  #root {
+    @apply h-screen;
+  }
 }

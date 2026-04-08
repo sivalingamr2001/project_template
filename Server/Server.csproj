@@ -8,6 +8,7 @@
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
         <PackageReference Include="MySqlConnector" />
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
         <PackageReference Include="Serilog.AspNetCore" />
         <PackageReference Include="Swashbuckle.AspNetCore" />
     </ItemGroup>
