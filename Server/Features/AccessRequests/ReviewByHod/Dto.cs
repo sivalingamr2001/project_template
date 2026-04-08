@@ -4,6 +4,7 @@ namespace Server.Features.AccessRequests.ReviewByHod;
 
 public sealed record ReviewByHodRequest(
     int ReviewerEmployeeId,
+    AccessTypes ConfirmAccessType,
     bool Approved,
     string? Comments);
 

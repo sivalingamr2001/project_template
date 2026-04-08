@@ -9,6 +9,7 @@ export type AccessRequestItemPayload = {
 }
 
 export type AccessRequestFormPayload = {
+  accessReqId?: number
   empId: number
   isAgree: boolean
   items: AccessRequestItemPayload[]

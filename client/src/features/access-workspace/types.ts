@@ -40,8 +40,8 @@ export type AccessRequest = {
   accessReqId: number
   empId: number
   reqTo: number
-  aggregateStatus: number
-  status: number
+  aggregateStatus: string
+  status: string
   itsrNo: string | null
   isAgreed: boolean
   accessItems: AccessItem[] // Grouped child items

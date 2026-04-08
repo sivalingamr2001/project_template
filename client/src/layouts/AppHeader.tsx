@@ -1,12 +1,10 @@
 import { IconBell, IconLayoutSidebarLeftCollapse } from "@tabler/icons-react"
 import { useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 import { useAuth } from "@/context/AuthContext"
 import { useAccessWorkspace } from "@/features/access-workspace/hooks/useAccessWorkspace"
 import { cn } from "@/lib/utils"
-
-import HeaderBreadcrumbs from "./components/HeaderBreadcrumbs"
 import NotificationSheet from "./components/NotificationSheet"
 import UserMenu from "./components/UserMenu"
 
@@ -16,7 +14,6 @@ type AppHeaderProps = {
 }
 
 export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
-  const location = useLocation()
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const { notifications } = useAccessWorkspace("dashboard")
@@ -41,8 +38,6 @@ export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
         >
           <IconLayoutSidebarLeftCollapse className="h-5 w-5" />
         </button>
-        <div className="h-4 w-px bg-border" />
-        <HeaderBreadcrumbs pathname={location.pathname} />
       </div>
       <div className="flex items-center gap-2">
         <button

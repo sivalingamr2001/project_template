@@ -20,7 +20,7 @@ public class BaseEntity
 }
 
 [Table("jan_accessrequest")]
-public sealed class AccessRequestEntity : BaseEntity
+public class AccessRequestEntity : BaseEntity
 {
     [Key]
     [Column("accessreq_id")]
@@ -46,10 +46,12 @@ public sealed class AccessRequestEntity : BaseEntity
 
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
+
+    public virtual ICollection<AccessItemEntity> AccessItems { get; set; } = new List<AccessItemEntity>();
 }
 
 [Table("jan_accessitems")]
-public sealed class AccessItemEntity : BaseEntity
+public class AccessItemEntity : BaseEntity
 {
     [Key]
     [Column("accessitem_id")]
@@ -63,6 +65,9 @@ public sealed class AccessItemEntity : BaseEntity
 
     [Column("access_type")]
     public AccessTypes AccessType { get; set; }
+
+    [Column("confirm_access_type")]
+    public AccessTypes ConfirmAccessType { get; set; }
 
     [Column("reason")]
     public string Reason { get; set; } = string.Empty;

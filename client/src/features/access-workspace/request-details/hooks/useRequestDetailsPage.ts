@@ -53,7 +53,7 @@ export function useRequestDetailsPage(
   }
   const handleReviewClose = () => setIsReviewOpen(false)
 
-  const handleReview = async (comments: string, itsrNo: string) => {
+  const handleReview = async (comments: string, confirmAccessType: number = 1) => {
     if (!details) return
     setIsPending(true)
     try {
@@ -63,7 +63,8 @@ export function useRequestDetailsPage(
           details.accessReqId,
           reviewerEmployeeId,
           approved,
-          comments
+          comments,
+          confirmAccessType
         )
       if (canReviewAsIt)
         await reviewAccessRequestByIt(
@@ -71,7 +72,8 @@ export function useRequestDetailsPage(
           reviewerEmployeeId,
           approved,
           comments,
-          itsrNo
+          details.itsrNo || "",
+          confirmAccessType
         )
       await refetch()
       setIsReviewOpen(false)

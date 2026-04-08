@@ -14,7 +14,6 @@ type RequestReportDetailsProps = {
 function RequestReportDetails({ details }: RequestReportDetailsProps) {
   const primaryItem = details.items[0]
   const hodReviewer = getHodReviewer(details)
-  const hasMultipleItems = details.items.length > 1
 
   return (
     <div className="space-y-6 p-6">
@@ -66,12 +65,6 @@ function RequestReportDetails({ details }: RequestReportDetailsProps) {
             </div>
           </ReportField>
           <ReportField label="Reason for Access" value={primaryItem?.reason} />
-          {hasMultipleItems ? (
-            <ReportField
-              label="Additional Items"
-              value={`${details.items.length - 1} more item${details.items.length - 1 === 1 ? "" : "s"}`}
-            />
-          ) : null}
         </div>
       </div>
       <div className="h-px bg-border" />

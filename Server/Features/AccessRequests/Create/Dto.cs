@@ -1,6 +1,7 @@
 namespace Server.Features.AccessRequests.Create;
 
 public sealed record CreateAccessRequest(
+    int? AccessReqId,
     int EmpId,
     int ReqTo,
     string? ItsrNo,

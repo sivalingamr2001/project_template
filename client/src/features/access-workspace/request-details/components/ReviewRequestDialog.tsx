@@ -57,7 +57,7 @@ function ReviewRequestDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="!max-w-4xl sm:!max-w-4xl">
+      <DialogContent className="max-w-4xl! sm:max-w-4xl!">
         <DialogHeader>
           <DialogTitle>
             {role === "Hod" ? "HOD Review" : "IT Review"} • Request #

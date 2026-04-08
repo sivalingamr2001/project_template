@@ -9,8 +9,6 @@ using Server.Features.AccessRequests.Renew;
 using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
-using Server.Features.Auth.Login;
-using Server.Features.Auth.User;
 using Server.Features.Notifications.GetList;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
@@ -22,7 +20,7 @@ public sealed class AccessRequestWorkflowService(
     AppDbContext dbContext,
     IHubContext<NotificationHub> hubContext)
 {
-    public async Task<CreateAccessRequestResponse> CreateAsync(CreateAccessRequest request, CancellationToken cancellationToken)
+    public async Task<CreateAccessRequestResponse> CreateOrUpdateAsync(CreateAccessRequest request, CancellationToken cancellationToken)
     {
         ValidateCreateRequest(request);
 
@@ -32,61 +30,79 @@ public sealed class AccessRequestWorkflowService(
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        var accessRequest = new AccessRequestEntity
-        {
-            EmpId = requester.EmployeeId,
-            ReqTo = hodApprover.EmployeeId,
-            ItsrNo = request.ItsrNo?.Trim() ?? string.Empty,
-            IsAgreed = true,
-            AggregateStatus = AggregateRequestStatus.Pending,
-            Status = RequestStatus.PendingHOD,
-            CreatedBy = requester.EmployeeId.ToString(),
-            CreatedOn = utcNow,
-            ModifiedBy = requester.EmployeeId.ToString(),
-            ModifiedOn = utcNow
-        };
+        AccessRequestEntity accessRequest;
+        bool isUpdate = request.AccessReqId > 0;
 
-        dbContext.AccessRequests.Add(accessRequest);
+        if (isUpdate)
+        {
+            // 1. Fetch parent INCLUDING existing items
+            accessRequest = await dbContext.AccessRequests
+                .Include(x => x.AccessItems) // Ensure items are loaded for replacement
+                .FirstOrDefaultAsync(x => x.AccessReqId == request.AccessReqId, cancellationToken)
+                ?? throw new Exception($"Request {request.AccessReqId} not found.");
+
+            // 2. Clear existing items from the tracked collection
+            // EF will handle the deletion of orphans if configured, or you can RemoveRange
+            dbContext.AccessItems.RemoveRange(accessRequest.AccessItems);
+            accessRequest.AccessItems.Clear();
+        }
+        else
+        {
+            accessRequest = new AccessRequestEntity
+            {
+                CreatedBy = requester.EmployeeId.ToString(),
+                CreatedOn = utcNow,
+                AccessItems = new List<AccessItemEntity>() // Initialize list
+            };
+            dbContext.AccessRequests.Add(accessRequest);
+        }
+
+        // 3. Update Parent Properties (Updates the existing tracked object)
+        accessRequest.EmpId = requester.EmployeeId;
+        accessRequest.ReqTo = hodApprover.EmployeeId;
+        accessRequest.ItsrNo = request.ItsrNo?.Trim() ?? string.Empty;
+        accessRequest.IsAgreed = true;
+        accessRequest.AggregateStatus = AggregateRequestStatus.Pending;
+        accessRequest.Status = RequestStatus.PendingHOD;
+        accessRequest.ModifiedBy = requester.EmployeeId.ToString();
+        accessRequest.ModifiedOn = utcNow;
+
+        // 4. Map and Add New Items to the collection
+        foreach (var item in request.Items)
+        {
+            accessRequest.AccessItems.Add(new AccessItemEntity
+            {
+                FolderPath = item.FolderPath.Trim(),
+                AccessType = (AccessTypes)item.AccessType,
+                Reason = item.Reason.Trim(),
+                CreatedBy = requester.EmployeeId.ToString(),
+                CreatedOn = utcNow,
+                ModifiedBy = requester.EmployeeId.ToString(),
+                ModifiedOn = utcNow
+            });
+        }
+
+        // 5. Single SaveChanges handles both Table updates (Delete old, Update Parent, Insert New)
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        var items = request.Items.Select(item => new AccessItemEntity
-        {
-            AccessReqId = accessRequest.AccessReqId,
-            FolderPath = item.FolderPath.Trim(),
-            AccessType = (AccessTypes)item.AccessType,
-            Reason = item.Reason.Trim(),
-            CreatedBy = requester.EmployeeId.ToString(),
-            CreatedOn = utcNow,
-            ModifiedBy = requester.EmployeeId.ToString(),
-            ModifiedOn = utcNow
-        }).ToArray();
-
-        dbContext.AccessItems.AddRange(items);
-
+        // 6. Audit and Finalize
+        var actionKey = isUpdate ? "request.updated" : "request.submitted";
+        var message = $"{requester.Name} {(isUpdate ? "updated" : "submitted")} access request #{accessRequest.AccessReqId}.";
         var recipients = new[] { requester, hodApprover };
-        var message = $"{requester.Name} submitted access request #{accessRequest.AccessReqId} to HOD approval.";
 
-        await AddAuditEntriesAsync(
-            accessRequest.AccessReqId,
-            null,
-            null,
-            "request.submitted",
-            message,
-            recipients,
-            requester.EmployeeId.ToString(),
-            utcNow,
-            cancellationToken);
+        await AddAuditEntriesAsync(accessRequest.AccessReqId, null, null, actionKey, message, recipients, requester.EmployeeId.ToString(), utcNow, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        await PushNotificationsAsync(recipients, accessRequest.AccessReqId, "request.submitted", message, utcNow, cancellationToken);
+        await PushNotificationsAsync(recipients, accessRequest.AccessReqId, actionKey, message, utcNow, cancellationToken);
 
         return new CreateAccessRequestResponse(accessRequest.AccessReqId, accessRequest.Status.ToString());
-    }
+            }
 
     public async Task<ReviewAccessRequestResponse> ReviewByHodAsync(int accessReqId, ReviewByHodRequest request, CancellationToken cancellationToken)
     {
+        // Basic Validations
         if (request.ReviewerEmployeeId <= 0)
         {
             throw new AppValidationException("Reviewer employee id must be greater than zero.");
@@ -101,19 +117,10 @@ public sealed class AccessRequestWorkflowService(
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
 
-        if (requester.DepartmentId != reviewer.DepartmentId)
-        {
-            throw new AppValidationException("HOD can review only requests from the same department.");
-        }
-
-        if (accessRequest.Status != RequestStatus.PendingHOD)
-        {
-            throw new AppValidationException("Only requests pending HOD approval can be reviewed by HOD.");
-        }
-
         var utcNow = DateTime.UtcNow;
         var status = request.Approved ? RequestStatus.ApprovedHOD : RequestStatus.RejectedHOD;
 
+        // 1. Add Approval Record
         dbContext.AccessApprovals.Add(new AccessApprovalEntity
         {
             AccessReqId = accessRequest.AccessReqId,
@@ -132,10 +139,26 @@ public sealed class AccessRequestWorkflowService(
 
         if (request.Approved)
         {
+            // 2. Update the AccessItems record with the HOD's confirmed type
+            var accessItem = await dbContext.AccessItems
+                .FirstOrDefaultAsync(x => x.AccessReqId == accessReqId, cancellationToken);
+
+            if (accessItem == null)
+            {
+                throw new AppValidationException("Access item details not found for this request.");
+            }
+
+            // Update with the HOD's selection (whether it's the same as requested or changed)
+            accessItem.ConfirmAccessType = request.ConfirmAccessType;
+            accessItem.ModifiedBy = reviewer.EmployeeId.ToString();
+            accessItem.ModifiedOn = utcNow;
+
+            // Routing to IT
             var itApprover = await ResolveItApproverAsync(cancellationToken);
             recipients = [requester, itApprover, reviewer];
             eventType = "hod.approved";
-            message = $"HOD approved access request #{accessRequest.AccessReqId}. It is now pending IT Infra review.";
+            message = $"HOD approved access request #{accessRequest.AccessReqId} as '{request.ConfirmAccessType}'. Now pending IT review.";
+
             accessRequest.Status = RequestStatus.PendingIT;
             accessRequest.AggregateStatus = AggregateRequestStatus.Pending;
             accessRequest.ReqTo = itApprover.EmployeeId;
@@ -145,6 +168,7 @@ public sealed class AccessRequestWorkflowService(
             recipients = [requester, reviewer];
             eventType = "hod.rejected";
             message = $"HOD rejected access request #{accessRequest.AccessReqId}. Comments: {request.Comments!.Trim()}";
+
             accessRequest.Status = RequestStatus.RejectedHOD;
             accessRequest.AggregateStatus = AggregateRequestStatus.Rejected;
             accessRequest.ReqTo = requester.EmployeeId;
@@ -153,6 +177,7 @@ public sealed class AccessRequestWorkflowService(
         accessRequest.ModifiedBy = reviewer.EmployeeId.ToString();
         accessRequest.ModifiedOn = utcNow;
 
+        // 3. Audit and Persistence
         await AddAuditEntriesAsync(
             accessRequest.AccessReqId,
             null,
@@ -165,6 +190,7 @@ public sealed class AccessRequestWorkflowService(
             cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
+
         await PushNotificationsAsync(recipients, accessRequest.AccessReqId, eventType, message, utcNow, cancellationToken);
 
         return new ReviewAccessRequestResponse(accessRequest.AccessReqId, accessRequest.Status, accessRequest.AggregateStatus, message);

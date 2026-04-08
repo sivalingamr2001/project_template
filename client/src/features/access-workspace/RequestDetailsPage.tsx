@@ -1,20 +1,24 @@
 import { useParams } from "react-router-dom"
 
 import { useAuth } from "@/context/AuthContext"
+import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
+import ApprovalReviewModal from "./components/ApprovalReviewModal"
+import CreateRequestModal from "./components/CreateRequestModal"
 import StageFlow from "./request-details/components/StageFlow"
 import TimelineSection from "./request-details/components/TimelineSection"
 import { useRequestDetails } from "./request-details/hooks/useRequestDetails"
 import { useRequestDetailsPage } from "./request-details/hooks/useRequestDetailsPage"
 import RequestReportPanel from "./request-details/report/components/RequestReportPanel"
-import CreateRequestModal from "./components/CreateRequestModal"
 
 function RequestDetailsPage() {
   const { requestId } = useParams()
+  const { itemId } = useParams()
   const { user } = useAuth()
   const accessReqId = Number(requestId)
+  const selectedItemFromUrl = itemId ? Number(itemId) : undefined
   const reviewerEmployeeId = user?.employeeId ?? 0
   const role =
     user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
@@ -23,6 +27,23 @@ function RequestDetailsPage() {
     reviewerEmployeeId
   )
   const page = useRequestDetailsPage(details, reviewerEmployeeId, role, refetch)
+  const prevItemIdRef = useRef<number | undefined>(undefined)
+
+  // Set selected item from URL parameter (only when it changes)
+  useEffect(() => {
+    if (selectedItemFromUrl && selectedItemFromUrl !== prevItemIdRef.current) {
+      page.setSelectedItemId(selectedItemFromUrl)
+      prevItemIdRef.current = selectedItemFromUrl
+    }
+  }, [selectedItemFromUrl])
+
+  const detailsWithSelectedItem = {
+    ...details,
+    items:
+      details?.items
+        .filter((item) => item.accessItemId === page.selectedItemId)
+        .map((item) => ({ ...item, isSelected: true })) ?? [],
+  }
 
   if (isLoading)
     return (
@@ -51,7 +72,9 @@ function RequestDetailsPage() {
         </Button>
         <div className="flex gap-2">
           {page.canResubmit && (
-            <Button onClick={page.handleResubmitOpen}>Resubmit Request</Button>
+            <Button onClick={() => page.handleResubmitOpen()}>
+              Resubmit Request
+            </Button>
           )}
           {(page.canReviewAsHod || page.canReviewAsIt) && (
             <>
@@ -73,13 +96,28 @@ function RequestDetailsPage() {
       </div>
       <StageFlow status={details.status} />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,4fr)_minmax(280px,1fr)]">
-        <RequestReportPanel details={details} />
+        <RequestReportPanel details={detailsWithSelectedItem} />
         <TimelineSection timeline={details.timeline} />
       </div>
-      <CreateRequestModal
+      <ApprovalReviewModal
+        actionType={page.reviewAction}
+        details={details}
         isOpen={page.isReviewOpen}
+        isPending={page.isPending}
+        selectedItemId={page.selectedItemId}
         onClose={page.handleReviewClose}
-        onSuccess={refetch}
+        onSubmit={(comments, confirmAccessType) =>
+          page.handleReview(comments, confirmAccessType)
+        }
+        role={role === "Hod" ? "Hod" : "ItTeam"}
+      />
+      <CreateRequestModal
+        initialData={page.resubmitPayload}
+        isOpen={page.isResubmitOpen}
+        onClose={page.handleResubmitClose}
+        onSuccess={page.handleResubmitSuccess}
+        submitLabel="Resubmit Request"
+        title="Resubmit Request"
       />
     </div>
   )

@@ -32,31 +32,16 @@ export const requestColumns: TableColumn<AccessRequest>[] = [
   {
     key: "status",
     header: "Status",
-    render: (row) => (
-      <div>
-        <p>{row.status}</p>
-      </div>
-    ),
+    render: (row) => row.status,
   },
   {
     key: "aggregateStatus",
     header: "OverallStatus",
     render: (row) => (
-      <div>
-        <p className="text-sm text-muted-foreground">{row.aggregateStatus}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">{row.aggregateStatus}</p>
     ),
   },
   { key: "itsr", header: "ITSR", render: (row) => row.itsrNo ?? "--" },
-  // {
-  //   key: "action",
-  //   header: "Action",
-  //   render: (row) => (
-  //     <Button asChild size="sm" variant="outline">
-  //       <Link to={`/requests/${row.accessReqId}`}>View</Link>
-  //     </Button>
-  //   ),
-  // },
 ]
 
 export const employeeColumns: TableColumn<EmployeeRecord>[] = [

@@ -1,10 +1,8 @@
 import {
-  IconBook2,
   IconChecklist,
   IconClockCheck,
   IconDashboard,
   IconFileInvoice,
-  IconHistory,
   IconShieldCheck,
   IconUsers,
 } from "@tabler/icons-react"
@@ -32,12 +30,12 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         icon: IconChecklist,
         roles: ["Hod"],
       },
-      {
-        label: "Approval History",
-        to: "/hod/approval-history",
-        icon: IconHistory,
-        roles: ["Hod"],
-      },
+      // {
+      //   label: "Approval History",
+      //   to: "/hod/approval-history",
+      //   icon: IconHistory,
+      //   roles: ["Hod"],
+      // },
       {
         label: "All Requests",
         to: "/hod/all-requests",
@@ -72,13 +70,7 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         to: "/it/employees",
         icon: IconUsers,
         roles: ["ItTeam"],
-      },
-      {
-        label: "Audit Log",
-        to: "/it/audit-log",
-        icon: IconBook2,
-        roles: ["ItTeam"],
-      },
+      }
     ],
   },
 ]

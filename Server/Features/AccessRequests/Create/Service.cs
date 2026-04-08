@@ -6,6 +6,6 @@ public sealed class CreateAccessRequestService(AccessRequestWorkflowService work
 {
     public async Task<CreateAccessRequestResponse> CreateAsync(CreateAccessRequest request, CancellationToken cancellationToken)
     {
-        return await workflowService.CreateAsync(request, cancellationToken);
+        return await workflowService.CreateOrUpdateAsync(request, cancellationToken);
     }
 }

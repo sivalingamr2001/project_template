@@ -1,19 +1,12 @@
 import { useState } from "react"
 
-import type { AccessRequestDetails } from "../../../types"
-import ReportBadge from "./ReportBadge"
+import { formatRequestDate } from "../../utils/requestDetails"
 import RequestReportDetails from "./RequestReportDetails"
 import RequestReportItSection from "./RequestReportItSection"
 import RequestReportPolicies from "./RequestReportPolicies"
 import RequestReportTabs from "./RequestReportTabs"
-import { formatRequestDate } from "../../utils/requestDetails"
-import { getStatusTone } from "../utils/requestReport"
 
-type RequestReportPanelProps = {
-  details: AccessRequestDetails
-}
-
-function RequestReportPanel({ details }: RequestReportPanelProps) {
+function RequestReportPanel({ details }: any) {
   const [activeTab, setActiveTab] = useState("details")
 
   return (

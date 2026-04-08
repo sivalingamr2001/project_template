@@ -14,9 +14,11 @@ export function buildResubmitPayload(
   details: AccessRequestDetails
 ): AccessRequestFormPayload {
   return {
+    accessReqId: details.accessReqId,
     empId: details.empId,
     isAgree: true,
     items: details.items.map((item) => ({
+      accessItemId: item.accessItemId,
       accessType: mapAccessType(item.accessType),
       confirmAccessTypeByHOD: 0,
       folderPath: item.folderPath,

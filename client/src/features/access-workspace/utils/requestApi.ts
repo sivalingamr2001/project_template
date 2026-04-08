@@ -172,14 +172,20 @@ export async function reviewAccessRequestByHod(
   accessReqId: number,
   reviewerEmployeeId: number,
   approved: boolean,
-  comments: string
+  comments: string,
+  confirmAccessType?: number
 ) {
   const response = await fetch(
     `${API_URL}/access-requests/${accessReqId}/hod-review`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reviewerEmployeeId, approved, comments }),
+      body: JSON.stringify({
+        reviewerEmployeeId,
+        approved,
+        comments,
+        confirmAccessType: confirmAccessType || 1,
+      }),
     }
   )
   if (!response.ok) throw new Error("Unable to complete HOD review.")
@@ -190,15 +196,42 @@ export async function reviewAccessRequestByIt(
   reviewerEmployeeId: number,
   approved: boolean,
   comments: string,
-  itsrNo: string
+  itsrNo: string,
+  confirmAccessType?: number
 ) {
   const response = await fetch(
     `${API_URL}/access-requests/${accessReqId}/it-review`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reviewerEmployeeId, approved, comments, itsrNo }),
+      body: JSON.stringify({
+        reviewerEmployeeId,
+        approved,
+        comments,
+        itsrNo,
+        confirmAccessType: confirmAccessType || 1,
+      }),
     }
   )
   if (!response.ok) throw new Error("Unable to complete IT review.")
+}
+
+export async function revokeAccessRequest(
+  accessReqId: number,
+  reviewerEmployeeId: number,
+  comments: string
+) {
+  const response = await fetch(
+    `${API_URL}/access-requests/${accessReqId}/revoke`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reviewerEmployeeId,
+        comments,
+      }),
+    }
+  )
+
+  if (!response.ok) throw new Error("Unable to revoke access request.")
 }

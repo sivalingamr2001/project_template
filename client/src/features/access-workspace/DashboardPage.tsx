@@ -69,7 +69,7 @@ function DashboardPage() {
                     </span>
                     <span>
                       <Link
-                        to={`/requests/${row.accessReqId}`}
+                        to={`/requests/${row.accessReqId}/items/${item.accessItemId}`}
                         className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
                       >
                         Details
@@ -87,6 +87,7 @@ function DashboardPage() {
                           />
                         </svg>
                       </Link>
+                      )
                     </span>
                   </div>
                 ))}
