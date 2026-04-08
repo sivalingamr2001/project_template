@@ -1,7 +1,4 @@
-import type {
-  AccessRequestItem,
-  AccessRequestTimeline,
-} from "../../types"
+import type { AccessRequestItem, AccessRequestTimeline } from "../../types"
 
 type StageCard = {
   description: string

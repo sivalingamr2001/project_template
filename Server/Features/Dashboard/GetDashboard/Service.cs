@@ -41,44 +41,38 @@ public sealed class GetDashboardService(AppDbContext dbContext)
 
         var totalCount = await requestQuery.CountAsync(cancellationToken);
 
-        var rows = await (
-            from request in requestQuery
-            join item in dbContext.AccessItems.AsNoTracking() on request.AccessReqId equals item.AccessReqId
-            orderby request.AccessReqId descending
-            select new
-            {
-                request.AccessReqId,
-                request.EmpId,
-                request.ReqTo,
-                request.AggregateStatus,
-                request.Status,
-                request.ItsrNo,
-                request.IsAgreed,
-                item.AccessItemId,
-                item.FolderPath,
-                item.Reason,
-                item.AccessType,
-            }
-        )
+        var data = await requestQuery
+        .OrderByDescending(r => r.AccessReqId)
         .Skip(query.Skip)
         .Take(query.NormalizedPageSize)
+        .Select(request => new DashboardAccessRequestDto(
+            request.AccessReqId,
+            request.EmpId,
+            request.ReqTo,
+            request.AggregateStatus,
+            request.Status,
+            request.ItsrNo,
+            request.IsAgreed,
+            // Project AccessItems
+            dbContext.AccessItems
+                .Where(ai => ai.AccessReqId == request.AccessReqId)
+                .Select(ai => new AccessItemDto(
+                    ai.AccessItemId,
+                    ai.FolderPath,
+                    ai.Reason,
+                    ai.AccessType))
+                .ToList(),
+            // Project ApprovalItems (assuming a table exists)
+            dbContext.AccessApprovals
+                .Where(a => a.AccessReqId == request.AccessReqId)
+                .Select(a => new ApprovalItemDto(
+                    a.AccessReqId,
+                    a.ApproverId,
+                    a.ApprovalStatus,
+                    a.Comments))
+                .ToList()
+        ))
         .ToListAsync(cancellationToken);
-
-        var data = rows
-            .Select(row => new DashboardAccessRequestDto(
-                row.AccessReqId,
-                row.EmpId,
-                row.ReqTo,
-                row.AggregateStatus,
-                row.Status,
-                row.ItsrNo,
-                row.IsAgreed,
-                row.AccessItemId,
-                row.FolderPath,
-                row.Reason,
-                row.AccessType
-            ))
-            .ToList();
 
         return new PaginatedResponse<DashboardAccessRequestDto>(data, totalCount, query.NormalizedPage, query.NormalizedPageSize);
     }

@@ -6,7 +6,10 @@ export const ACCESS_OPTIONS = [
   { label: "Read and Write", value: 2 },
 ]
 
-export function createDefaultPayload(employeeId: number) {
+export function createDefaultPayload(
+  employeeId: number,
+  userHODId: number
+): AccessRequestFormPayload {
   return {
     empId: employeeId,
     isAgree: false,
@@ -19,6 +22,6 @@ export function createDefaultPayload(employeeId: number) {
       },
     ],
     itsrNo: "",
-    reqTo: 0,
+    reqTo: userHODId ?? 0,
   } satisfies AccessRequestFormPayload
 }

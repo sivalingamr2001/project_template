@@ -22,7 +22,9 @@ function CommonTable<T>({
   rows,
 }: CommonTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1)
-  const [expandedRowId, setExpandedRowId] = useState<string | number | null>(null)
+  const [expandedRowId, setExpandedRowId] = useState<string | number | null>(
+    null
+  )
 
   useEffect(() => {
     setCurrentPage(1)

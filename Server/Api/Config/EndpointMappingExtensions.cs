@@ -7,6 +7,7 @@ using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
 using Server.Features.Auth.Login;
+using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
 using Server.Features.Notifications.GetList;
 using Server.Features.Notifications.MarkRead;
@@ -19,6 +20,10 @@ public static class EndpointMappingExtensions
     {
         var authGroup = app.MapGroup("/api/auth").WithTags("Auth");
         LoginEndpoint.Map(authGroup);
+
+        var userGroup = app.MapGroup("/api/User").WithTags("User");
+        GetAllUsersEndpoint.Map(userGroup);
+
 
         var accessRequestsGroup = app.MapGroup("/api/access-requests").WithTags("Access Requests");
         CreateAccessRequestEndpoint.Map(accessRequestsGroup);

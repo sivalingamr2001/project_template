@@ -6,18 +6,19 @@ import { createDefaultPayload } from "../utils/accessRequestForm"
 
 export function useAccessRequestForm(
   employeeId: number,
+  userHODId: number,
   initialData?: AccessRequestFormPayload,
   mode: "create" | "edit" = "create"
 ) {
   const [formData, setFormData] = useState<AccessRequestFormPayload>(
-    initialData ?? createDefaultPayload(employeeId)
+    initialData ?? createDefaultPayload(employeeId, userHODId)
   )
 
   useEffect(() => {
     if (initialData) setFormData(initialData)
     if (!initialData && mode === "create")
-      setFormData(createDefaultPayload(employeeId))
-  }, [employeeId, initialData, mode])
+      setFormData(createDefaultPayload(employeeId, userHODId))
+  }, [employeeId, userHODId, initialData, mode])
 
   return { formData, setFormData }
 }

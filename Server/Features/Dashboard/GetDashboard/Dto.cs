@@ -13,7 +13,17 @@ public sealed record DashboardAccessRequestDto(
     RequestStatus Status,
     string? ItsrNo,
     bool IsAgreed,
+    List<AccessItemDto> AccessItems,
+    List<ApprovalItemDto> ApprovalItems);
+
+public record AccessItemDto(
     int AccessItemId,
     string FolderPath,
     string Reason,
     AccessTypes AccessType);
+
+public record ApprovalItemDto(
+    int ApprovalId,
+    int ApproverId,
+    RequestStatus Status,
+    string Remarks);

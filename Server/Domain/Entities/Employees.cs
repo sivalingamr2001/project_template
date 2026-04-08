@@ -17,6 +17,10 @@ public sealed class EmployeeEntity
     [Column("email_address", TypeName = "varchar(255)")]
     public string Email { get; set; } = string.Empty;
 
+    [Required]
+    [Column("phone_number")]
+    public int Phone { get; set; }
+
     [Column("dept_id")]
     public int DepartmentId { get; set; }
 

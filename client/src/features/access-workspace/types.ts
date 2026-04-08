@@ -9,6 +9,12 @@ export type QueueMode =
   | "itQueue"
   | "itActive"
   | "itAll"
+export type RequestStatus =
+  | "Submitted"
+  | "Approved"
+  | "Rejected"
+  | "Expired"
+  | "Revoked"
 export type AggregateStatus =
   | "Pending"
   | "Approved"
@@ -16,29 +22,35 @@ export type AggregateStatus =
   | "Expired"
   | "Revoked"
 
+export type AccessItem = {
+  accessItemId: number
+  folderPath: string
+  reason: string
+  accessType: number // 1 for Read Only, 2 for Read & Write, etc.
+}
+
+export type ApprovalItem = {
+  approvalId: number
+  approverName: string
+  status: number
+  remarks: string | null
+}
+
 export type AccessRequest = {
   accessReqId: number
-  accessType: "Not Applicable" | "Read Only" | "Read & Write"
-  aggregateStatus: AggregateStatus
-  createdOn: string
   empId: number
-  folderPath: string
-  itsrNo: string | null
-  reason: string
   reqTo: number
-  status: string
-}
-export type DashboardAccessRequestDto = {
-  accessReqId: number
-  accessType: number
   aggregateStatus: number
-  empId: number
-  folderPath: string
-  itsrNo: string | null
-  reason: string
-  reqTo: number
   status: number
+  itsrNo: string | null
+  isAgreed: boolean
+  accessItems: AccessItem[] // Grouped child items
+  approvalItems: ApprovalItem[]
 }
+
+// This matches your C# record DashboardAccessRequestDto exactly
+export type DashboardAccessRequestDto = AccessRequest
+
 export type PaginatedResponse<T> = {
   data: T[]
   page: number

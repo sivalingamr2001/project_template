@@ -10,7 +10,7 @@ const INPUT_CLASS =
 
 function LoginPage() {
   const { isAuthenticated, isLoading, login, user } = useAuth()
-  const [employeeId, setEmployeeId] = useState("1001")
+  const [employeeId, setEmployeeId] = useState("")
   const [password, setPassword] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
   const role =

@@ -21,7 +21,10 @@ function AccessItemDetails({ details, item }: AccessItemDetailsProps) {
           label="Assigned To"
           value={details.currentApproverName || `Emp #${details.reqTo}`}
         />
-        <DetailRow label="Business Reason" value={item.reason || "No reason was provided."} />
+        <DetailRow
+          label="Business Reason"
+          value={item.reason || "No reason was provided."}
+        />
       </div>
     </section>
   )

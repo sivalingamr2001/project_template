@@ -12,4 +12,7 @@ public sealed record LoggedInUserDto(
     string Email,
     int DepartmentId,
     string DepartmentName,
-    string Role);
+    string Role,
+    HodDto? DepartmentHod);
+
+public record HodDto(int EmployeeId, string Name, string Email);

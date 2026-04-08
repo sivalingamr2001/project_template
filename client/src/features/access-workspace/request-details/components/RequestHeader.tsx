@@ -1,8 +1,5 @@
 import type { ReactNode } from "react"
 
-import { Button } from "@/components/ui/button"
-import { IconArrowLeft } from "@tabler/icons-react"
-
 type RequestHeaderProps = {
   accessReqId: number
   action?: ReactNode
@@ -10,26 +7,9 @@ type RequestHeaderProps = {
   status: string
 }
 
-function RequestHeader({
-  accessReqId,
-  action,
-  onBack,
-  status,
-}: RequestHeaderProps) {
+function RequestHeader({ accessReqId, status }: RequestHeaderProps) {
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button
-          className="w-fit px-0"
-          size="sm"
-          variant="ghost"
-          onClick={onBack}
-        >
-          <IconArrowLeft className="size-4" />
-          {"Back to Requests"}
-        </Button>
-        {action}
-      </div>
       <div className="rounded-[0.9rem] border border-border bg-background p-4 shadow-sm">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -42,10 +22,11 @@ function RequestHeader({
               </h1>
             </div>
             <div className="rounded-[0.9rem] border border-border bg-card px-4 py-2">
-              <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">
+              <span className="mr-2 text-xs tracking-[0.22em] text-muted-foreground uppercase">
                 Current Status
-              </p>
-              <p className="mt-2 text-lg font-semibold">{status}</p>
+              </span>
+              <span className="text-muted-foreground">•</span>
+              <span className="mt-2 ml-2 text-sm font-semibold">{status}</span>
             </div>
           </div>
         </div>

@@ -1,8 +1,5 @@
 import { Button } from "@/components/ui/button"
-import {
-  IconChevronLeft,
-  IconChevronRight,
-} from "@tabler/icons-react"
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 
 type CommonTablePaginationProps = {
   currentPage: number
@@ -29,17 +26,19 @@ function CommonTablePagination({
       >
         <IconChevronLeft className="size-4" />
       </Button>
-      {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-        <Button
-          key={page}
-          size="icon-sm"
-          type="button"
-          variant={page === currentPage ? "outline" : "ghost"}
-          onClick={() => onPageChange(page)}
-        >
-          {page}
-        </Button>
-      ))}
+      {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+        (page) => (
+          <Button
+            key={page}
+            size="icon-sm"
+            type="button"
+            variant={page === currentPage ? "outline" : "ghost"}
+            onClick={() => onPageChange(page)}
+          >
+            {page}
+          </Button>
+        )
+      )}
       <Button
         disabled={!canGoNext}
         size="icon-sm"

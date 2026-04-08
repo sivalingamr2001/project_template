@@ -7,13 +7,21 @@ import {
   type ReactNode,
 } from "react"
 
-type AuthUser = {
+export type HODDetails = {
   employeeId: number
   name: string
   email: string
+}
+
+export type AuthUser = {
+  employeeId: number
+  name: string
+  email: string
+  phone: number
   departmentId: number
   departmentName: string
   role: string
+  departmentHod: HODDetails
 }
 
 type AuthContextValue = {
@@ -31,7 +39,7 @@ type LoginResponse = {
 }
 
 const STORAGE_KEY = "auth_session"
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5001/api"
+const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5001/api"
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {

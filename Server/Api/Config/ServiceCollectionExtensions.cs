@@ -3,6 +3,7 @@ using Server.Features.AccessRequests.Common;
 using Server.Features.AccessRequests.Create;
 using Server.Features.AccessRequests.GetList;
 using Server.Features.Auth.Login;
+using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
@@ -45,6 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();
+        services.AddScoped<UserService>();
         services.AddScoped<CreateAccessRequestService>();
         services.AddScoped<GetAccessRequestsService>();
         services.AddScoped<GetDashboardService>();

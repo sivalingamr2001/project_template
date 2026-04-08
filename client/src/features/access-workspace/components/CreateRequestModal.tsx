@@ -1,11 +1,11 @@
 import { useState } from "react"
 
-import { Button } from "@/components/ui/button"
 import {
   createAccessRequest,
   type AccessRequestFormPayload,
 } from "@/lib/access-request-api"
 
+import { IconX } from "@tabler/icons-react"
 import { NewRequestForm } from "../request-form"
 
 type CreateRequestModalProps = {
@@ -57,9 +57,7 @@ function CreateRequestModal({
               Fill the file user request details and submit for approval.
             </p>
           </div>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Close
-          </Button>
+          <IconX className="size-5 cursor-pointer text-muted-foreground" onClick={onClose} />
         </div>
         {errorMessage ? (
           <p className="mb-4 text-sm text-destructive">{errorMessage}</p>

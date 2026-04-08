@@ -3,11 +3,12 @@ import type {
   AccessRequestApproval,
   AccessRequestDetails,
   AccessRequestItem,
-  DashboardAccessRequestDto,
-  PaginatedResponse,
+  AggregateStatus,
+  RequestStatus,
 } from "../types"
 
-const API_URL = import.meta.env.VITE_API_URL ?? "https://localhost:7229/api"
+const API_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:7229/api"
 const ACCESS_TYPE_MAP = ["Not Applicable", "Read Only", "Read & Write"] as const
 const AGGREGATE_STATUS_MAP = [
   "Pending",
@@ -29,21 +30,6 @@ const STATUS_MAP = [
   "Expired",
   "Revoked",
 ] as const
-
-function mapDashboardItem(item: DashboardAccessRequestDto): AccessRequest {
-  return {
-    accessReqId: item.accessReqId,
-    accessType: ACCESS_TYPE_MAP[item.accessType] ?? "Not Applicable",
-    aggregateStatus: AGGREGATE_STATUS_MAP[item.aggregateStatus] ?? "Pending",
-    createdOn: "N/A",
-    empId: item.empId,
-    folderPath: item.folderPath,
-    itsrNo: item.itsrNo,
-    reason: item.reason,
-    reqTo: item.reqTo,
-    status: STATUS_MAP[item.status] ?? "Submitted",
-  }
-}
 
 function mapAccessItem(item: {
   accessItemId: number
@@ -140,14 +126,34 @@ function mapAccessRequestDetails(details: {
   }
 }
 
-export async function fetchAccessRequests(employeeId: number) {
+export async function fetchAccessRequests(
+  employeeId: number
+): Promise<AccessRequest[]> {
   const response = await fetch(
     `${API_URL}/dashboard/${employeeId}?Page=1&PageSize=10`
   )
   if (!response.ok) throw new Error("Unable to load access requests.")
-  const payload =
-    (await response.json()) as PaginatedResponse<DashboardAccessRequestDto>
-  return payload.data.map(mapDashboardItem)
+
+  const payload = await response.json()
+
+  return payload.data.map((request: any) => ({
+    ...request,
+    // Explicitly cast to the Map types so TS is happy
+    status: (typeof request.status === "number"
+      ? STATUS_MAP[request.status]
+      : request.status) as RequestStatus,
+
+    accessItems: request.accessItems.map((item: any) => ({
+      ...item,
+      accessType: (typeof item.accessType === "number"
+        ? ACCESS_TYPE_MAP[item.accessType]
+        : item.accessType) as AccessRequestItem["accessType"],
+    })),
+
+    aggregateStatus: (typeof request.aggregateStatus === "number"
+      ? AGGREGATE_STATUS_MAP[request.aggregateStatus]
+      : request.aggregateStatus) as AggregateStatus,
+  }))
 }
 
 export async function fetchAccessRequestDetails(

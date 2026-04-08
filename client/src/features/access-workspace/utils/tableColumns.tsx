@@ -1,7 +1,4 @@
-import { Link } from "react-router-dom"
-
-import { Button } from "@/components/ui/button"
-
+import { GetCurrentUser } from "@/lib/utils"
 import type {
   AccessRequest,
   AuditLogItem,
@@ -9,26 +6,26 @@ import type {
   TableColumn,
 } from "../types"
 
+const userData = GetCurrentUser()
+
 export const requestColumns: TableColumn<AccessRequest>[] = [
+  {
+    key: "employeeId",
+    header: "Employee ID",
+    render: (row) => row.empId,
+  },
   {
     key: "request",
     header: "Request",
     render: (row) => (
-      <div>
-        <p className="font-semibold">{row.accessReqId}</p>
-        <p className="text-sm text-muted-foreground">
-          Emp #{row.empId} • ReqTo #{row.reqTo}
-        </p>
-      </div>
-    ),
-  },
-  {
-    key: "folder",
-    header: "Folder",
-    render: (row) => (
-      <div>
-        <p className="font-medium break-all">{row.folderPath}</p>
-        <p className="text-sm text-muted-foreground">{row.reason}</p>
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="font-semibold">REQ #{row.accessReqId}</span>
+        <span className="text-muted-foreground">•</span>
+        <span className="text-muted-foreground">
+          {row.empId === userData?.employeeId
+            ? userData?.name
+            : `Emp #${row.empId}`}
+        </span>
       </div>
     ),
   },
@@ -38,21 +35,28 @@ export const requestColumns: TableColumn<AccessRequest>[] = [
     render: (row) => (
       <div>
         <p>{row.status}</p>
+      </div>
+    ),
+  },
+  {
+    key: "aggregateStatus",
+    header: "OverallStatus",
+    render: (row) => (
+      <div>
         <p className="text-sm text-muted-foreground">{row.aggregateStatus}</p>
       </div>
     ),
   },
-  { key: "access", header: "Access", render: (row) => row.accessType },
-  { key: "itsr", header: "ITSR", render: (row) => row.itsrNo ?? "Unassigned" },
-  {
-    key: "action",
-    header: "Action",
-    render: (row) => (
-      <Button asChild size="sm" variant="outline">
-        <Link to={`/requests/${row.accessReqId}`}>View</Link>
-      </Button>
-    ),
-  },
+  { key: "itsr", header: "ITSR", render: (row) => row.itsrNo ?? "--" },
+  // {
+  //   key: "action",
+  //   header: "Action",
+  //   render: (row) => (
+  //     <Button asChild size="sm" variant="outline">
+  //       <Link to={`/requests/${row.accessReqId}`}>View</Link>
+  //     </Button>
+  //   ),
+  // },
 ]
 
 export const employeeColumns: TableColumn<EmployeeRecord>[] = [
