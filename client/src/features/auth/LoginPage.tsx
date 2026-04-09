@@ -1,76 +1,175 @@
-import { useState, type ChangeEvent, type FormEvent } from "react"
-import { Navigate } from "react-router-dom"
+import { useEffect, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { LoaderCircle, Lock, TrendingUp } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/context/AuthContext"
-import { getDefaultRoute } from "@/features/access-workspace/utils/accessSelectors"
+import { useAuthContext } from "@/features/auth/auth-context";
+import { Badge } from "@/shared/components/ui/badge";
+import { Button } from "@/shared/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card";
+import { Input } from "@/shared/components/ui/input";
 
-const INPUT_CLASS =
-  "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm outline-none transition focus:border-primary"
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const search = useSearch({ strict: false });
+  const auth = useAuthContext();
 
-function LoginPage() {
-  const { isAuthenticated, isLoading, login, user } = useAuth()
-  const [employeeId, setEmployeeId] = useState("")
-  const [password, setPassword] = useState("")
-  const [errorMessage, setErrorMessage] = useState("")
-  const role =
-    user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
-  const handleEmployeeIdChange = (event: ChangeEvent<HTMLInputElement>) =>
-    setEmployeeId(event.target.value)
-  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) =>
-    setPassword(event.target.value)
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setErrorMessage("")
+  const [email, setEmail] = useState("admin@mastery.dev");
+  const [password, setPassword] = useState("mastery");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
+
+  const redirectTo =
+    typeof search.redirect === "string" ? search.redirect : "/app/budget";
+
+  useEffect(() => {
+    if (auth.isLoggedIn && pendingRedirect) {
+      void navigate({ replace: true, to: pendingRedirect });
+      setPendingRedirect(null);
+    }
+  }, [auth.isLoggedIn, navigate, pendingRedirect]);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
     try {
-      await login(Number(employeeId), password)
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Login failed.")
+      await auth.login({ email, password });
+      setPendingRedirect(redirectTo);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Unable to sign in right now."
+      );
+      setPendingRedirect(null);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
-  if (isAuthenticated) return <Navigate to={getDefaultRoute(role)} replace />
-
   return (
-    <div className="flex h-screen items-center justify-center bg-background px-4">
-      <form
-        className="w-full max-w-md rounded-[0.75rem] border border-border bg-card p-6 shadow-sm"
-        onSubmit={handleSubmit}
-      >
-        <p className="text-sm font-semibold tracking-[0.18em] text-primary uppercase">
-          File Server Access
-        </p>
-        <h1 className="mt-3 font-heading text-3xl font-semibold">
-          Sign in to continue
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Use your employee ID and password from the server login API.
-        </p>
-        <div className="mt-6 grid gap-4">
-          <input
-            className={INPUT_CLASS}
-            inputMode="numeric"
-            value={employeeId}
-            onChange={handleEmployeeIdChange}
-            placeholder="Employee ID"
-          />
-          <input
-            className={INPUT_CLASS}
-            type="password"
-            value={password}
-            onChange={handlePasswordChange}
-            placeholder="Password"
-          />
-          {errorMessage ? (
-            <p className="text-sm text-destructive">{errorMessage}</p>
-          ) : null}
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign in"}
-          </Button>
+    <div className="min-h-screen grid lg:grid-cols-2">
+      
+      {/* LEFT: Branding Panel */}
+      <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#020617] p-10 text-white">
+        
+        {/* Top */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white">
+            <TrendingUp className="h-6 w-6" />
+          </div>
+          <div>
+            <div className="text-lg font-semibold">Janatics India Pvt. Ltd.</div>
+            <div className="text-sm text-white/70">
+              R&D Budget Intelligence Platform
+            </div>
+          </div>
         </div>
-      </form>
-    </div>
-  )
-}
 
-export default LoginPage
+        {/* Middle */}
+        <div className="max-w-md">
+          <h1 className="text-4xl font-semibold leading-tight">
+            Strategic Budget Control, Reimagined
+          </h1>
+          <p className="mt-4 text-white/70">
+            Drive financial clarity across R&D initiatives with real-time
+            tracking, variance insights, and performance analytics.
+          </p>
+
+          <div className="mt-6 space-y-3 text-sm text-white/80">
+            <div>✔ Real-time budget vs actual tracking</div>
+            <div>✔ Phase-level utilization insights</div>
+            <div>✔ Export-ready audit reports</div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="text-xs text-white/50">
+          © 2026 Internal Platform
+        </div>
+      </div>
+
+      {/* RIGHT: Login */}
+      <div className="flex items-center justify-center p-6 bg-background">
+        
+        <Card className="w-full max-w-md border-white/10 bg-card/95 rounded-none">
+          <CardHeader>
+            <Badge className="w-fit" variant="secondary">
+              Demo sign in
+            </Badge>
+
+            <CardTitle className="mt-2 flex items-center gap-2 text-3xl">
+              <Lock className="h-6 w-6 text-primary" />
+              Access the platform
+            </CardTitle>
+
+            <CardDescription>
+              Use{" "}
+              <span className="font-semibold text-foreground">
+                admin@mastery.dev
+              </span>{" "}
+              or{" "}
+              <span className="font-semibold text-foreground">
+                user@mastery.dev
+              </span>
+              . Any password (4+ chars).
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                  {error}
+                </div>
+              )}
+
+              {/* Submit */}
+              <Button
+                className="w-full"
+                size="lg"
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting && (
+                  <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {isSubmitting ? "Signing in..." : "Enter the app"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+      </div>
+    </div>
+  );
+}

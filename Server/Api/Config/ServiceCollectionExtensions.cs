@@ -1,11 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Server.Features.AccessRequests.Common;
-using Server.Features.AccessRequests.Create;
-using Server.Features.AccessRequests.GetList;
-using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
-using Server.Features.Auth.User;
-using Server.Features.Dashboard.GetDashboard;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
 using Server.Shared.Helpers;
@@ -45,13 +39,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<PasswordHasher>();
         services.AddScoped<DatabaseInitializer>();
-        services.AddTransient<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();
-        services.AddScoped<UserService>();
-        services.AddScoped<CreateAccessRequestService>();
-        services.AddScoped<GetAccessRequestsService>();
-        services.AddScoped<GetDashboardService>();
-        services.AddScoped<GetAuditLogsService>();
 
         services.AddCors(options =>
         {

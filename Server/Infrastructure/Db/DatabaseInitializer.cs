@@ -12,20 +12,71 @@ public sealed class DatabaseInitializer(
 {
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        await dbContext.Database.MigrateAsync(cancellationToken);
+        // 1. Ensure the database file and schema are created
+        // This creates the tables if migrations haven't run or don't exist yet
+        var databaseCreator = dbContext.GetService<IRelationalDatabaseCreator>();
 
+        // For SQLite, we check if the database exists, then create tables
+        if (!await databaseCreator.ExistsAsync(cancellationToken))
+        {
+            await databaseCreator.CreateAsync(cancellationToken);
+        }
+
+        // Check if the table "jan_employees" exists before querying
         if (!await TableExistsAsync("jan_employees", cancellationToken))
         {
-            var databaseCreator = dbContext.GetService<IRelationalDatabaseCreator>();
             await databaseCreator.CreateTablesAsync(cancellationToken);
         }
 
-        if (await dbContext.Employees.AnyAsync(cancellationToken))
+        // 2. Now it is safe to check for data and seed
+        if (!await dbContext.Employees.AnyAsync(cancellationToken))
         {
-            return;
+            await SeedEmployeesAsync(cancellationToken);
         }
 
-        await SeedEmployeesAsync(cancellationToken);
+        if (!await dbContext.Categories.AnyAsync(cancellationToken))
+        {
+            await SeedBudgetMetadataAsync(cancellationToken);
+        }
+    }
+
+    private async Task SeedBudgetMetadataAsync(CancellationToken cancellationToken)
+    {
+        var budgetData = new List<CategoryEntity>
+        {
+            CreateCategory(1, "Product Design", ["Benchmarking sample", "FEA Analysis", "CFD Analysis", "Design consultancy", "Others"]),
+            CreateCategory(2, "Concept devpt.", ["Comp.devpt-Concept", "Machining components", "Plastic - Hand moulds", "Rubber moulds", "3D printing", "RPT", "MIM", "Jigs & fixtures", "Concept testing"]),
+            CreateCategory(3, "Prototype devpt.", ["Machining components", "Plastic - Inj. moulds", "Aluminium - Die casting", "Investment casting", "Stamping tools", "Rubber moulds", "Jigs & fixtures", "Comp. mfg.", "Testing"]),
+            CreateCategory(4, "Product testing", ["Testing instruments", "Testing fixtures", "Certification", "Others"]),
+            CreateCategory(5, "Capital equipments", ["Testing equipments", "Special machines", "Others"]),
+            CreateCategory(6, "Field validation", ["Product development"])
+        };
+
+        await dbContext.Categories.AddRangeAsync(budgetData, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private CategoryEntity CreateCategory(int id, string name, string[] itemNames)
+    {
+        var category = new CategoryEntity
+        {
+            CategoryId = id,
+            Name = name,
+            CreatedBy = "System",
+            CreatedOn = DateTime.UtcNow
+        };
+
+        foreach (var itemName in itemNames)
+        {
+            category.CostItems.Add(new CostItemEntity
+            {
+                Name = itemName,
+                CreatedBy = "System",
+                CreatedOn = DateTime.UtcNow
+            });
+        }
+
+        return category;
     }
 
     private async Task SeedEmployeesAsync(CancellationToken cancellationToken)
