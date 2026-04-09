@@ -70,7 +70,7 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         to: "/it/employees",
         icon: IconUsers,
         roles: ["ItTeam"],
-      }
+      },
     ],
   },
 ]

@@ -2,14 +2,25 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useAuth } from "@/context/AuthContext"
 
-import type { AccessRequest, QueueMode } from "../types"
+import type {
+  AccessRequest,
+  AuditLogItem,
+  EmployeeRecord,
+  NotificationItem,
+  QueueMode,
+} from "../types"
 import {
   getDefaultRoute,
   getRequestsByMode,
   getSummaryCards,
 } from "../utils/accessSelectors"
-import { AUDIT_LOGS, EMPLOYEES, NOTIFICATIONS } from "../utils/mockData"
-import { fetchAccessRequests } from "../utils/requestApi"
+import {
+  fetchAccessRequests,
+  fetchAuditLogs,
+  fetchAllUsers,
+  fetchNotifications,
+  markNotificationRead,
+} from "../utils/requestApi"
 
 export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   const { user } = useAuth()
@@ -17,21 +28,46 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   const role =
     user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
   const [apiRequests, setApiRequests] = useState<AccessRequest[]>([])
+  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])
+  const [employees, setEmployees] = useState<EmployeeRecord[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     if (!employeeId) return
+
     setIsLoading(true)
-    fetchAccessRequests(employeeId)
-      .then(setApiRequests)
-      .then(() => setErrorMessage(null))
-      .catch((error: Error) => {
+    void (async () => {
+      try {
+        const [requests, notificationsResponse, auditLogsResponse, users] =
+          await Promise.all([
+            fetchAccessRequests(employeeId),
+            fetchNotifications(employeeId),
+            fetchAuditLogs(),
+            fetchAllUsers(),
+          ])
+
+        setApiRequests(requests)
+        setNotifications(notificationsResponse)
+        setAuditLogs(auditLogsResponse)
+        setEmployees(users)
+        setErrorMessage(null)
+      } catch (error) {
         setApiRequests([])
-        setErrorMessage(error.message)
-      })
-      .finally(() => setIsLoading(false))
+        setNotifications([])
+        setAuditLogs([])
+        setEmployees([])
+        if (error instanceof Error) {
+          setErrorMessage(error.message)
+        } else {
+          setErrorMessage("Unable to load workspace data.")
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    })()
   }, [employeeId, reloadKey])
 
   const requests = useMemo(
@@ -48,13 +84,24 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
     )
   const refetch = () => setReloadKey((current) => current + 1)
 
+  const markNotificationAsRead = async (auditId: number) => {
+    if (!employeeId) return
+    await markNotificationRead(auditId, employeeId)
+    setNotifications((current) =>
+      current.map((item) =>
+        item.auditId === auditId ? { ...item, isRead: true } : item
+      )
+    )
+  }
+
   return {
-    auditLogs: AUDIT_LOGS,
+    auditLogs,
     defaultRoute: getDefaultRoute(role),
-    employees: EMPLOYEES,
+    employees,
     errorMessage,
     isLoading,
-    notifications: NOTIFICATIONS.filter((item) => item.recipientRole === role),
+    markNotificationAsRead,
+    notifications: notifications.filter((item) => item.recipientRole === role),
     refetch,
     requests,
     role,

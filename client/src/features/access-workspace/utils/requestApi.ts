@@ -4,6 +4,10 @@ import type {
   AccessRequestDetails,
   AccessRequestItem,
   AggregateStatus,
+  AppRole,
+  AuditLogItem,
+  EmployeeRecord,
+  NotificationItem,
   RequestStatus,
 } from "../types"
 
@@ -166,6 +170,71 @@ export async function fetchAccessRequestDetails(
   if (!response.ok) throw new Error("Unable to load request details.")
   const payload = await response.json()
   return mapAccessRequestDetails(payload)
+}
+
+export async function fetchNotifications(
+  employeeId: number
+): Promise<NotificationItem[]> {
+  const response = await fetch(`${API_URL}/notifications/${employeeId}`)
+  if (!response.ok) throw new Error("Unable to load notifications.")
+
+  const payload = await response.json()
+  return payload.map((item: any) => ({
+    auditId: item.auditId,
+    accessReqId: item.accessReqId,
+    eventType: item.eventType,
+    message: item.message,
+    recipientRole: item.recipientRole as AppRole,
+    createdOn:
+      typeof item.createdOn === "string"
+        ? item.createdOn
+        : new Date(item.createdOn).toLocaleString(),
+    isRead: item.isRead,
+  }))
+}
+
+export async function markNotificationRead(
+  auditId: number,
+  employeeId: number
+) {
+  const response = await fetch(`${API_URL}/notifications/${auditId}/read`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ EmployeeId: employeeId }),
+  })
+  if (!response.ok) throw new Error("Unable to update notification status.")
+}
+
+export async function fetchAuditLogs(): Promise<AuditLogItem[]> {
+  const response = await fetch(`${API_URL}/audit-logs`)
+  if (!response.ok) throw new Error("Unable to load audit logs.")
+
+  const payload = await response.json()
+  return payload.map((item: any) => ({
+    auditId: item.auditId,
+    actor: item.actor,
+    eventType: item.eventType,
+    requestId: item.requestId,
+    createdOn:
+      typeof item.createdOn === "string"
+        ? item.createdOn
+        : new Date(item.createdOn).toLocaleString(),
+    details: item.details,
+  }))
+}
+
+export async function fetchAllUsers(): Promise<EmployeeRecord[]> {
+  const response = await fetch(`${API_URL}/User/GetAllUsers`)
+  if (!response.ok) throw new Error("Unable to load employees.")
+
+  const payload = await response.json()
+  return payload.users.map((item: any) => ({
+    employeeId: item.employeeId,
+    name: item.name,
+    departmentName: item.departmentName,
+    role: item.role as AppRole,
+    email: item.email,
+  }))
 }
 
 export async function reviewAccessRequestByHod(

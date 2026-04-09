@@ -28,6 +28,10 @@ export function useRequestDetailsPage(
   const [isReviewOpen, setIsReviewOpen] = useState(false)
   const [isResubmitOpen, setIsResubmitOpen] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState(0)
+  const canRevoke =
+    details &&
+    ["Approved", "Granted"].includes(details.status) &&
+    role === "Hod"
   const canReviewAsHod = role === "Hod" && details?.status === "Pending HOD"
   const canReviewAsIt = role === "ItTeam" && details?.status === "Pending IT"
   const canResubmit =
@@ -53,7 +57,10 @@ export function useRequestDetailsPage(
   }
   const handleReviewClose = () => setIsReviewOpen(false)
 
-  const handleReview = async (comments: string, confirmAccessType: number = 1) => {
+  const handleReview = async (
+    comments: string,
+    confirmAccessType: number = 1
+  ) => {
     if (!details) return
     setIsPending(true)
     try {
@@ -85,6 +92,7 @@ export function useRequestDetailsPage(
 
   return {
     canResubmit,
+    canRevoke,
     canReviewAsHod,
     canReviewAsIt,
     handleBack,

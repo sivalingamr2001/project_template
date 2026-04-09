@@ -57,7 +57,10 @@ function CreateRequestModal({
               Fill the file user request details and submit for approval.
             </p>
           </div>
-          <IconX className="size-5 cursor-pointer text-muted-foreground" onClick={onClose} />
+          <IconX
+            className="size-5 cursor-pointer text-muted-foreground"
+            onClick={onClose}
+          />
         </div>
         {errorMessage ? (
           <p className="mb-4 text-sm text-destructive">{errorMessage}</p>

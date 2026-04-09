@@ -108,7 +108,11 @@ export const router = createBrowserRouter([
               { path: "it/audit-log", element: <AuditLogPage /> },
             ],
           },
-          { path: "requests/:requestId/items/:itemId", element: <RequestDetailsPage /> },
+          { path: "requests/:requestId", element: <RequestDetailsPage /> },
+          {
+            path: "requests/:requestId/items/:itemId",
+            element: <RequestDetailsPage />,
+          },
         ],
       },
     ],

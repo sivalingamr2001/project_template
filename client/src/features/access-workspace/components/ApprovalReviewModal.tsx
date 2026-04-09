@@ -131,26 +131,26 @@ function ApprovalReviewModal({
                     <Input disabled value={item.accessType} />
                   </Field>
 
-                  {role === "Hod" && (
-                    <Field
-                      label={`Confirm Access Type${role === "Hod" ? " (HOD)" : ""}`}
+                  <Field
+                    label={`Confirm Access Type${role === "Hod" ? " (HOD)" : ""}`}
+                  >
+                    <Select
+                      // Disable the dropdown if the user is NOT a Hod
+                      disabled={role !== "Hod"}
+                      value={String(confirmAccessType)}
+                      onValueChange={(value) =>
+                        setConfirmAccessType(Number(value))
+                      }
                     >
-                      <Select
-                        value={String(confirmAccessType)}
-                        onValueChange={(value) =>
-                          setConfirmAccessType(Number(value))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Read Only</SelectItem>
-                          <SelectItem value="2">Read & Write</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Read Only</SelectItem>
+                        <SelectItem value="2">Read & Write</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
                 </div>
               </div>
             ))}

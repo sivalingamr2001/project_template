@@ -5,6 +5,7 @@ import type {
   EmployeeRecord,
   TableColumn,
 } from "../types"
+import { Link } from "react-router-dom"
 
 const userData = GetCurrentUser()
 
@@ -42,6 +43,18 @@ export const requestColumns: TableColumn<AccessRequest>[] = [
     ),
   },
   { key: "itsr", header: "ITSR", render: (row) => row.itsrNo ?? "--" },
+  {
+    key: "view",
+    header: "View",
+    render: (row) => (
+      <Link
+        className="text-sm font-semibold text-primary hover:underline"
+        to={`/requests/${row.accessReqId}`}
+      >
+        View
+      </Link>
+    ),
+  },
 ]
 
 export const employeeColumns: TableColumn<EmployeeRecord>[] = [

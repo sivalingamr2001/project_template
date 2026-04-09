@@ -1,12 +1,11 @@
-import { Link } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { GetCurrentUser } from "@/lib/utils"
+import { useMemo, useState } from "react"
 import CommonTable from "./components/CommonTable"
 import PageSection from "./components/PageSection"
 import { useAccessWorkspace } from "./hooks/useAccessWorkspace"
 import type { QueueMode } from "./types"
 import { requestColumns } from "./utils/tableColumns"
-import { Button } from "@/components/ui/button"
-import { GetCurrentUser } from "@/lib/utils"
-import { useMemo, useState } from "react"
 // Import Modal Components (Assuming Shadcn/UI)
 import {
   Dialog,
@@ -72,59 +71,6 @@ function ReviewQueuePage({ description, mode, title }: ReviewQueuePageProps) {
         getRowId={(row) => row.accessReqId}
         pageSize={5}
         rows={isLoading ? [] : requests}
-        renderExpandedRow={(row) => (
-          <div className="m-2 rounded-lg border border-dashed border-border bg-muted/30 p-4">
-            <div className="mb-2 grid grid-cols-4 gap-4 px-2 text-[10px] font-bold text-muted-foreground uppercase">
-              <span>Folder Path</span>
-              <span>Access Type</span>
-              <span>Reason</span>
-              <span>Actions</span>
-            </div>
-
-            <div className="space-y-1">
-              {row.accessItems?.map((item: any) => (
-                <div
-                  key={item.accessItemId}
-                  className="grid grid-cols-4 gap-4 rounded border border-border/50 bg-background p-2 text-xs"
-                >
-                  <span className="font-mono break-all text-primary">
-                    {item.folderPath}
-                  </span>
-                  <span>
-                    {item.accessType === 2 ? "Read & Write" : "Read Only"}
-                  </span>
-                  <span className="line-clamp-1 text-muted-foreground italic">
-                    {item.reason}
-                  </span>
-                  <span className="flex items-center gap-3">
-                    <Link
-                      to={`/requests/${row.accessReqId}/items/${item.accessItemId}`}
-                      className="inline-flex items-center gap-1 font-medium text-blue-600 hover:underline"
-                    >
-                      Details
-                    </Link>
-
-                    {/* Revoke: Only for IT Team AND if status is Approved/Granted */}
-                    {userData?.role === "ItTeam" &&
-                      row.aggregateStatus === "Approved" && (
-                        <button
-                          onClick={() =>
-                            handleRevokeClick(
-                              row.accessReqId,
-                              item.accessItemId
-                            )
-                          }
-                          className="font-medium text-red-600 hover:underline"
-                        >
-                          Revoke
-                        </button>
-                      )}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
         emptyMessage={isLoading ? "Loading..." : "No requests found."}
       />
 
