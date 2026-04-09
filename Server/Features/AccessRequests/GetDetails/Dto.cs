@@ -24,6 +24,12 @@ public sealed record AccessRequestItemDto(
     int AccessItemId,
     string FolderPath,
     AccessTypes AccessType,
+    AccessTypes ConfirmAccessType,
+    AggregateRequestStatus HodValidationStatus,
+    string HodValidationComments,
+    bool IsHodValidated,
+    DateTime? AccessGrantedOn,
+    DateTime? AccessValidUntil,
     string Reason,
     DateTime CreatedOn);
 

@@ -91,8 +91,14 @@ export type AccessTypeLabel = "Not Applicable" | "Read Only" | "Read & Write"
 export type AccessRequestItem = {
   accessItemId: number
   accessType: AccessTypeLabel
+  accessGrantedOn: string | null
+  accessValidUntil: string | null
+  confirmAccessType: AccessTypeLabel
   createdOn: string
   folderPath: string
+  hodValidationComments: string
+  hodValidationStatus: AggregateStatus
+  isHodValidated: boolean
   reason: string
 }
 export type AccessRequestApproval = {

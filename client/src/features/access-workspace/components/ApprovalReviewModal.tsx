@@ -19,17 +19,25 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import type { AccessRequestDetails } from "../types"
+import type { AccessRequestDetails, AccessRequestItem } from "../types"
 
 type ApprovalReviewModalProps = {
   actionType: "approve" | "reject" | null
   details: AccessRequestDetails | null
   isOpen: boolean
   isPending: boolean
-  selectedItemId?: number
+  item: AccessRequestItem | null
   onClose: () => void
-  onSubmit: (comments: string, confirmAccessType: number) => void
+  onSubmit: (payload: {
+    approved: boolean
+    comments: string
+    confirmAccessType: number
+  }) => void
   role: "Hod" | "ItTeam"
+  reviewState?: {
+    comments: string
+    confirmAccessType: number
+  } | null
 }
 
 function ApprovalReviewModal({
@@ -37,157 +45,132 @@ function ApprovalReviewModal({
   details,
   isOpen,
   isPending,
-  selectedItemId,
+  item,
   onClose,
   onSubmit,
   role,
+  reviewState,
 }: ApprovalReviewModalProps) {
   const [comments, setComments] = useState("")
   const [confirmAccessType, setConfirmAccessType] = useState<number>(1)
 
-  // Filter to show only selected item, or all items if none selected
-  const itemsToShow = selectedItemId
-    ? details?.items.filter((item) => item.accessItemId === selectedItemId) ||
-      []
-    : details?.items || []
-
   useEffect(() => {
-    if (!details) return
-    setComments("")
+    if (!item) return
 
-    // Get the confirm access type for the selected item
-    const selectedItem = selectedItemId
-      ? details.items.find((item) => item.accessItemId === selectedItemId)
-      : details.items[0]
-
-    if (selectedItem) {
-      const accessTypeValue =
-        selectedItem.accessType === "Read & Write"
+    setComments(reviewState?.comments ?? "")
+    setConfirmAccessType(
+      reviewState?.confirmAccessType ??
+        (item.confirmAccessType === "Read & Write" ||
+        item.accessType === "Read & Write"
           ? 2
-          : selectedItem.accessType === "Read Only"
-            ? 1
-            : 0
-      setConfirmAccessType(accessTypeValue)
-    }
-  }, [details?.accessReqId, selectedItemId, actionType, isOpen])
+          : 1)
+    )
+  }, [actionType, isOpen, item, reviewState])
 
-  if (!details || !actionType) return null
-
-  const handleSubmit = () => {
-    onSubmit(comments, confirmAccessType)
-  }
+  if (!details || !actionType || !item) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl! sm:max-w-4xl!">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {role === "Hod" ? "HOD Review & Approval" : "IT Review & Approval"}{" "}
-            • Request #{details.accessReqId}
+            {role === "Hod" ? "Validate Child Access Item" : "Review Access Request"}{" "}
+            #{details.accessReqId}
           </DialogTitle>
           <DialogDescription>
             {actionType === "approve"
-              ? `Click approve to ${role === "Hod" ? "verify access types and" : ""} authorize this request`
-              : `Click reject to deny this access request`}
+              ? role === "Hod"
+                ? "Confirm the final access type for this child item and mark it as validated."
+                : "Approve this request to grant access for all validated child items."
+              : role === "Hod"
+                ? "Reject this child item and record the reason."
+                : "Reject this request and record the IT review comment."}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <Field label="Employee ID">
             <Input disabled value={details.empId} />
           </Field>
           <Field label="Requester">
             <Input disabled value={details.requesterName} />
           </Field>
-          <Field label="Department">
-            <Input disabled value={details.departmentName} />
+          <Field label="Folder Path">
+            <Input disabled value={item.folderPath} />
           </Field>
-          <Field label="ITSR Number">
-            <Input disabled value={details.itsrNo || ""} />
-          </Field>
-        </div>
-
-        {/* Access Items Section */}
-        <div className="space-y-3 border-t pt-4">
-          <h3 className="font-semibold">Access Items</h3>
-          <div className="max-h-[40vh] space-y-3 overflow-y-auto">
-            {/* Here selected access item details are shown for review and approval. */}
-            {itemsToShow.map((item) => (
-              <div
-                key={item.accessItemId}
-                className="rounded-lg border border-border bg-muted/50 p-4"
-              >
-                <div className="mb-3 grid gap-3 md:grid-cols-2">
-                  <Field label="Folder Path">
-                    <Input disabled value={item.folderPath} />
-                  </Field>
-                  <Field label="Reason for Access">
-                    <Input disabled value={item.reason} />
-                  </Field>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  <Field label="Requested Access Type">
-                    <Input disabled value={item.accessType} />
-                  </Field>
-
-                  {role === "Hod" && (
-                    <Field
-                      label={`Confirm Access Type${role === "Hod" ? " (HOD)" : ""}`}
-                    >
-                      <Select
-                        value={String(confirmAccessType)}
-                        onValueChange={(value) =>
-                          setConfirmAccessType(Number(value))
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">Read Only</SelectItem>
-                          <SelectItem value="2">Read & Write</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Comments Section */}
-        <div className="space-y-3 border-t pt-4">
-          <Field
-            label={`${role === "Hod" ? "HOD" : "IT"} Comments & Verification`}
-          >
-            <Textarea
-              className="min-h-32"
-              placeholder={`Add your ${role === "Hod" ? "verification" : "review"} comments...`}
-              value={comments}
-              onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                setComments(event.target.value)
-              }
-            />
+          <Field label="Requested Access Type">
+            <Input disabled value={item.accessType} />
           </Field>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex justify-end gap-3 border-t pt-4">
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
+        <Field label="Reason">
+          <Textarea disabled rows={3} value={item.reason} />
+        </Field>
+
+        {role === "Hod" ? (
+          <Field label="Confirm Access Type">
+            <Select
+              value={String(confirmAccessType)}
+              onValueChange={(value) => setConfirmAccessType(Number(value))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Read Only</SelectItem>
+                <SelectItem value="2">Read & Write</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+        ) : null}
+
+        <Field
+          label={
+            actionType === "reject"
+              ? "Comments"
+              : role === "Hod"
+                ? "Validation Notes"
+                : "IT Comments"
+          }
+        >
+          <Textarea
+            className="min-h-28"
+            placeholder={
+              actionType === "reject"
+                ? "Comments are required for rejection."
+                : "Optional notes"
+            }
+            value={comments}
+            onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
+              setComments(event.target.value)
+            }
+          />
+        </Field>
+
+        <div className="flex justify-end gap-3">
+          <Button disabled={isPending} variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            disabled={isPending}
+            disabled={isPending || (actionType === "reject" && !comments.trim())}
             variant={actionType === "reject" ? "destructive" : "default"}
-            onClick={handleSubmit}
+            onClick={() =>
+              onSubmit({
+                approved: actionType === "approve",
+                comments,
+                confirmAccessType,
+              })
+            }
           >
             {isPending
-              ? "Processing..."
-              : actionType === "reject"
-                ? "Reject Request"
-                : "Approve & Confirm"}
+              ? "Saving..."
+              : actionType === "approve"
+                ? role === "Hod"
+                  ? "Save Validation"
+                  : "Approve Request"
+                : role === "Hod"
+                  ? "Reject Item"
+                  : "Reject Request"}
           </Button>
         </div>
       </DialogContent>

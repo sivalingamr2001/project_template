@@ -7,6 +7,7 @@ import {
 
 import { IconX } from "@tabler/icons-react"
 import { NewRequestForm } from "../request-form"
+import { toast } from "sonner"
 
 type CreateRequestModalProps = {
   initialData?: AccessRequestFormPayload
@@ -34,6 +35,7 @@ function CreateRequestModal({
       await createAccessRequest(values)
       onSuccess?.()
       onClose()
+      toast.success("Access request created successfully.")
     } catch (error) {
       setErrorMessage(
         error instanceof Error

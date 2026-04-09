@@ -75,6 +75,10 @@ public sealed class AccessRequestWorkflowService(
                 AccessReqId = accessRequest.AccessReqId, // This will be set correctly by EF for new or existing parent
                 FolderPath = item.FolderPath.Trim(),
                 AccessType = (AccessTypes)item.AccessType,
+                ConfirmAccessType = AccessTypes.NotApplicable,
+                HodValidationStatus = AggregateRequestStatus.Pending,
+                HodValidationComments = string.Empty,
+                IsHodValidated = false,
                 Reason = item.Reason.Trim(),
                 CreatedBy = requester.EmployeeId.ToString(),
                 CreatedOn = utcNow,
@@ -103,31 +107,96 @@ public sealed class AccessRequestWorkflowService(
 
     public async Task<ReviewAccessRequestResponse> ReviewByHodAsync(int accessReqId, ReviewByHodRequest request, CancellationToken cancellationToken)
     {
-        // Basic Validations
         if (request.ReviewerEmployeeId <= 0)
         {
             throw new AppValidationException("Reviewer employee id must be greater than zero.");
         }
 
-        if (!request.Approved && string.IsNullOrWhiteSpace(request.Comments))
+        if (request.Items.Count == 0)
         {
-            throw new AppValidationException("Comments are required when HOD rejects a request.");
+            throw new AppValidationException("HOD must review all child access items before submitting.");
         }
 
         var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Hod, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
 
-        var utcNow = DateTime.UtcNow;
-        var status = request.Approved ? RequestStatus.ApprovedHOD : RequestStatus.RejectedHOD;
+        if (accessRequest.Status != RequestStatus.PendingHOD)
+        {
+            throw new AppValidationException("Only requests pending HOD review can be reviewed by HOD.");
+        }
 
-        // 1. Add Approval Record
+        var accessItems = await dbContext.AccessItems
+            .Where(item => item.AccessReqId == accessReqId)
+            .OrderBy(item => item.AccessItemId)
+            .ToListAsync(cancellationToken);
+
+        if (accessItems.Count == 0)
+        {
+            throw new AppValidationException("Access item details not found for this request.");
+        }
+
+        var submittedItems = request.Items
+            .GroupBy(item => item.AccessItemId)
+            .Select(group => group.Last())
+            .ToDictionary(item => item.AccessItemId);
+
+        if (submittedItems.Count != accessItems.Count || accessItems.Any(item => !submittedItems.ContainsKey(item.AccessItemId)))
+        {
+            throw new AppValidationException("HOD must validate every child access item before submitting.");
+        }
+
+        var utcNow = DateTime.UtcNow;
+        var rejectedItems = new List<AccessItemEntity>();
+        var approvedItems = new List<AccessItemEntity>();
+
+        foreach (var accessItem in accessItems)
+        {
+            var reviewItem = submittedItems[accessItem.AccessItemId];
+
+            if (!reviewItem.IsValidated)
+            {
+                throw new AppValidationException($"Access item #{accessItem.AccessItemId} is not marked as validated.");
+            }
+
+            if (!reviewItem.Approved && string.IsNullOrWhiteSpace(reviewItem.Comments))
+            {
+                throw new AppValidationException($"Comments are required when rejecting access item #{accessItem.AccessItemId}.");
+            }
+
+            accessItem.IsHodValidated = true;
+            accessItem.HodValidationStatus = reviewItem.Approved
+                ? AggregateRequestStatus.Approved
+                : AggregateRequestStatus.Rejected;
+            accessItem.HodValidationComments = reviewItem.Comments?.Trim() ?? string.Empty;
+            accessItem.ConfirmAccessType = reviewItem.Approved
+                ? reviewItem.ConfirmAccessType
+                : AccessTypes.NotApplicable;
+            accessItem.ModifiedBy = reviewer.EmployeeId.ToString();
+            accessItem.ModifiedOn = utcNow;
+
+            if (reviewItem.Approved)
+            {
+                approvedItems.Add(accessItem);
+            }
+            else
+            {
+                rejectedItems.Add(accessItem);
+            }
+        }
+
+        var requestApproved = rejectedItems.Count == 0;
+        var status = requestApproved ? RequestStatus.ApprovedHOD : RequestStatus.RejectedHOD;
+        var summaryComment = requestApproved
+            ? $"HOD validated {approvedItems.Count} child access item(s)."
+            : $"HOD validated {approvedItems.Count} child access item(s) and rejected {rejectedItems.Count} item(s).";
+
         dbContext.AccessApprovals.Add(new AccessApprovalEntity
         {
             AccessReqId = accessRequest.AccessReqId,
             ApproverId = reviewer.EmployeeId,
             ApprovalStatus = status,
-            Comments = request.Comments?.Trim() ?? string.Empty,
+            Comments = summaryComment,
             CreatedBy = reviewer.EmployeeId.ToString(),
             CreatedOn = utcNow,
             ModifiedBy = reviewer.EmployeeId.ToString(),
@@ -138,27 +207,12 @@ public sealed class AccessRequestWorkflowService(
         string eventType;
         string message;
 
-        if (request.Approved)
+        if (requestApproved)
         {
-            // 2. Update the AccessItems record with the HOD's confirmed type
-            var accessItem = await dbContext.AccessItems
-                .FirstOrDefaultAsync(x => x.AccessReqId == accessReqId, cancellationToken);
-
-            if (accessItem == null)
-            {
-                throw new AppValidationException("Access item details not found for this request.");
-            }
-
-            // Update with the HOD's selection (whether it's the same as requested or changed)
-            accessItem.ConfirmAccessType = request.ConfirmAccessType;
-            accessItem.ModifiedBy = reviewer.EmployeeId.ToString();
-            accessItem.ModifiedOn = utcNow;
-
-            // Routing to IT
             var itApprover = await ResolveItApproverAsync(cancellationToken);
             recipients = [requester, itApprover, reviewer];
             eventType = "hod.approved";
-            message = $"HOD approved access request #{accessRequest.AccessReqId} as '{request.ConfirmAccessType}'. Now pending IT review.";
+            message = $"HOD validated all child access items for request #{accessRequest.AccessReqId}. The request is now pending IT review.";
 
             accessRequest.Status = RequestStatus.PendingIT;
             accessRequest.AggregateStatus = AggregateRequestStatus.Pending;
@@ -168,7 +222,7 @@ public sealed class AccessRequestWorkflowService(
         {
             recipients = [requester, reviewer];
             eventType = "hod.rejected";
-            message = $"HOD rejected access request #{accessRequest.AccessReqId}. Comments: {request.Comments!.Trim()}";
+            message = $"HOD rejected request #{accessRequest.AccessReqId} after validating all child access items. The requester must resubmit the request.";
 
             accessRequest.Status = RequestStatus.RejectedHOD;
             accessRequest.AggregateStatus = AggregateRequestStatus.Rejected;
@@ -178,7 +232,27 @@ public sealed class AccessRequestWorkflowService(
         accessRequest.ModifiedBy = reviewer.EmployeeId.ToString();
         accessRequest.ModifiedOn = utcNow;
 
-        // 3. Audit and Persistence
+        foreach (var accessItem in accessItems)
+        {
+            var itemEventType = accessItem.HodValidationStatus == AggregateRequestStatus.Approved
+                ? "hod.item.approved"
+                : "hod.item.rejected";
+            var itemMessage = accessItem.HodValidationStatus == AggregateRequestStatus.Approved
+                ? $"HOD approved child item #{accessItem.AccessItemId} for folder '{accessItem.FolderPath}' with '{accessItem.ConfirmAccessType}'."
+                : $"HOD rejected child item #{accessItem.AccessItemId} for folder '{accessItem.FolderPath}'. Comments: {accessItem.HodValidationComments}";
+
+            await AddAuditEntriesAsync(
+                accessRequest.AccessReqId,
+                accessItem.AccessItemId,
+                null,
+                itemEventType,
+                itemMessage,
+                recipients,
+                reviewer.EmployeeId.ToString(),
+                utcNow,
+                cancellationToken);
+        }
+
         await AddAuditEntriesAsync(
             accessRequest.AccessReqId,
             null,
@@ -253,14 +327,26 @@ public sealed class AccessRequestWorkflowService(
             accessRequest.AggregateStatus = AggregateRequestStatus.Approved;
             accessRequest.ItsrNo = request.ItsrNo!.Trim();
             accessRequest.ReqTo = requester.EmployeeId;
+
+            var itemRows = await dbContext.AccessItems
+                .Where(item => item.AccessReqId == accessRequest.AccessReqId)
+                .ToListAsync(cancellationToken);
+
+            foreach (var item in itemRows)
+            {
+                item.AccessGrantedOn = utcNow;
+                item.AccessValidUntil = utcNow.AddDays(365);
+                item.ModifiedBy = reviewer.EmployeeId.ToString();
+                item.ModifiedOn = utcNow;
+            }
         }
         else
         {
             eventType = "it.rejected";
-            message = $"IT rejected access request #{accessRequest.AccessReqId}. Comments: {request.Comments!.Trim()}";
+            message = $"IT rejected access request #{accessRequest.AccessReqId}. HOD must resubmit the request. Comments: {request.Comments!.Trim()}";
             accessRequest.Status = RequestStatus.RejectedIT;
             accessRequest.AggregateStatus = AggregateRequestStatus.Rejected;
-            accessRequest.ReqTo = requester.EmployeeId;
+            accessRequest.ReqTo = hodRecipients.FirstOrDefault()?.EmployeeId ?? reviewer.EmployeeId;
         }
 
         accessRequest.ModifiedBy = reviewer.EmployeeId.ToString();
@@ -407,6 +493,10 @@ public sealed class AccessRequestWorkflowService(
             AccessReqId = renewalRequest.AccessReqId,
             FolderPath = item.FolderPath,
             AccessType = item.AccessType,
+            ConfirmAccessType = AccessTypes.NotApplicable,
+            HodValidationStatus = AggregateRequestStatus.Pending,
+            HodValidationComments = string.Empty,
+            IsHodValidated = false,
             Reason = item.Reason,
             CreatedBy = requester.EmployeeId.ToString(),
             CreatedOn = utcNow,
@@ -460,6 +550,12 @@ public sealed class AccessRequestWorkflowService(
                 item.AccessItemId,
                 item.FolderPath,
                 item.AccessType,
+                item.ConfirmAccessType,
+                item.HodValidationStatus,
+                item.HodValidationComments,
+                item.IsHodValidated,
+                item.AccessGrantedOn,
+                item.AccessValidUntil,
                 item.Reason,
                 item.CreatedOn))
             .ToList();

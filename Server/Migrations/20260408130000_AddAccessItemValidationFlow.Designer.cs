@@ -11,10 +11,9 @@ using Server.Infrastructure.Db;
 namespace Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260408174645_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260408130000_AddAccessItemValidationFlow")]
+    partial class AddAccessItemValidationFlow
     {
-        /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
@@ -81,6 +80,14 @@ namespace Server.Migrations
                         .HasColumnType("INTEGER")
                         .HasColumnName("access_type");
 
+                    b.Property<DateTime?>("AccessGrantedOn")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("access_granted_on");
+
+                    b.Property<DateTime?>("AccessValidUntil")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("access_valid_until");
+
                     b.Property<int>("ConfirmAccessType")
                         .HasColumnType("INTEGER")
                         .HasColumnName("confirm_access_type");
@@ -98,6 +105,19 @@ namespace Server.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("folder_path");
+
+                    b.Property<string>("HodValidationComments")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("hod_validation_comments");
+
+                    b.Property<int>("HodValidationStatus")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("hod_validation_status");
+
+                    b.Property<bool>("IsHodValidated")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_hod_validated");
 
                     b.Property<string>("ModifiedBy")
                         .HasColumnType("TEXT")

@@ -64,6 +64,14 @@ function RequestReportDetails({ details }: RequestReportDetailsProps) {
               </ReportBadge>
             </div>
           </ReportField>
+          <ReportField
+            label="Confirmed by HOD"
+            value={
+              primaryItem?.confirmAccessType === "Not Applicable"
+                ? "Pending validation"
+                : primaryItem?.confirmAccessType
+            }
+          />
           <ReportField label="Reason for Access" value={primaryItem?.reason} />
         </div>
       </div>

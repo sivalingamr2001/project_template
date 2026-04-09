@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom"
 
 import { useAuth } from "@/context/AuthContext"
 import { useAccessWorkspace } from "@/features/access-workspace/hooks/useAccessWorkspace"
+import type { NotificationItem } from "@/features/access-workspace/types"
 import { cn } from "@/lib/utils"
 import NotificationSheet from "./components/NotificationSheet"
 import UserMenu from "./components/UserMenu"
@@ -16,7 +17,10 @@ type AppHeaderProps = {
 export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
-  const { notifications } = useAccessWorkspace("dashboard")
+  const { markNotificationRead, notifications } = useAccessWorkspace(
+    "dashboard",
+    "notifications"
+  )
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const hasUnread = notifications.some((item) => !item.isRead)
@@ -26,6 +30,14 @@ export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
   const handleNotificationOpenChange = (isOpen: boolean) =>
     setIsNotificationOpen(isOpen)
   const handleProfile = () => navigate("/profile")
+  const handleNotificationSelect = async (notification: NotificationItem) => {
+    if (!notification.isRead) {
+      await markNotificationRead(notification.auditId)
+    }
+
+    setIsNotificationOpen(false)
+    navigate(`/requests/${notification.accessReqId}`)
+  }
 
   return (
     <header className="flex min-h-14 items-center justify-between gap-3 rounded-[0.5rem] border border-border bg-card px-4">
@@ -61,6 +73,7 @@ export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
         isOpen={isNotificationOpen}
         notifications={notifications}
         onOpenChange={handleNotificationOpenChange}
+        onSelectNotification={handleNotificationSelect}
       />
     </header>
   )

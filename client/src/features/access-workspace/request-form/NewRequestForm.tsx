@@ -3,7 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { useApp } from "@/hooks/useApp"
 import { IconPlus } from "@tabler/icons-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import AccessDetail from "./AccessDetails"
 import { useAccessRequestForm } from "./hooks/useAccessRequestForm"
 import type { NewRequestFormProps } from "./types"
@@ -29,6 +29,8 @@ export function NewRequestForm({
     initialData,
     mode
   )
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const displayUser =
     fetchedUser || (formData.empId === me ? currentUser : null)
@@ -63,11 +65,22 @@ export function NewRequestForm({
     }
   }, [formData.empId, me, myHod, setFormData])
 
-  const handleAddDetail = () =>
+  const handleAddDetail = () => {
     setFormData((current) => ({
       ...current,
       items: [...current.items, createDefaultPayload(me, myHod).items[0]],
     }))
+    setExpandedIndex(formData.items.length)
+    // Small delay to allow DOM update before scrolling
+    setTimeout(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior: "smooth",
+        })
+      }
+    }, 100)
+  }
 
   const handleRemoveDetail = (index: number) => {
     setFormData((prev) => ({
@@ -86,6 +99,10 @@ export function NewRequestForm({
         i === index ? { ...item, [field]: value } : item
       ),
     }))
+  }
+
+  const handleToggleDetail = (index: number) => {
+    setExpandedIndex((prev) => (prev === index ? null : index))
   }
 
   return (
@@ -114,7 +131,7 @@ export function NewRequestForm({
           <h3 className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Access Details
           </h3>
-          {currentRole === "User" && (
+          {(currentRole === "User" || mode === "edit") && (
             <Button
               type="button"
               size="sm"
@@ -126,17 +143,25 @@ export function NewRequestForm({
             </Button>
           )}
         </div>
-        {formData.items.map((detail, index) => (
-          <AccessDetail
-            key={index}
-            index={index}
-            detail={detail}
-            totalItems={formData.items.length}
-            currentRole={currentRole}
-            onRemove={handleRemoveDetail}
-            onChange={handleDetailChange}
-          />
-        ))}
+        <div
+          ref={scrollContainerRef}
+          className="max-h-[450px] space-y-4 overflow-y-auto pr-1"
+        >
+          {formData.items.map((detail, index) => (
+            <AccessDetail
+              key={index}
+              index={index}
+              detail={detail}
+              isExpanded={expandedIndex === index}
+              totalItems={formData.items.length}
+              currentRole={currentRole}
+              onRemove={handleRemoveDetail}
+              onToggle={handleToggleDetail}
+              onChange={handleDetailChange}
+              mode={mode}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="space-y-3">

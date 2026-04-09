@@ -11,11 +11,21 @@ type RequestReportItSectionProps = {
 
 function RequestReportItSection({ details }: RequestReportItSectionProps) {
   const itReviewer = getItReviewer(details)
+  const primaryItem = details.items[0]
   const rows = [
     ["Date Received", formatRequestDate(details.createdOn)],
-    ["Date Access Provided", formatRequestDate(getItProvisionDate(details))],
+    [
+      "Date Access Provided",
+      formatRequestDate(primaryItem?.accessGrantedOn || getItProvisionDate(details)),
+    ],
     ["Access Granted By", itReviewer?.approverName || "—"],
-    ["Access Level Assigned", details.items[0]?.accessType || "Not Applicable"],
+    [
+      "Access Level Assigned",
+      primaryItem?.confirmAccessType === "Not Applicable"
+        ? primaryItem?.accessType || "Not Applicable"
+        : primaryItem?.confirmAccessType || "Not Applicable",
+    ],
+    ["Access Valid Until", formatRequestDate(primaryItem?.accessValidUntil || null)],
   ]
 
   return (

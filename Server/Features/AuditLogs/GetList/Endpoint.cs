@@ -1,10 +1,12 @@
+using Microsoft.AspNetCore.Builder;
+
 namespace Server.Features.AuditLogs.GetList;
 
 public static class GetAuditLogsEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet(string.Empty, async (
+        group.MapGet("/", async (
             GetAuditLogsService service,
             CancellationToken cancellationToken) =>
         {

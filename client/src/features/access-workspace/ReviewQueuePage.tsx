@@ -90,9 +90,7 @@ function ReviewQueuePage({ description, mode, title }: ReviewQueuePageProps) {
                   <span className="font-mono break-all text-primary">
                     {item.folderPath}
                   </span>
-                  <span>
-                    {item.accessType === 2 ? "Read & Write" : "Read Only"}
-                  </span>
+                  <span>{String(item.accessType)}</span>
                   <span className="line-clamp-1 text-muted-foreground italic">
                     {item.reason}
                   </span>

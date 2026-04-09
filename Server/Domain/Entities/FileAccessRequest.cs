@@ -69,6 +69,21 @@ public class AccessItemEntity : BaseEntity
     [Column("confirm_access_type")]
     public AccessTypes ConfirmAccessType { get; set; }
 
+    [Column("hod_validation_status")]
+    public AggregateRequestStatus HodValidationStatus { get; set; } = AggregateRequestStatus.Pending;
+
+    [Column("hod_validation_comments")]
+    public string HodValidationComments { get; set; } = string.Empty;
+
+    [Column("is_hod_validated")]
+    public bool IsHodValidated { get; set; }
+
+    [Column("access_granted_on")]
+    public DateTime? AccessGrantedOn { get; set; }
+
+    [Column("access_valid_until")]
+    public DateTime? AccessValidUntil { get; set; }
+
     [Column("reason")]
     public string Reason { get; set; } = string.Empty;
 }

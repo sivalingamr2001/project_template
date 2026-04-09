@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Server.Features.AccessRequests.Common;
 using Server.Features.AccessRequests.Create;
 using Server.Features.AccessRequests.GetList;
+using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
@@ -50,6 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CreateAccessRequestService>();
         services.AddScoped<GetAccessRequestsService>();
         services.AddScoped<GetDashboardService>();
+        services.AddScoped<GetAuditLogsService>();
 
         services.AddCors(options =>
         {

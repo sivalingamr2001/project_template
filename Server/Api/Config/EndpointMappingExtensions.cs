@@ -6,6 +6,7 @@ using Server.Features.AccessRequests.Renew;
 using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
+using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
@@ -40,6 +41,9 @@ public static class EndpointMappingExtensions
         var notificationsGroup = app.MapGroup("/api/notifications").WithTags("Notifications");
         GetNotificationsEndpoint.Map(notificationsGroup);
         MarkNotificationReadEndpoint.Map(notificationsGroup);
+
+        var auditLogsGroup = app.MapGroup("/api/audit-logs").WithTags("Audit Logs");
+        GetAuditLogsEndpoint.Map(auditLogsGroup);
 
         app.MapHub<NotificationHub>("/hubs/notifications");
 

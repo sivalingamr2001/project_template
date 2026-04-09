@@ -12,6 +12,9 @@ export interface AccessDetailProps {
   currentRole: string | null
   detail: AccessRequestFormPayload["items"][number]
   index: number
+  isExpanded: boolean
+  mode: "create" | "edit"
+  onToggle: (index: number) => void
   onChange: (
     index: number,
     field: keyof AccessRequestFormPayload["items"][number],

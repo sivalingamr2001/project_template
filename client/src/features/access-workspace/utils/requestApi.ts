@@ -4,11 +4,15 @@ import type {
   AccessRequestDetails,
   AccessRequestItem,
   AggregateStatus,
+  AuditLogItem,
+  EmployeeRecord,
+  NotificationItem,
   RequestStatus,
 } from "../types"
 
 const API_URL =
   import.meta.env.VITE_API_BASE_URL ?? "https://localhost:7229/api"
+const API_ORIGIN = API_URL.replace(/\/api$/, "")
 const ACCESS_TYPE_MAP = ["Not Applicable", "Read Only", "Read & Write"] as const
 const AGGREGATE_STATUS_MAP = [
   "Pending",
@@ -33,20 +37,44 @@ const STATUS_MAP = [
 
 function mapAccessItem(item: {
   accessItemId: number
+  accessGrantedOn: string | null
   accessType: number | string
+  accessValidUntil: string | null
+  confirmAccessType: number | string
   createdOn: string
   folderPath: string
+  hodValidationComments: string
+  hodValidationStatus: number | string
+  isHodValidated: boolean
   reason: string
 }): AccessRequestItem {
-  const index =
+  const accessTypeIndex =
     typeof item.accessType === "number"
       ? item.accessType
       : ACCESS_TYPE_MAP.findIndex((value) => value === item.accessType)
+  const confirmAccessTypeIndex =
+    typeof item.confirmAccessType === "number"
+      ? item.confirmAccessType
+      : ACCESS_TYPE_MAP.findIndex((value) => value === item.confirmAccessType)
+  const hodStatusIndex =
+    typeof item.hodValidationStatus === "number"
+      ? item.hodValidationStatus
+      : AGGREGATE_STATUS_MAP.findIndex(
+          (value) => value === item.hodValidationStatus
+        )
+
   return {
     accessItemId: item.accessItemId,
-    accessType: ACCESS_TYPE_MAP[index] ?? "Not Applicable",
+    accessGrantedOn: item.accessGrantedOn,
+    accessType: ACCESS_TYPE_MAP[accessTypeIndex] ?? "Not Applicable",
+    accessValidUntil: item.accessValidUntil,
+    confirmAccessType:
+      ACCESS_TYPE_MAP[confirmAccessTypeIndex] ?? "Not Applicable",
     createdOn: item.createdOn,
     folderPath: item.folderPath,
+    hodValidationComments: item.hodValidationComments,
+    hodValidationStatus: AGGREGATE_STATUS_MAP[hodStatusIndex] ?? "Pending",
+    isHodValidated: item.isHodValidated,
     reason: item.reason,
   }
 }
@@ -95,9 +123,15 @@ function mapAccessRequestDetails(details: {
   empId: number
   items: Array<{
     accessItemId: number
+    accessGrantedOn: string | null
     accessType: number | string
+    accessValidUntil: string | null
+    confirmAccessType: number | string
     createdOn: string
     folderPath: string
+    hodValidationComments: string
+    hodValidationStatus: number | string
+    isHodValidated: boolean
     reason: string
   }>
   itsrNo: string | null
@@ -168,12 +202,101 @@ export async function fetchAccessRequestDetails(
   return mapAccessRequestDetails(payload)
 }
 
+export async function fetchNotifications(
+  employeeId: number
+): Promise<NotificationItem[]> {
+  const response = await fetch(`${API_URL}/notifications/${employeeId}`)
+  if (!response.ok) throw new Error("Unable to load notifications.")
+
+  const payload = (await response.json()) as Array<{
+    accessReqId: number
+    auditId: number
+    createdOn: string
+    eventType: string
+    isRead: boolean
+    message: string
+    recipientEmpId: number
+    recipientName: string
+    recipientRole: string
+  }>
+
+  return payload.map((item) => ({
+    accessReqId: item.accessReqId,
+    auditId: item.auditId,
+    createdOn: item.createdOn,
+    eventType: item.eventType,
+    isRead: item.isRead,
+    message: item.message,
+    recipientRole:
+      item.recipientRole === "Hod" || item.recipientRole === "ItTeam"
+        ? item.recipientRole
+        : "User",
+  }))
+}
+
+export async function markNotificationAsRead(
+  auditId: number,
+  employeeId: number
+) {
+  const response = await fetch(`${API_URL}/notifications/${auditId}/read`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ employeeId }),
+  })
+
+  if (!response.ok) throw new Error("Unable to update notification.")
+}
+
+export async function fetchEmployees(): Promise<EmployeeRecord[]> {
+  const response = await fetch(`${API_ORIGIN}/api/User/GetAllUsers`)
+  if (!response.ok) throw new Error("Unable to load employees.")
+
+  const payload = (await response.json()) as {
+    users: Array<{
+      departmentName: string
+      email: string
+      employeeId: number
+      name: string
+      role: string
+    }>
+  }
+
+  return payload.users.map((user) => ({
+    departmentName: user.departmentName,
+    email: user.email,
+    employeeId: user.employeeId,
+    name: user.name,
+    role:
+      user.role === "Hod" || user.role === "ItTeam" ? user.role : "User",
+  }))
+}
+
+export async function fetchAuditLogs(): Promise<AuditLogItem[]> {
+  const response = await fetch(`${API_URL}/audit-logs`)
+  if (!response.ok) throw new Error("Unable to load audit logs.")
+
+  const payload = (await response.json()) as Array<{
+    actor: string
+    auditId: number
+    createdOn: string
+    details: string
+    eventType: string
+    requestId: number
+  }>
+
+  return payload
+}
+
 export async function reviewAccessRequestByHod(
   accessReqId: number,
   reviewerEmployeeId: number,
-  approved: boolean,
-  comments: string,
-  confirmAccessType?: number
+  items: Array<{
+    accessItemId: number
+    approved: boolean
+    comments: string
+    confirmAccessType: number
+    isValidated: boolean
+  }>
 ) {
   const response = await fetch(
     `${API_URL}/access-requests/${accessReqId}/hod-review`,
@@ -182,9 +305,7 @@ export async function reviewAccessRequestByHod(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         reviewerEmployeeId,
-        approved,
-        comments,
-        confirmAccessType: confirmAccessType || 1,
+        items,
       }),
     }
   )
