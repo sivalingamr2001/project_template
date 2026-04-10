@@ -2,17 +2,32 @@ import type { AccessRequest, AppRole, QueueMode, SummaryCard } from "../types"
 
 const numberFormatter = new Intl.NumberFormat("en-US")
 
-function expandRequestsByItem(requests: AccessRequest[]) {
+function expandRequestsByItem(
+  requests: AccessRequest[],
+  filter?: (item: AccessRequest["accessItems"][number]) => boolean
+) {
   return requests.flatMap((request) => {
-    if (request.accessItems.length === 0) {
+    if (!request.accessItems.length) {
       return [request]
     }
 
-    return request.accessItems.map((accessItem) => ({
+    const items = filter
+      ? request.accessItems.filter(filter)
+      : request.accessItems
+
+    return items.map((accessItem) => ({
       ...request,
       accessItems: [accessItem],
     }))
   })
+}
+
+function isItemStatus(request: AccessRequest, status: string) {
+  return request.accessItems.some((item) => item.status === status)
+}
+
+function isItemStatusIncludes(request: AccessRequest, substring: string) {
+  return request.accessItems.some((item) => item.status.includes(substring))
 }
 
 export function getRequestsByMode(
@@ -26,27 +41,32 @@ export function getRequestsByMode(
     )
   if (mode === "hodPending")
     return expandRequestsByItem(
-      requests.filter((request) => request.status === "Pending HOD")
+      requests.filter((request) => isItemStatus(request, "Pending HOD")),
+      (item) => item.status === "Pending HOD"
     )
   if (mode === "hodHistory")
     return expandRequestsByItem(
       requests.filter(
         (request) =>
-          request.status.includes("HOD") && request.status !== "Pending HOD"
-      )
+          isItemStatusIncludes(request, "HOD") &&
+          !isItemStatus(request, "Pending HOD")
+      ),
+      (item) => item.status.includes("HOD") && item.status !== "Pending HOD"
     )
   if (mode === "hodAll") return expandRequestsByItem(requests)
   if (mode === "itQueue")
     return expandRequestsByItem(
-      requests.filter((request) => request.status === "Pending IT")
+      requests.filter((request) => isItemStatus(request, "Pending IT")),
+      (item) => item.status === "Pending IT"
     )
   if (mode === "itActive")
     return expandRequestsByItem(
       requests.filter(
         (request) =>
-          request.status === "Access Granted" ||
+          isItemStatus(request, "Access Granted") ||
           request.aggregateStatus === "Approved"
-      )
+      ),
+      (item) => item.status === "Access Granted"
     )
   return expandRequestsByItem(requests)
 }
@@ -75,8 +95,9 @@ export function getSummaryCards(
     {
       label: "Provisioned",
       value: numberFormatter.format(
-        userRequests.filter((request) => request.status === "Access Granted")
-          .length
+        userRequests.filter((request) =>
+              request.accessItems.some((item) => item.status === "Access Granted")
+        ).length
       ),
       detail: "Access granted and logged",
     },

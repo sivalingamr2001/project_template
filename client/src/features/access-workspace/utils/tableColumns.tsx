@@ -11,6 +11,11 @@ const userData = GetCurrentUser()
 
 export const requestColumns: TableColumn<AccessRequest>[] = [
   {
+    key: "accessItems",
+    header: "Items",
+    render: (row) => row.accessItems.map((item) => item.accessItemId).join(", "),
+  },
+  {
     key: "folderPath",
     header: "Folder Path",
     render: (row) => {
@@ -37,26 +42,34 @@ export const requestColumns: TableColumn<AccessRequest>[] = [
       </div>
     ),
   },
+  { key: "itsr", header: "ITSR", render: (row) => row.itsrNo ?? "--" },
   {
     key: "status",
     header: "Status",
-    render: (row) => row.status,
+    render: (row) => {
+      const status = row.accessItems[0]?.status || row.status
+      const statusColors: Record<string, string> = {
+        Approved: "bg-green-100 text-green-800",
+        Rejected: "bg-red-100 text-red-800",
+        Pending: "bg-yellow-100 text-yellow-800",
+      }
+      const colorClass = statusColors[status] || "bg-gray-100 text-gray-800"
+      return (
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colorClass}`}
+        >
+          {status}
+        </span>
+      )
+    },
   },
-  {
-    key: "aggregateStatus",
-    header: "OverallStatus",
-    render: (row) => (
-      <p className="text-sm text-muted-foreground">{row.aggregateStatus}</p>
-    ),
-  },
-  { key: "itsr", header: "ITSR", render: (row) => row.itsrNo ?? "--" },
   {
     key: "view",
     header: "View",
     render: (row) => (
       <Link
         className="text-sm font-semibold text-primary hover:underline"
-        to={`/requests/${row.accessReqId}`}
+        to={`/requests/${row.accessReqId}/items/${row.accessItems[0]?.accessItemId ?? "request"}`}
       >
         View
       </Link>

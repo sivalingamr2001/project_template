@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Server.Domain.Entities;
 
 namespace Server.Infrastructure.Db;

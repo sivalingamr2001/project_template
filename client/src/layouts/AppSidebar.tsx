@@ -23,7 +23,7 @@ function AppSidebar({ isCollapsed }: AppSidebarProps) {
       className={`flex h-full flex-col rounded-[0.75rem] border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground ${isCollapsed ? "w-20" : "w-72"}`}
     >
       <div
-        className={`mb-6 flex items-center rounded-2xl bg-sidebar-accent p-3 ${isCollapsed ? "justify-center" : "gap-3"}`}
+        className={`mb-6 flex items-center rounded-2xl bg-sidebar-accent p-3 ${isCollapsed ? "justify-center bg-transparent" : "gap-3"}`}
       >
         <div className="rounded-2xl bg-sidebar-primary p-3 text-sidebar-primary-foreground">
           <IconFolders className="size-5" />

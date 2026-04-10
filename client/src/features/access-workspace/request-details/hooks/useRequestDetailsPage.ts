@@ -10,6 +10,7 @@ import { getDefaultRoute } from "../../utils/accessSelectors"
 import {
   reviewAccessRequestByHod,
   reviewAccessRequestByIt,
+  revokeAccessRequest,
 } from "../../utils/requestApi"
 
 type Role = "Hod" | "ItTeam" | "User"
@@ -27,27 +28,30 @@ export function useRequestDetailsPage(
   )
   const [isReviewOpen, setIsReviewOpen] = useState(false)
   const [isResubmitOpen, setIsResubmitOpen] = useState(false)
+  const [isRevokeOpen, setIsRevokeOpen] = useState(false)
   const [selectedItemId, setSelectedItemId] = useState(0)
+  const selectedItem =
+    details?.items.find((item) => item.accessItemId === selectedItemId) ??
+    details?.items[0] ??
+    null
   const canRevoke =
     details &&
-    ["Approved", "Granted"].includes(details.status) &&
-    role === "Hod"
-  const canReviewAsHod = role === "Hod" && details?.status === "Pending HOD"
-  const canReviewAsIt = role === "ItTeam" && details?.status === "Pending IT"
+    selectedItem?.status === "Access Granted" &&
+    role === "ItTeam"
   const canResubmit =
     role === "User" &&
     details?.empId === reviewerEmployeeId &&
-    ["Rejected HOD", "Rejected IT", "Revoked"].includes(details?.status || "")
+    ["Rejected HOD", "Rejected IT", "Revoked"].includes(selectedItem?.status || "")
 
   useEffect(() => {
     if (!details) return
     setSelectedItemId((current) => current || findInitialItemId(details.items))
   }, [details])
 
-  const selectedItem =
-    details?.items.find((item) => item.accessItemId === selectedItemId) ??
-    details?.items[0] ??
-    null
+  const canReviewAsHod =
+    role === "Hod" && selectedItem?.status === "Pending HOD"
+  const canReviewAsIt =
+    role === "ItTeam" && selectedItem?.status === "Pending IT"
   const resubmitPayload = details ? buildResubmitPayload(details) : undefined
   const handleBack = () => navigate(-1)
   const handleResubmitSuccess = () => navigate(getDefaultRoute("User"))
@@ -56,6 +60,18 @@ export function useRequestDetailsPage(
     setIsReviewOpen(true)
   }
   const handleReviewClose = () => setIsReviewOpen(false)
+
+  const handleRevoke = async (comments: string) => {
+    if (!details) return
+    setIsPending(true)
+    try {
+      await revokeAccessRequest(details.accessReqId, selectedItemId, reviewerEmployeeId, comments)
+      await refetch()
+      setIsRevokeOpen(false)
+    } finally {
+      setIsPending(false)
+    }
+  }
 
   const handleReview = async (
     comments: string,
@@ -68,6 +84,7 @@ export function useRequestDetailsPage(
       if (canReviewAsHod)
         await reviewAccessRequestByHod(
           details.accessReqId,
+          selectedItemId,
           reviewerEmployeeId,
           approved,
           comments,
@@ -76,6 +93,7 @@ export function useRequestDetailsPage(
       if (canReviewAsIt)
         await reviewAccessRequestByIt(
           details.accessReqId,
+          selectedItemId,
           reviewerEmployeeId,
           approved,
           comments,
@@ -98,6 +116,9 @@ export function useRequestDetailsPage(
     handleBack,
     handleResubmitOpen: () => setIsResubmitOpen(true),
     handleResubmitClose: () => setIsResubmitOpen(false),
+    handleRevoke,
+    handleRevokeOpen: () => setIsRevokeOpen(true),
+    handleRevokeClose: () => setIsRevokeOpen(false),
     handleResubmitSuccess,
     handleReview,
     handleReviewClose,
@@ -105,6 +126,7 @@ export function useRequestDetailsPage(
     isPending,
     isResubmitOpen,
     isReviewOpen,
+    isRevokeOpen,
     resubmitPayload: resubmitPayload as AccessRequestFormPayload | undefined,
     reviewAction,
     selectedItem,

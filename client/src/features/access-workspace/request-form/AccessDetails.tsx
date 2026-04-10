@@ -11,7 +11,6 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { IconChevronDown, IconChevronUp, IconTrash } from "@tabler/icons-react"
-import { useState } from "react"
 import type { AccessDetailProps } from "./types"
 import { ACCESS_OPTIONS } from "./utils/accessRequestForm"
 

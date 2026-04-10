@@ -23,11 +23,11 @@ public sealed record CreateAccessRequestResponse(
     bool IsAgree,
     string? ItsrNo,
     RequestStatus Status,
-    AggregateRequestStatus AggregateStatus,
     IReadOnlyList<CreateAccessItemResponse> Items);
 
 public sealed record CreateAccessItemResponse(
     int AccessItemId,
+    RequestStatus Status,
     string FolderPath,
     AccessTypes AccessType,
     AccessTypes ConfirmAccessTypeByHOD,

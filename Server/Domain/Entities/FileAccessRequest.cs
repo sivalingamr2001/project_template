@@ -32,12 +32,6 @@ public class AccessRequestEntity : BaseEntity
     [Column("req_to")]
     public int ReqTo { get; set; }
 
-    [Column("status")]
-    public RequestStatus Status { get; set; }
-
-    [Column("aggregate_status")]
-    public AggregateRequestStatus AggregateStatus { get; set; }
-
     [Column("is_agreed")]
     public bool IsAgreed { get; set; }
 
@@ -59,6 +53,9 @@ public class AccessItemEntity : BaseEntity
 
     [Column("accessreq_id")]
     public int AccessReqId { get; set; }
+
+    [Column("status")]
+    public RequestStatus Status { get; set; }
 
     [Column("folder_path")]
     public string FolderPath { get; set; } = string.Empty;
@@ -82,6 +79,9 @@ public sealed class AccessApprovalEntity : BaseEntity
 
     [Column("accessreq_id")]
     public int AccessReqId { get; set; }
+
+    [Column("accessitem_id")]
+    public int AccessItemId { get; set; }
 
     [Column("approver_id")]
     public int ApproverId { get; set; }

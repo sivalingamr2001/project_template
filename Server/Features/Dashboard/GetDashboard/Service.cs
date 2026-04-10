@@ -1,5 +1,7 @@
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
 using Server.Shared.Helpers;
@@ -49,8 +51,6 @@ public sealed class GetDashboardService(AppDbContext dbContext)
             request.AccessReqId,
             request.EmpId,
             request.ReqTo,
-            request.AggregateStatus,
-            request.Status,
             request.ItsrNo,
             request.IsAgreed,
             // Project AccessItems
@@ -58,6 +58,7 @@ public sealed class GetDashboardService(AppDbContext dbContext)
                 .Where(ai => ai.AccessReqId == request.AccessReqId)
                 .Select(ai => new AccessItemDto(
                     ai.AccessItemId,
+                    ai.Status,
                     ai.FolderPath,
                     ai.Reason,
                     ai.AccessType))
@@ -74,7 +75,85 @@ public sealed class GetDashboardService(AppDbContext dbContext)
         ))
         .ToListAsync(cancellationToken);
 
-        return new PaginatedResponse<DashboardAccessRequestDto>(data, totalCount, query.NormalizedPage, query.NormalizedPageSize);
+        var enrichedData = data
+            .ToList();
+
+        return new PaginatedResponse<DashboardAccessRequestDto>(enrichedData, totalCount, query.NormalizedPage, query.NormalizedPageSize);
+    }
+
+    private static RequestStatus DeriveRequestStatus(IEnumerable<RequestStatus> statuses)
+    {
+        if (statuses.Any(status => status == RequestStatus.PendingHOD))
+        {
+            return RequestStatus.PendingHOD;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.PendingIT))
+        {
+            return RequestStatus.PendingIT;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.AccessGranted))
+        {
+            return RequestStatus.AccessGranted;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.RejectedHOD))
+        {
+            return RequestStatus.RejectedHOD;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.RejectedIT))
+        {
+            return RequestStatus.RejectedIT;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.Revoked))
+        {
+            return RequestStatus.Revoked;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.Expired))
+        {
+            return RequestStatus.Expired;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.ApprovedHOD))
+        {
+            return RequestStatus.ApprovedHOD;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.ApprovedIT))
+        {
+            return RequestStatus.ApprovedIT;
+        }
+
+        return RequestStatus.Submitted;
+    }
+
+    private static AggregateRequestStatus DeriveAggregateStatus(IEnumerable<RequestStatus> statuses)
+    {
+        if (statuses.Any(status => status == RequestStatus.Revoked))
+        {
+            return AggregateRequestStatus.Revoked;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.Expired))
+        {
+            return AggregateRequestStatus.Expired;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.RejectedHOD || status == RequestStatus.RejectedIT || status == RequestStatus.AccessRejected))
+        {
+            return AggregateRequestStatus.Rejected;
+        }
+
+        if (statuses.Any(status => status == RequestStatus.AccessGranted))
+        {
+            return AggregateRequestStatus.Approved;
+        }
+
+        return AggregateRequestStatus.Pending;
     }
 
     private sealed record EmployeeProfile(string DepartmentName, string Role);

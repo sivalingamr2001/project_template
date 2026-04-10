@@ -1,16 +1,14 @@
 import { useMemo, useState } from "react"
 
-import { Link } from "react-router-dom"
 import CommonTable from "./components/CommonTable"
 import CreateRequestModal from "./components/CreateRequestModal"
 import HeaderBar from "./components/HeaderBar"
 import PageSection from "./components/PageSection"
-import StatsGrid from "./components/StatsGrid"
 import { useAccessWorkspace } from "./hooks/useAccessWorkspace"
 import { requestColumns } from "./utils/tableColumns"
 
 function DashboardPage() {
-  const { errorMessage, isLoading, refetch, searchRequests, summaryCards } =
+  const { errorMessage, isLoading, refetch, searchRequests } =
     useAccessWorkspace("dashboard")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchValue, setSearchValue] = useState("")
@@ -21,7 +19,7 @@ function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      <StatsGrid cards={summaryCards} />
+      {/* <StatsGrid cards={summaryCards} /> */}
       <PageSection title="My Requests" description="">
         <div className="mb-4">
           <HeaderBar

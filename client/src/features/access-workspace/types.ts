@@ -1,6 +1,4 @@
-import type { ReactNode } from "react"
-
-export type AppRole = "User" | "Hod" | "ItTeam"
+ export type AppRole = "User" | "Hod" | "ItTeam"
 export type QueueMode =
   | "dashboard"
   | "hodPending"
@@ -11,8 +9,14 @@ export type QueueMode =
   | "itAll"
 export type RequestStatus =
   | "Submitted"
-  | "Approved"
-  | "Rejected"
+  | "Pending HOD"
+  | "Pending IT"
+  | "Approved HOD"
+  | "Approved IT"
+  | "Access Granted"
+  | "Rejected HOD"
+  | "Rejected IT"
+  | "Access Rejected"
   | "Expired"
   | "Revoked"
 export type AggregateStatus =
@@ -24,6 +28,7 @@ export type AggregateStatus =
 
 export type AccessItem = {
   accessItemId: number
+  status: RequestStatus
   folderPath: string
   reason: string
   accessType: number // 1 for Read Only, 2 for Read & Write, etc.
@@ -85,11 +90,12 @@ export type SummaryCard = { detail: string; label: string; value: string }
 export type TableColumn<T> = {
   header: string
   key: string
-  render: (row: T) => ReactNode
+  render: (row: T, index: number) => React.ReactNode;
 }
 export type AccessTypeLabel = "Not Applicable" | "Read Only" | "Read & Write"
 export type AccessRequestItem = {
   accessItemId: number
+  status: RequestStatus
   accessType: AccessTypeLabel
   createdOn: string
   folderPath: string
@@ -131,4 +137,20 @@ export type AccessRequestDetails = {
   requesterName: string
   status: string
   timeline: AccessRequestTimeline[]
+}
+
+
+export type AccessRequestFormPayloadForResumbission = {
+  accessReqId: number
+  empId: number
+  isAgree: boolean
+  items: {
+    accessItemId: number
+    accessType: number
+    confirmAccessTypeByHOD: number
+    folderPath: string
+    reason: string
+  }
+  itsrNo: string
+  reqTo: number
 }

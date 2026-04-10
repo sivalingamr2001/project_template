@@ -20,7 +20,7 @@ function StageFlow({ status }: StageFlowProps) {
       {cards.map((card, index) => (
         <article
           key={card.label}
-          className={`rounded-[0.9rem] border bg-card px-4 py-2 ${TONE_CLASS[card.tone]}`}
+          className={`group relative rounded-[0.9rem] border bg-card px-4 py-2 ${TONE_CLASS[card.tone]}`}
         >
           <div className="flex items-center justify-between gap-3">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-current text-sm font-semibold">
@@ -34,10 +34,9 @@ function StageFlow({ status }: StageFlowProps) {
               <span className="ml-2 text-sm font-semibold">{card.label}</span>
             </div>
           </div>
-          {/* <h2 className="mt-3 font-semibold">{card.label}</h2>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+          <div className="pointer-events-none absolute left-1/2 top-full z-10 hidden w-64 -translate-x-1/2 rounded border border-border bg-background p-3 text-xs text-muted-foreground shadow-lg ring-1 ring-border/50 group-hover:block">
             {card.description}
-          </p> */}
+          </div>
         </article>
       ))}
     </div>

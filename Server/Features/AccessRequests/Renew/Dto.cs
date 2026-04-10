@@ -7,7 +7,6 @@ public sealed record RenewAccessRequest(
     string? ItsrNo);
 
 public sealed record RenewAccessRequestResponse(
-    int AccessReqId,
+    int AccessItemId,
     RequestStatus Status,
-    AggregateRequestStatus AggregateStatus,
     string Message);

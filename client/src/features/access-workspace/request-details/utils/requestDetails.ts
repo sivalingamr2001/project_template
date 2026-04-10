@@ -16,6 +16,9 @@ const STAGE_LABELS = [
   "Pending HOD",
   "Pending IT",
   "Access Granted",
+  "Rejected",
+  "Revoked",
+  "Expired",
 ]
 
 export function formatRequestDate(value: string | null) {
@@ -26,7 +29,7 @@ export function formatRequestDateTime(value: string | null) {
   return value ? DATE_TIME_FORMATTER.format(new Date(value)) : "Not available"
 }
 
-export function buildStageCards(status: string): StageCard[] {
+export function buildStageCards(status: any): StageCard[] {
   return STAGE_LABELS.map((label, index) => ({
     description: getStageDescription(index),
     label,
@@ -56,6 +59,9 @@ function getStageDescription(index: number) {
       "Business validation by HOD.",
       "IT infrastructure approval.",
       "Access delivered to requester.",
+      "Request rejected by approver.",
+      "Access revoked after approval.",
+      "Access expired need renewal.",
     ][index] ?? ""
   )
 }

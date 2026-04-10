@@ -12,7 +12,7 @@ import type {
 } from "../types"
 
 const API_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:7229/api"
+  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001/api"
 const ACCESS_TYPE_MAP = ["Not Applicable", "Read Only", "Read & Write"] as const
 const AGGREGATE_STATUS_MAP = [
   "Pending",
@@ -38,6 +38,7 @@ const STATUS_MAP = [
 function mapAccessItem(item: {
   accessItemId: number
   accessType: number | string
+  status: number | string
   createdOn: string
   folderPath: string
   reason: string
@@ -46,8 +47,14 @@ function mapAccessItem(item: {
     typeof item.accessType === "number"
       ? item.accessType
       : ACCESS_TYPE_MAP.findIndex((value) => value === item.accessType)
+  const statusIndex =
+    typeof item.status === "number"
+      ? item.status
+      : STATUS_MAP.findIndex((value) => value === item.status)
+
   return {
     accessItemId: item.accessItemId,
+    status: (STATUS_MAP[statusIndex] ?? "Submitted") as RequestStatus,
     accessType: ACCESS_TYPE_MAP[index] ?? "Not Applicable",
     createdOn: item.createdOn,
     folderPath: item.folderPath,
@@ -99,6 +106,7 @@ function mapAccessRequestDetails(details: {
   empId: number
   items: Array<{
     accessItemId: number
+    status: number | string
     accessType: number | string
     createdOn: string
     folderPath: string
@@ -149,6 +157,9 @@ export async function fetchAccessRequests(
 
     accessItems: request.accessItems.map((item: any) => ({
       ...item,
+      status: (typeof item.status === "number"
+        ? STATUS_MAP[item.status]
+        : item.status) as RequestStatus,
       accessType: (typeof item.accessType === "number"
         ? ACCESS_TYPE_MAP[item.accessType]
         : item.accessType) as AccessRequestItem["accessType"],
@@ -239,13 +250,14 @@ export async function fetchAllUsers(): Promise<EmployeeRecord[]> {
 
 export async function reviewAccessRequestByHod(
   accessReqId: number,
+  accessItemId: number,
   reviewerEmployeeId: number,
   approved: boolean,
   comments: string,
   confirmAccessType?: number
 ) {
   const response = await fetch(
-    `${API_URL}/access-requests/${accessReqId}/hod-review`,
+    `${API_URL}/access-requests/${accessReqId}/${accessItemId}/hod-review`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -262,6 +274,7 @@ export async function reviewAccessRequestByHod(
 
 export async function reviewAccessRequestByIt(
   accessReqId: number,
+  accessItemId: number,
   reviewerEmployeeId: number,
   approved: boolean,
   comments: string,
@@ -269,7 +282,7 @@ export async function reviewAccessRequestByIt(
   confirmAccessType?: number
 ) {
   const response = await fetch(
-    `${API_URL}/access-requests/${accessReqId}/it-review`,
+    `${API_URL}/access-requests/${accessReqId}/${accessItemId}/it-review`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -287,11 +300,12 @@ export async function reviewAccessRequestByIt(
 
 export async function revokeAccessRequest(
   accessReqId: number,
+  accessItemId: number,
   reviewerEmployeeId: number,
   comments: string
 ) {
   const response = await fetch(
-    `${API_URL}/access-requests/${accessReqId}/revoke`,
+    `${API_URL}/access-requests/${accessReqId}/${accessItemId}/revoke`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

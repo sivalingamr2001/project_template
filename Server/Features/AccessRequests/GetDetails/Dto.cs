@@ -11,8 +11,6 @@ public sealed record AccessRequestDetailsDto(
     int ReqTo,
     string CurrentApproverName,
     string CurrentApproverRole,
-    RequestStatus Status,
-    AggregateRequestStatus AggregateStatus,
     string? ItsrNo,
     DateTime CreatedOn,
     DateTime? ModifiedOn,
@@ -22,6 +20,7 @@ public sealed record AccessRequestDetailsDto(
 
 public sealed record AccessRequestItemDto(
     int AccessItemId,
+    RequestStatus Status,
     string FolderPath,
     AccessTypes AccessType,
     string Reason,

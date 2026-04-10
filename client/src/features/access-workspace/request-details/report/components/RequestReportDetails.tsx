@@ -41,6 +41,11 @@ function RequestReportDetails({ details }: RequestReportDetailsProps) {
             label="Folder Name / Path"
             value={primaryItem?.folderPath}
           />
+          <ReportField label="Item Status">
+            <ReportBadge tone={getStatusTone(primaryItem?.status || details.status)}>
+              {primaryItem?.status ?? "Pending"}
+            </ReportBadge>
+          </ReportField>
           <ReportField label="Type of Access Required">
             <div className="mt-1 flex flex-wrap gap-2">
               <ReportBadge
@@ -78,10 +83,10 @@ function RequestReportDetails({ details }: RequestReportDetailsProps) {
           <ReportField label="Decision">
             <ReportBadge
               tone={getStatusTone(
-                hodReviewer?.approvalStatus || details.status
+                details.items[0]?.status || details.status
               )}
             >
-              {hodReviewer?.approvalStatus || "Pending"}
+              {details.items[0]?.status || "Pending"}
             </ReportBadge>
           </ReportField>
           <ReportField label="Department" value={details.departmentName} />

@@ -18,14 +18,13 @@ export function buildResubmitPayload(
     empId: details.empId,
     isAgree: true,
     items: details.items.map((item) => ({
-      accessItemId: item.accessItemId,
       accessType: mapAccessType(item.accessType),
       confirmAccessTypeByHOD: 0,
       folderPath: item.folderPath,
       reason: item.reason,
     })),
-    itsrNo: "",
-    reqTo: 0,
+    itsrNo: details.itsrNo || "",
+    reqTo: details.reqTo,
   }
 }
 

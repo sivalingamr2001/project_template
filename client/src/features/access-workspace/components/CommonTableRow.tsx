@@ -42,9 +42,9 @@ function CommonTableRow<T>({
             ) : null}
           </td>
         ) : null}
-        {columns.map((column) => (
+        {columns.map((column, index) => (
           <td key={column.key} className="px-4 py-4 align-top">
-            {column.render(row)}
+            {column.render(row, index)}
           </td>
         ))}
       </tr>

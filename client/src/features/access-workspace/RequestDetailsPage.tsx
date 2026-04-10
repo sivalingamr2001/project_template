@@ -12,6 +12,7 @@ import TimelineSection from "./request-details/components/TimelineSection"
 import { useRequestDetails } from "./request-details/hooks/useRequestDetails"
 import { useRequestDetailsPage } from "./request-details/hooks/useRequestDetailsPage"
 import RequestReportPanel from "./request-details/report/components/RequestReportPanel"
+import RevocModal from "./components/RevocModal"
 
 function RequestDetailsPage() {
   const { requestId } = useParams()
@@ -76,6 +77,11 @@ function RequestDetailsPage() {
               Resubmit Request
             </Button>
           )}
+          {page.canRevoke && (
+            <Button variant="destructive" onClick={() => page.handleRevokeOpen()}>
+              Revoke Request
+            </Button>
+          )}
           {(page.canReviewAsHod || page.canReviewAsIt) && (
             <>
               <Button
@@ -94,7 +100,7 @@ function RequestDetailsPage() {
           )}
         </div>
       </div>
-      <StageFlow status={details.status} />
+      <StageFlow status={page.selectedItem?.status ?? details.status} />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,4fr)_minmax(280px,1fr)]">
         <RequestReportPanel details={detailsWithSelectedItem} />
         <TimelineSection timeline={details.timeline} />
@@ -119,6 +125,13 @@ function RequestDetailsPage() {
         submitLabel="Resubmit Request"
         title="Resubmit Request"
       />
+      <RevocModal
+        isOpen={page.isRevokeOpen}
+        isPending={page.isPending}
+        onClose={page.handleRevokeClose}
+        onSubmit={page.handleRevoke}
+      />
+
     </div>
   )
 }

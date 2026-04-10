@@ -11,5 +11,4 @@ public sealed record ReviewByHodRequest(
 public sealed record ReviewAccessRequestResponse(
     int AccessReqId,
     RequestStatus Status,
-    AggregateRequestStatus AggregateStatus,
     string Message);

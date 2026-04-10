@@ -6,6 +6,7 @@ using Server.Features.AccessRequests.Renew;
 using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
+using Server.Features.AccessRequests.Resubmit;
 using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
@@ -33,6 +34,7 @@ public static class EndpointMappingExtensions
         ReviewAccessRequestByHodEndpoint.Map(accessRequestsGroup);
         ReviewAccessRequestByItEndpoint.Map(accessRequestsGroup);
         RevokeAccessRequestEndpoint.Map(accessRequestsGroup);
+        ResubmitAccessItemEndpoint.Map(accessRequestsGroup);
         RenewAccessRequestEndpoint.Map(accessRequestsGroup);
 
         var dashboardGroup = app.MapGroup("/api/dashboard").WithTags("Dashboard");

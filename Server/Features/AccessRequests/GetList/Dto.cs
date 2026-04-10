@@ -9,7 +9,6 @@ public sealed record AccessRequestListItemDto(
     int AccessReqId,
     int EmpId,
     int ReqTo,
-    AggregateRequestStatus AggregateStatus,
     RequestStatus Status,
     string? ItsrNo,
     bool IsAgreed,

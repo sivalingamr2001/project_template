@@ -9,8 +9,6 @@ public sealed record DashboardAccessRequestDto(
     int AccessReqId,
     int EmpId,
     int ReqTo,
-    AggregateRequestStatus AggregateStatus,
-    RequestStatus Status,
     string? ItsrNo,
     bool IsAgreed,
     List<AccessItemDto> AccessItems,
@@ -18,6 +16,7 @@ public sealed record DashboardAccessRequestDto(
 
 public record AccessItemDto(
     int AccessItemId,
+    RequestStatus Status,
     string FolderPath,
     string Reason,
     AccessTypes AccessType);
