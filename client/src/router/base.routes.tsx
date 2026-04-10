@@ -10,7 +10,7 @@ export const rootRoute = createRootRouteWithContext<RouterAppContext>()({
 
 export const appRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/app",
+  path: "/",
   beforeLoad: requireAuth,
   component: AppLayout,
 });
