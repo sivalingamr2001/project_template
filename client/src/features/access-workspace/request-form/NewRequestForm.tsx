@@ -20,6 +20,7 @@ export function NewRequestForm({
   const { currentRole, currentUser } = useApp()
   const [isFetchingUser, setIsFetchingUser] = useState(false)
   const [fetchedUser, setFetchedUser] = useState<any>(null)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(0)
 
   const me = currentUser?.employeeId ?? 0
   const myHod = currentUser?.departmentHod?.employeeId ?? 0
@@ -63,11 +64,13 @@ export function NewRequestForm({
     }
   }, [formData.empId, me, myHod, setFormData])
 
-  const handleAddDetail = () =>
+  const handleAddDetail = () => {
     setFormData((current) => ({
       ...current,
       items: [...current.items, createDefaultPayload(me, myHod).items[0]],
     }))
+    setExpandedIndex(formData.items.length)
+  }
 
   const handleRemoveDetail = (index: number) => {
     setFormData((prev) => ({
@@ -126,17 +129,23 @@ export function NewRequestForm({
             </Button>
           )}
         </div>
-        {formData.items.map((detail, index) => (
-          <AccessDetail
-            key={index}
-            index={index}
-            detail={detail}
-            totalItems={formData.items.length}
-            currentRole={currentRole}
-            onRemove={handleRemoveDetail}
-            onChange={handleDetailChange}
-          />
-        ))}
+        <div className="max-h-[clamp(200px,40vh,600px)] overflow-y-auto space-y-4 pr-2">
+          {formData.items.map((detail, index) => (
+            <AccessDetail
+              key={index}
+              index={index}
+              detail={detail}
+              isExpanded={expandedIndex === index}
+              onToggle={() =>
+                setExpandedIndex(expandedIndex === index ? null : index)
+              }
+              totalItems={formData.items.length}
+              currentRole={currentRole}
+              onRemove={handleRemoveDetail}
+              onChange={handleDetailChange}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="space-y-3">

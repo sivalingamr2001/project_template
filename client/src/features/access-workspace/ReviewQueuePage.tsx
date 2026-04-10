@@ -68,7 +68,9 @@ function ReviewQueuePage({ description, mode, title }: ReviewQueuePageProps) {
 
       <CommonTable
         columns={requestColumns}
-        getRowId={(row) => row.accessReqId}
+        getRowId={(row) =>
+          `${row.accessReqId}-${row.accessItems[0]?.accessItemId ?? "request"}`
+        }
         pageSize={5}
         rows={isLoading ? [] : requests}
         emptyMessage={isLoading ? "Loading..." : "No requests found."}

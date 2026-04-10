@@ -11,9 +11,16 @@ const userData = GetCurrentUser()
 
 export const requestColumns: TableColumn<AccessRequest>[] = [
   {
-    key: "employeeId",
-    header: "Employee ID",
-    render: (row) => row.empId,
+    key: "folderPath",
+    header: "Folder Path",
+    render: (row) => {
+      const [firstItem, ...remainingItems] = row.accessItems
+      if (!firstItem) return "--"
+
+      return remainingItems.length > 0
+        ? `${firstItem.folderPath} (+${remainingItems.length} more)`
+        : firstItem.folderPath
+    },
   },
   {
     key: "request",

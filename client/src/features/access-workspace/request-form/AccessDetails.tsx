@@ -19,11 +19,12 @@ export default function AccessDetail({
   currentRole,
   detail,
   index,
+  isExpanded,
+  onToggle,
   onChange,
   onRemove,
   totalItems,
 }: AccessDetailProps) {
-  const [isExpanded, setIsExpanded] = useState(true)
   const accessLabel = ACCESS_OPTIONS.find(
     (o) => o.value === detail.accessType
   )?.label
@@ -36,8 +37,9 @@ export default function AccessDetail({
           "flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-accent/50",
           isExpanded ? "border-b bg-accent/10" : ""
         )}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={onToggle}
       >
+
         <div className="flex items-center gap-3">
           <div className="text-muted-foreground">
             {isExpanded ? (

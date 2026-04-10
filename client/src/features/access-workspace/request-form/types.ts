@@ -12,6 +12,8 @@ export interface AccessDetailProps {
   currentRole: string | null
   detail: AccessRequestFormPayload["items"][number]
   index: number
+  isExpanded: boolean
+  onToggle: () => void
   onChange: (
     index: number,
     field: keyof AccessRequestFormPayload["items"][number],
@@ -20,3 +22,4 @@ export interface AccessDetailProps {
   onRemove: (index: number) => void
   totalItems: number
 }
+

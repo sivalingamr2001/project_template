@@ -38,7 +38,9 @@ function DashboardPage() {
 
         <CommonTable
           columns={requestColumns}
-          getRowId={(row) => row.accessReqId}
+          getRowId={(row) =>
+            `${row.accessReqId}-${row.accessItems[0]?.accessItemId ?? "request"}`
+          }
           pageSize={5}
           rows={isLoading ? [] : filteredRequests}
           emptyMessage={isLoading ? "Loading..." : "No requests found."}

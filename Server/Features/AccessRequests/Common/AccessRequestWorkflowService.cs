@@ -61,7 +61,7 @@ public sealed class AccessRequestWorkflowService(
         accessRequest.EmpId = requester.EmployeeId;
         accessRequest.ReqTo = hodApprover.EmployeeId;
         accessRequest.ItsrNo = request.ItsrNo?.Trim() ?? string.Empty;
-        accessRequest.IsAgreed = true;
+        accessRequest.IsAgreed = request.IsAgree;
         accessRequest.AggregateStatus = AggregateRequestStatus.Pending;
         accessRequest.Status = RequestStatus.PendingHOD;
         accessRequest.ModifiedBy = requester.EmployeeId.ToString();
@@ -75,6 +75,7 @@ public sealed class AccessRequestWorkflowService(
                 AccessReqId = accessRequest.AccessReqId, // This will be set correctly by EF for new or existing parent
                 FolderPath = item.FolderPath.Trim(),
                 AccessType = (AccessTypes)item.AccessType,
+                ConfirmAccessType = (AccessTypes)item.ConfirmAccessTypeByHOD,
                 Reason = item.Reason.Trim(),
                 CreatedBy = requester.EmployeeId.ToString(),
                 CreatedOn = utcNow,
@@ -98,8 +99,24 @@ public sealed class AccessRequestWorkflowService(
 
         await PushNotificationsAsync(recipients, accessRequest.AccessReqId, actionKey, message, utcNow, cancellationToken);
 
-        return new CreateAccessRequestResponse(accessRequest.AccessReqId, accessRequest.Status.ToString());
-            }
+        return new CreateAccessRequestResponse(
+            accessRequest.AccessReqId,
+            accessRequest.EmpId,
+            accessRequest.ReqTo,
+            accessRequest.IsAgreed,
+            accessRequest.ItsrNo,
+            accessRequest.Status,
+            accessRequest.AggregateStatus,
+            accessRequest.AccessItems
+                .OrderBy(item => item.AccessItemId)
+                .Select(item => new CreateAccessItemResponse(
+                    item.AccessItemId,
+                    item.FolderPath,
+                    item.AccessType,
+                    item.ConfirmAccessType,
+                    item.Reason))
+                .ToList());
+    }
 
     public async Task<ReviewAccessRequestResponse> ReviewByHodAsync(int accessReqId, ReviewByHodRequest request, CancellationToken cancellationToken)
     {
@@ -592,6 +609,16 @@ public sealed class AccessRequestWorkflowService(
         if (request.Items.Any(item => !Enum.IsDefined(typeof(AccessTypes), item.AccessType)))
         {
             throw new AppValidationException("One or more access types are invalid.");
+        }
+
+        if (!request.IsAgree)
+        {
+            throw new AppValidationException("You must agree before submitting the access request.");
+        }
+
+        if (request.Items.Any(item => !Enum.IsDefined(typeof(AccessTypes), item.ConfirmAccessTypeByHOD)))
+        {
+            throw new AppValidationException("One or more HOD confirmed access types are invalid.");
         }
     }
 
