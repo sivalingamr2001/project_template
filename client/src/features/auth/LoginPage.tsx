@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { LoaderCircle, Lock, TrendingUp } from "lucide-react";
 
 import { useAuthContext } from "@/features/auth/auth-context";
@@ -16,7 +16,7 @@ import { Input } from "@/shared/components/ui/input";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const search = useSearch({ strict: false });
+  const [searchParams] = useSearchParams();
   const auth = useAuthContext();
 
   const [email, setEmail] = useState("admin@mastery.dev");
@@ -25,12 +25,11 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
 
-  const redirectTo =
-    typeof search.redirect === "string" ? search.redirect : "/app/budget";
+  const redirectTo = searchParams.get("redirect") || "/budget";
 
   useEffect(() => {
     if (auth.isLoggedIn && pendingRedirect) {
-      void navigate({ replace: true, to: pendingRedirect });
+      navigate(pendingRedirect, { replace: true });
       setPendingRedirect(null);
     }
   }, [auth.isLoggedIn, navigate, pendingRedirect]);

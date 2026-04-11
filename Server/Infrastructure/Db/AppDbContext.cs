@@ -79,47 +79,47 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // Seed Cost Items
         modelBuilder.Entity<BudgetItem>().HasData(
             // 1: Product design
-            new BudgetItem { ItemId = 1, CategoryId = 1, ItemName = "Benchmarking sample" },
-            new BudgetItem { ItemId = 2, CategoryId = 1, ItemName = "FEA Analysis" },
-            new BudgetItem { ItemId = 3, CategoryId = 1, ItemName = "CFD Analysis" },
-            new BudgetItem { ItemId = 4, CategoryId = 1, ItemName = "Design consultancy" },
-            new BudgetItem { ItemId = 5, CategoryId = 1, ItemName = "Others" },
+            new BudgetItem { ItemId = 1, CategoryId = 1, ItemName = "Benchmarking sample", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 2, CategoryId = 1, ItemName = "FEA Analysis", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 3, CategoryId = 1, ItemName = "CFD Analysis", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 4, CategoryId = 1, ItemName = "Design consultancy", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 5, CategoryId = 1, ItemName = "Others", Planned = 0, Actual = 0 },
 
             // 2: Concept development
-            new BudgetItem { ItemId = 6, CategoryId = 2, ItemName = "Comp.devpt-Concept" },
-            new BudgetItem { ItemId = 7, CategoryId = 2, ItemName = "Machining components" },
-            new BudgetItem { ItemId = 8, CategoryId = 2, ItemName = "Plastic - Hand moulds" },
-            new BudgetItem { ItemId = 9, CategoryId = 2, ItemName = "Rubber moulds" },
-            new BudgetItem { ItemId = 10, CategoryId = 2, ItemName = "3D printing" },
-            new BudgetItem { ItemId = 11, CategoryId = 2, ItemName = "RPT" },
-            new BudgetItem { ItemId = 12, CategoryId = 2, ItemName = "MIM" },
-            new BudgetItem { ItemId = 13, CategoryId = 2, ItemName = "Jigs & fixtures" },
-            new BudgetItem { ItemId = 14, CategoryId = 2, ItemName = "Concept testing" },
+            new BudgetItem { ItemId = 6, CategoryId = 2, ItemName = "Comp.devpt-Concept", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 7, CategoryId = 2, ItemName = "Machining components", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 8, CategoryId = 2, ItemName = "Plastic - Hand moulds", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 9, CategoryId = 2, ItemName = "Rubber moulds", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 10, CategoryId = 2, ItemName = "3D printing", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 11, CategoryId = 2, ItemName = "RPT", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 12, CategoryId = 2, ItemName = "MIM", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 13, CategoryId = 2, ItemName = "Jigs & fixtures", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 14, CategoryId = 2, ItemName = "Concept testing", Planned = 0, Actual = 0 },
 
             // 3: Prototype development
-            new BudgetItem { ItemId = 15, CategoryId = 3, ItemName = "Machining components" },
-            new BudgetItem { ItemId = 16, CategoryId = 3, ItemName = "Plastic - Injection moulds" },
-            new BudgetItem { ItemId = 17, CategoryId = 3, ItemName = "Aluminium - Die casting" },
-            new BudgetItem { ItemId = 18, CategoryId = 3, ItemName = "Investment casting" },
-            new BudgetItem { ItemId = 19, CategoryId = 3, ItemName = "Stamping tools" },
-            new BudgetItem { ItemId = 20, CategoryId = 3, ItemName = "Rubber moulds" },
-            new BudgetItem { ItemId = 21, CategoryId = 3, ItemName = "Jigs & fixtures" },
-            new BudgetItem { ItemId = 22, CategoryId = 3, ItemName = "Comp. mfg." },
-            new BudgetItem { ItemId = 23, CategoryId = 3, ItemName = "Testing" },
+            new BudgetItem { ItemId = 15, CategoryId = 3, ItemName = "Machining components", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 16, CategoryId = 3, ItemName = "Plastic - Injection moulds", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 17, CategoryId = 3, ItemName = "Aluminium - Die casting", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 18, CategoryId = 3, ItemName = "Investment casting", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 19, CategoryId = 3, ItemName = "Stamping tools", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 20, CategoryId = 3, ItemName = "Rubber moulds", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 21, CategoryId = 3, ItemName = "Jigs & fixtures", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 22, CategoryId = 3, ItemName = "Comp. mfg.", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 23, CategoryId = 3, ItemName = "Testing", Planned = 0, Actual = 0 },
 
             // 4: Product testing
-            new BudgetItem { ItemId = 24, CategoryId = 4, ItemName = "Testing instruments" },
-            new BudgetItem { ItemId = 25, CategoryId = 4, ItemName = "Testing fixtures" },
-            new BudgetItem { ItemId = 26, CategoryId = 4, ItemName = "Certification" },
-            new BudgetItem { ItemId = 27, CategoryId = 4, ItemName = "Others" },
+            new BudgetItem { ItemId = 24, CategoryId = 4, ItemName = "Testing instruments", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 25, CategoryId = 4, ItemName = "Testing fixtures", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 26, CategoryId = 4, ItemName = "Certification", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 27, CategoryId = 4, ItemName = "Others", Planned = 0, Actual = 0 },
 
             // 5: Capital equipments
-            new BudgetItem { ItemId = 28, CategoryId = 5, ItemName = "Testing equipments" },
-            new BudgetItem { ItemId = 29, CategoryId = 5, ItemName = "Special machines" },
-            new BudgetItem { ItemId = 30, CategoryId = 5, ItemName = "Others" },
+            new BudgetItem { ItemId = 28, CategoryId = 5, ItemName = "Testing equipments", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 29, CategoryId = 5, ItemName = "Special machines", Planned = 0, Actual = 0 },
+            new BudgetItem { ItemId = 30, CategoryId = 5, ItemName = "Others", Planned = 0, Actual = 0 },
 
             // 6: Field validation
-            new BudgetItem { ItemId = 31, CategoryId = 6, ItemName = "Product development" }
+            new BudgetItem { ItemId = 31, CategoryId = 6, ItemName = "Product development", Planned = 0, Actual = 0 }
         );
     }
 }

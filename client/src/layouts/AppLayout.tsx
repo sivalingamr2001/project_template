@@ -1,18 +1,33 @@
-import { Link, Outlet, useRouter } from "@tanstack/react-router";
-import { Boxes, LogOut, TrendingUp, WalletCards } from "lucide-react";
+import { Outlet, useNavigate } from "react-router-dom";
+import { LogOut, TrendingUp } from "lucide-react";
 
 import { useAuthContext } from "@/features/auth";
+import { useBudget } from "@/features/budget";
 import { Button } from "@/shared/components/ui/button";
-import { Card } from "@/shared/components/ui/card";
-import { ActiveView } from "@/features/budget/budget-page.types";
-import { useBudget } from "@/features/budget/budget-context";
-import { useState } from "react";
+import { TopTabButton } from "@/layouts/TopTabButton";
 
 export default function AppLayout() {
   const auth = useAuthContext();
-  const router = useRouter();
-  const [activeView, setActiveView] = useState<ActiveView>("project-search");
-  const { activeRecord } = useBudget();
+  const navigate = useNavigate();
+  const { activeBudget, activeView, setActiveView } = useBudget();
+  const hasActiveBudget = Boolean(activeBudget);
+
+  function handleLogout() {
+    auth.logout();
+    navigate("/login", { replace: true });
+  }
+
+  function handleProjectSearch() {
+    setActiveView("project-search");
+  }
+
+  function handlePlanEntry() {
+    setActiveView("plan-entry");
+  }
+
+  function handlePerformanceReport() {
+    setActiveView("performance-report");
+  }
 
   return (
     <div className="shell-grid min-h-screen">
@@ -36,30 +51,24 @@ export default function AppLayout() {
               <TopTabButton
                 active={activeView === "project-search"}
                 label="Project Search"
-                onClick={() => setActiveView("project-search")}
+                onClick={handleProjectSearch}
               />
               <TopTabButton
                 active={activeView === "plan-entry"}
-                disabled={!activeRecord}
+                disabled={!hasActiveBudget}
                 label="Plan Entry"
-                onClick={() => setActiveView("plan-entry")}
+                onClick={handlePlanEntry}
               />
               <TopTabButton
                 active={activeView === "performance-report"}
-                disabled={!activeRecord}
+                disabled={!hasActiveBudget}
                 label="Performance Report"
-                onClick={() => setActiveView("performance-report")}
+                onClick={handlePerformanceReport}
               />
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                auth.logout();
-                void router.navigate({ to: "/login" });
-              }}
-            >
+            <Button variant="ghost" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>
@@ -70,32 +79,5 @@ export default function AppLayout() {
         </div>
       </main>
     </div>
-  );
-}
-
-function TopTabButton({
-  active,
-  disabled = false,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  disabled?: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className={`rounded-xl px-4 py-1 text-sm font-medium transition ${
-        active
-          ? "bg-primary text-primary-foreground shadow-md shadow-blue-950/20"
-          : "text-muted-foreground hover:bg-accent hover:text-foreground"
-      } ${disabled ? "cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground" : ""}`}
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
-      {label}
-    </button>
   );
 }

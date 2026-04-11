@@ -6,16 +6,14 @@ import "@/styles.css";
 import App from "./App";
 import { ThemeProvider } from "./shared/components/ThemeProvider";
 import { Toaster } from "./shared/components/ui/sonner";
-import { BudgetProvider } from "./features/budget/budget-context";
+import { BrowserRouter } from "react-router-dom";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <BudgetProvider>
-          <Toaster position="top-right" richColors />
-          <App />
-        </BudgetProvider>
+        <Toaster position="top-right" richColors />
+        <App />
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>,

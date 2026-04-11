@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Features.Auth.Login;
+using Server.Features.BudgetRecords;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
 using Server.Shared.Helpers;
@@ -40,6 +41,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<PasswordHasher>();
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<LoginService>();
+        services.AddScoped<BudgetRecordsService>();
 
         services.AddCors(options =>
         {
