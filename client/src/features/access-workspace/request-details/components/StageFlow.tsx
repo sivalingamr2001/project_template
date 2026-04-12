@@ -1,19 +1,21 @@
+import type { AccessRequestDetails, AccessRequestItem } from "../../types"
 import { buildStageCards } from "../utils/requestDetails"
 
 type StageFlowProps = {
-  status: string
+  details: AccessRequestDetails
+  selectedItem: AccessRequestItem
 }
 
 const TONE_CLASS = {
-  active: "border-primary text-primary",
+  active: "border-primary text-primary shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)]",
   complete:
     "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   failed: "border-destructive bg-destructive/10 text-destructive",
-  pending: "border-border text-muted-foreground",
+  pending: "border-border text-muted-foreground opacity-60",
 } as const
 
-function StageFlow({ status }: StageFlowProps) {
-  const cards = buildStageCards(status)
+function StageFlow({ details, selectedItem }: StageFlowProps) {
+  const cards = buildStageCards(details, selectedItem)
 
   return (
     <div className="grid gap-3 xl:grid-cols-4">

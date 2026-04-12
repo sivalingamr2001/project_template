@@ -100,7 +100,7 @@ function RequestDetailsPage() {
           )}
         </div>
       </div>
-      <StageFlow status={page.selectedItem?.status ?? details.status} />
+      <StageFlow details={details} selectedItem={page.selectedItem ?? details.items[0]} />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,4fr)_minmax(280px,1fr)]">
         <RequestReportPanel details={detailsWithSelectedItem} />
         <TimelineSection timeline={details.timeline} />
