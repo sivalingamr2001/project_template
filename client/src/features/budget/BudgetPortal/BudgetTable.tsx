@@ -5,10 +5,6 @@ import { useBudget } from "./hooks/useBudgetContext";
 export function BudgetTable() {
   const { budgetDraft, getBudgetTotals, getCategoryTotals, updateBudgetItem } = useBudget();
 
-  if (!budgetDraft) {
-    return null;
-  }
-
   const totals = getBudgetTotals(budgetDraft);
 
   return (

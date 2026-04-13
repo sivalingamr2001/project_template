@@ -10,7 +10,6 @@ export default function AppLayout() {
   const auth = useAuthContext();
   const navigate = useNavigate();
   const { activeBudget, activeView, setActiveView } = useBudget();
-  const hasActiveBudget = Boolean(activeBudget);
 
   function handleLogout() {
     auth.logout();
@@ -55,13 +54,11 @@ export default function AppLayout() {
               />
               <TopTabButton
                 active={activeView === "plan-entry"}
-                disabled={!hasActiveBudget}
                 label="Plan Entry"
                 onClick={handlePlanEntry}
               />
               <TopTabButton
                 active={activeView === "performance-report"}
-                disabled={!hasActiveBudget}
                 label="Performance Report"
                 onClick={handlePerformanceReport}
               />

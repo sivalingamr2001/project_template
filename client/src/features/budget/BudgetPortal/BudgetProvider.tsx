@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { useAuthContext } from "@/features/auth";
 
+import { DUMMY_BUDGET } from "./data/dummy";
 import { useBudgetsStore } from "./hooks/useBudgetsStore";
 import { BudgetContextProvider } from "./hooks/useBudgetContext";
 import type { ActiveView, BudgetContextValue, PlanTab } from "./types";
@@ -17,8 +18,8 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     () => ({
       budgets: store.budgets,
       isLoadingBudgets: store.isLoadingBudgets,
-      activeBudget: store.activeBudget,
-      budgetDraft: store.budgetDraft,
+      activeBudget: store.activeBudget ?? DUMMY_BUDGET,
+      budgetDraft: store.budgetDraft ?? DUMMY_BUDGET,
       activeView,
       planTab,
       setPlanTab,

@@ -22,7 +22,7 @@ export function ProjectSearchView() {
     const p = projectCode.trim().toLowerCase();
     const n = productNo.trim().toLowerCase();
 
-    return budgets.filter((r) => {
+    return (Array.isArray(budgets) ? budgets : []).filter((r) => {
       const matchesProject = !p || r.projectCode.toLowerCase().includes(p);
       const matchesProduct = !n || r.productNo.toLowerCase().includes(n) || r.projectTitle.toLowerCase().includes(n);
       return matchesProject && matchesProduct;

@@ -19,7 +19,14 @@ export function useBudgetsStore(employeeId: number) {
 
   const refreshBudgets = useCallback(async () => {
     setIsLoadingBudgets(true);
-    try { setBudgets(await getBudgets()); } catch (e) { toast.error(getApiErrorMessage(e)); } finally { setIsLoadingBudgets(false); }
+    try {
+      const data = await getBudgets();
+      setBudgets(Array.isArray(data) ? data : []);
+    } catch (e) {
+      toast.error(getApiErrorMessage(e));
+    } finally {
+      setIsLoadingBudgets(false);
+    }
   }, []);
 
   const setSelectedBudget = useCallback((record: BudgetRecord) => {
@@ -54,6 +61,10 @@ export function useBudgetsStore(employeeId: number) {
 
   const saveDraft = useCallback(async () => {
     if (!budgetDraft) { toast.info("No budget loaded."); return; }
+    if (budgetDraft.header.budgetId === 0) {
+      toast.info("Dummy data cannot be saved. Please search or create a real project.");
+      return;
+    }
     setIsSaving(true);
     try {
       const items = budgetDraft.categories.flatMap((c) => c.items.map((i) => ({ itemId: i.itemId, planned: i.planned, actual: i.actual })));

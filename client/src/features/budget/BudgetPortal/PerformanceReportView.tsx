@@ -29,10 +29,6 @@ export function PerformanceReportView() {
     setActiveView("plan-entry");
   }
 
-  if (!budgetDraft) {
-    return null;
-  }
-
   const totals = getBudgetTotals(budgetDraft);
   const utilization = totals.totalPlanned > 0 ? (totals.totalActual / totals.totalPlanned) * 100 : 0;
 
