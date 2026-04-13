@@ -47,7 +47,7 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy(CorsPolicyNames.ReactClient, policy =>
             {
-                policy.WithOrigins("http://localhost:5173")
+                policy.WithOrigins("http://localhost:5176")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();

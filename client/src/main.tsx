@@ -6,15 +6,17 @@ import "@/styles.css";
 import App from "./App";
 import { ThemeProvider } from "./shared/components/ThemeProvider";
 import { Toaster } from "./shared/components/ui/sonner";
-import { BrowserRouter } from "react-router-dom";
+import { TooltipProvider } from "./shared/components/ui/tooltip";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <AuthProvider>
-        <Toaster position="top-right" richColors />
-        <App />
-      </AuthProvider>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster position="top-right" richColors />
+          <App />
+        </AuthProvider>
+      </TooltipProvider>
     </ThemeProvider>
   </StrictMode>,
 );
