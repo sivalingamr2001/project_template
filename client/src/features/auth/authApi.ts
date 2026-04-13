@@ -17,7 +17,9 @@ export async function loginRequest(input: LoginInput) {
   const user = demoUsers.find((entry) => entry.email === input.email);
 
   if (!user || input.password.trim().length < 4) {
-    throw new Error("Use one of the demo emails and any password with 4+ characters.");
+    throw new Error(
+      "Use one of the demo emails and any password with 4+ characters.",
+    );
   }
 
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));

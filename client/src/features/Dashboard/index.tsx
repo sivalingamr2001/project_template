@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { BadgeCheck, Briefcase, Search, PlusCircle } from "lucide-react";
 import { Button } from "../../shared/components/ui/button";
 // 1. Import useNavigate from TanStack
 import { useNavigate } from "@tanstack/react-router";
+import CreateBudgetModal from "../budget/components/CreateBudgetModal";
 
 const portalStats = [
   { label: "Total active projects", value: "38", icon: Briefcase },
@@ -30,8 +31,8 @@ const actions = [
 ] as const;
 
 export default function DashboardPage() {
-  // 3. Initialize TanStack navigate
   const navigate = useNavigate();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const summaryText = useMemo(
     () =>
@@ -63,7 +64,8 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-xl font-semibold">Portal details</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                This dashboard is designed to help you keep project budgets organized.
+                This dashboard is designed to help you keep project budgets
+                organized.
               </p>
             </div>
           </div>
@@ -72,10 +74,15 @@ export default function DashboardPage() {
             {portalStats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.label} className="rounded-3xl bg-background p-5 shadow-sm">
+                <div
+                  key={stat.label}
+                  className="rounded-3xl bg-background p-5 shadow-sm"
+                >
                   <div className="flex items-center gap-3 text-primary">
                     <Icon className="h-5 w-5" />
-                    <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {stat.label}
+                    </p>
                   </div>
                   <p className="mt-4 text-3xl font-semibold">{stat.value}</p>
                 </div>
@@ -84,25 +91,43 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <aside className="rounded-[2rem] border border-border bg-card p-6 shadow-sm">
-          <h2 className="text-xl font-semibold">Quick actions</h2>
-          <div className="mt-6 space-y-4">
-            {actions.map((action) => (
-              <button
-                key={action.label}
-                type="button"
-                onClick={() => navigate({ to: action.to, search: action.search })}
-                className="flex w-full items-start justify-between rounded-3xl border border-border bg-background px-5 py-4 text-left transition hover:border-primary/60 hover:bg-primary/5"
+        <aside className="rounded-[2rem] border border-border bg-card p-6 shadow-sm h-fit">
+          <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Start a new budget entry.
+              </p>
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                className="w-full justify-between h-14 rounded-2xl px-5"
               >
-                <div>
-                  <p className="text-base font-semibold">{action.label}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>
-                </div>
-                <action.icon className="h-5 w-5 text-primary" />
-              </button>
-            ))}
+                Create Project
+                <PlusCircle className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Find existing projects.
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() => navigate({ to: "/app/budget" })}
+                className="w-full justify-between h-14 rounded-2xl px-5"
+              >
+                Search Project
+                <Search className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </aside>
+
+        {/* Modal Component Integration */}
+        <CreateBudgetModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
       </main>
     </div>
   );

@@ -14,9 +14,16 @@ import type {
 interface BudgetContextValue {
   state: BudgetStoreState;
   activeRecord: BudgetRecord | null;
-  createRecord: (input: { productName: string; productNo: string; projectCode: string }) => BudgetRecord;
+  createRecord: (input: {
+    productName: string;
+    productNo: string;
+    projectCode: string;
+  }) => BudgetRecord;
   deleteRecord: (recordId: string) => void;
-  getCategoryTotals: (categoryIndex: number, record?: BudgetRecord | null) => BudgetCategoryTotals;
+  getCategoryTotals: (
+    categoryIndex: number,
+    record?: BudgetRecord | null,
+  ) => BudgetCategoryTotals;
   getRecordTotals: (record: BudgetRecord) => BudgetTotals;
   getTotals: (record?: BudgetRecord | null) => BudgetTotals;
   loadRecord: (recordId: string) => void;
@@ -52,7 +59,10 @@ function buildBudgetDataFromTemplate() {
   }));
 }
 
-function getCategoryTotalsForRecord(record: BudgetRecord | null, categoryIndex: number): BudgetCategoryTotals {
+function getCategoryTotalsForRecord(
+  record: BudgetRecord | null,
+  categoryIndex: number,
+): BudgetCategoryTotals {
   if (!record) {
     return { planned: 0, actual: 0, variance: 0, variancePercent: 0 };
   }
@@ -72,15 +82,18 @@ function getTotalsForRecord(record: BudgetRecord | null): BudgetTotals {
   }
 
   const totalPlanned = record.budgetData.reduce(
-    (sum, category) => sum + category.items.reduce((itemSum, item) => itemSum + item.planned, 0),
+    (sum, category) =>
+      sum + category.items.reduce((itemSum, item) => itemSum + item.planned, 0),
     0,
   );
   const totalActual = record.budgetData.reduce(
-    (sum, category) => sum + category.items.reduce((itemSum, item) => itemSum + item.actual, 0),
+    (sum, category) =>
+      sum + category.items.reduce((itemSum, item) => itemSum + item.actual, 0),
     0,
   );
   const variance = totalPlanned - totalActual;
-  const variancePercent = totalPlanned > 0 ? (variance / totalPlanned) * 100 : 0;
+  const variancePercent =
+    totalPlanned > 0 ? (variance / totalPlanned) * 100 : 0;
 
   return { totalPlanned, totalActual, variance, variancePercent };
 }
@@ -129,7 +142,8 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       },
       deleteRecord: (recordId) => {
         setState((current) => ({
-          activeRecordId: current.activeRecordId === recordId ? null : current.activeRecordId,
+          activeRecordId:
+            current.activeRecordId === recordId ? null : current.activeRecordId,
           records: current.records.filter((record) => record.id !== recordId),
         }));
       },
@@ -174,15 +188,18 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
 
             return {
               ...record,
-              budgetData: record.budgetData.map((category, currentCategoryIndex) =>
-                currentCategoryIndex !== categoryIndex
-                  ? category
-                  : {
-                      ...category,
-                      items: category.items.map((item, currentItemIndex) =>
-                        currentItemIndex !== itemIndex ? item : { ...item, [field]: value },
-                      ),
-                    },
+              budgetData: record.budgetData.map(
+                (category, currentCategoryIndex) =>
+                  currentCategoryIndex !== categoryIndex
+                    ? category
+                    : {
+                        ...category,
+                        items: category.items.map((item, currentItemIndex) =>
+                          currentItemIndex !== itemIndex
+                            ? item
+                            : { ...item, [field]: value },
+                        ),
+                      },
               ),
             };
           }),
@@ -192,7 +209,9 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     [activeRecord, state],
   );
 
-  return <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>;
+  return (
+    <BudgetContext.Provider value={value}>{children}</BudgetContext.Provider>
+  );
 }
 
 export function useBudget() {

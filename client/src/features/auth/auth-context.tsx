@@ -6,8 +6,16 @@ import {
   type PropsWithChildren,
 } from "react";
 
-import { getStoredSession, loginRequest, logoutRequest } from "@/features/auth/authApi";
-import type { AuthContextValue, LoginInput, User } from "@/features/auth/auth.types";
+import {
+  getStoredSession,
+  loginRequest,
+  logoutRequest,
+} from "@/features/auth/authApi";
+import type {
+  AuthContextValue,
+  LoginInput,
+  User,
+} from "@/features/auth/auth.types";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 

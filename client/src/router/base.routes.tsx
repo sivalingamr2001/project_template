@@ -1,4 +1,7 @@
-import { createRootRouteWithContext, createRoute } from "@tanstack/react-router";
+import {
+  createRootRouteWithContext,
+  createRoute,
+} from "@tanstack/react-router";
 
 import { AppLayout, RootLayout } from "@/layouts";
 import { requireAuth } from "@/router/routeGuards";

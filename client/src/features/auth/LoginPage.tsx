@@ -47,7 +47,7 @@ export default function LoginPage() {
       setError(
         submitError instanceof Error
           ? submitError.message
-          : "Unable to sign in right now."
+          : "Unable to sign in right now.",
       );
       setPendingRedirect(null);
     } finally {
@@ -57,17 +57,17 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      
       {/* LEFT: Branding Panel */}
       <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#020617] p-10 text-white">
-        
         {/* Top */}
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white">
             <TrendingUp className="h-6 w-6" />
           </div>
           <div>
-            <div className="text-lg font-semibold">Janatics India Pvt. Ltd.</div>
+            <div className="text-lg font-semibold">
+              Janatics India Pvt. Ltd.
+            </div>
             <div className="text-sm text-white/70">
               R&D Budget Intelligence Platform
             </div>
@@ -92,14 +92,11 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-xs text-white/50">
-          © 2026 Internal Platform
-        </div>
+        <div className="text-xs text-white/50">© 2026 Internal Platform</div>
       </div>
 
       {/* RIGHT: Login */}
       <div className="flex items-center justify-center p-6 bg-background">
-        
         <Card className="w-full max-w-md border-white/10 bg-card/95 rounded-none">
           <CardHeader>
             <Badge className="w-fit" variant="secondary">
@@ -126,7 +123,6 @@ export default function LoginPage() {
 
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
-              
               {/* Email */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Email</label>
@@ -168,7 +164,6 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

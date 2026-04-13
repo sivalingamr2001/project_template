@@ -10,7 +10,7 @@
     ]
   },
   {
-    "category": "Concept devpt.",
+    "category": "Concept development",
     "items": [
       "Comp.devpt-Concept",
       "Machining components",
@@ -24,7 +24,7 @@
     ]
   },
   {
-    "category": "Prototype devpt.",
+    "category": "Prototype development",
     "items": [
       "Machining components",
       "Plastic - Inj. moulds",
@@ -48,16 +48,10 @@
   },
   {
     "category": "Capital equipments",
-    "items": [
-      "Testing equipments",
-      "Special machines",
-      "Others"
-    ]
+    "items": ["Testing equipments", "Special machines", "Others"]
   },
   {
     "category": "Field validation",
-    "items": [
-      "Product development"
-    ]
+    "items": ["Product development"]
   }
 ]

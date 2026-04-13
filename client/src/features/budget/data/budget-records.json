@@ -8,68 +8,98 @@
       "phase": "Product development",
       "department": "Research and Development",
       "status": "ON TRACK",
-      "lastUpdated": "2026-03-30T12:19:00+05:30"
+      "lastUpdated": "2026-04-13T15:11:00+05:30"
+    },
+    "summary": {
+      "totalPlanned": 2245000,
+      "totalActual": 2307000,
+      "overallVariance": -62000,
+      "currency": "INR"
     },
     "budgetData": [
       {
         "category": "Product Design",
         "items": [
-          { "name": "Benchmarking sample", "planned": 0, "actual": 0 },
-          { "name": "FEA Analysis", "planned": 0, "actual": 0 },
-          { "name": "CFD Analysis", "planned": 0, "actual": 0 },
-          { "name": "Design consultancy", "planned": 0, "actual": 0 },
-          { "name": "Others", "planned": 0, "actual": 0 }
+          { "name": "Benchmarking sample", "planned": 45000, "actual": 42000 },
+          { "name": "FEA Analysis", "planned": 80000, "actual": 75000 },
+          { "name": "CFD Analysis", "planned": 95000, "actual": 90000 },
+          { "name": "Design consultancy", "planned": 150000, "actual": 155000 },
+          { "name": "Others", "planned": 10000, "actual": 8500 }
         ]
       },
       {
-        "category": "Concept devpt.",
+        "category": "Concept development",
         "items": [
-          { "name": "Comp.devpt-Concept", "planned": 0, "actual": 0 },
-          { "name": "Machining components", "planned": 0, "actual": 0 },
-          { "name": "Plastic - Hand moulds", "planned": 0, "actual": 0 },
-          { "name": "Rubber moulds", "planned": 0, "actual": 0 },
-          { "name": "3D printing", "planned": 0, "actual": 0 },
-          { "name": "RPT", "planned": 0, "actual": 0 },
-          { "name": "MIM", "planned": 0, "actual": 0 },
-          { "name": "Jigs & fixtures", "planned": 0, "actual": 0 },
-          { "name": "Concept testing", "planned": 0, "actual": 0 }
+          { "name": "Comp.devpt-Concept", "planned": 60000, "actual": 65000 },
+          { "name": "Machining components", "planned": 85000, "actual": 92000 },
+          {
+            "name": "Plastic - Hand moulds",
+            "planned": 120000,
+            "actual": 115000
+          },
+          { "name": "Rubber moulds", "planned": 45000, "actual": 48000 },
+          { "name": "3D printing", "planned": 35000, "actual": 55000 },
+          { "name": "RPT", "planned": 40000, "actual": 38000 },
+          { "name": "MIM", "planned": 200000, "actual": 210000 },
+          { "name": "Jigs & fixtures", "planned": 75000, "actual": 80000 },
+          { "name": "Concept testing", "planned": 50000, "actual": 52000 }
         ]
       },
       {
-        "category": "Prototype devpt.",
+        "category": "Prototype development",
         "items": [
-          { "name": "Machining components", "planned": 0, "actual": 0 },
-          { "name": "Plastic - Inj. moulds", "planned": 0, "actual": 0 },
-          { "name": "Aluminium - Die casting", "planned": 0, "actual": 0 },
-          { "name": "Investment casting", "planned": 0, "actual": 0 },
-          { "name": "Stamping tools", "planned": 0, "actual": 0 },
-          { "name": "Rubber moulds", "planned": 0, "actual": 0 },
-          { "name": "Jigs & fixtures", "planned": 0, "actual": 0 },
-          { "name": "Comp. mfg.", "planned": 0, "actual": 0 },
-          { "name": "Testing", "planned": 0, "actual": 0 }
+          {
+            "name": "Machining components",
+            "planned": 110000,
+            "actual": 125000
+          },
+          {
+            "name": "Plastic - Inj. moulds",
+            "planned": 450000,
+            "actual": 485000
+          },
+          {
+            "name": "Aluminium - Die casting",
+            "planned": 350000,
+            "actual": 380000
+          },
+          { "name": "Investment casting", "planned": 180000, "actual": 175000 },
+          { "name": "Stamping tools", "planned": 90000, "actual": 95000 },
+          { "name": "Rubber moulds", "planned": 55000, "actual": 58000 },
+          { "name": "Jigs & fixtures", "planned": 40000, "actual": 42000 },
+          { "name": "Comp. mfg.", "planned": 65000, "actual": 70000 },
+          { "name": "Testing", "planned": 30000, "actual": 32000 }
         ]
       },
       {
         "category": "Product testing",
         "items": [
-          { "name": "Testing instruments", "planned": 0, "actual": 0 },
-          { "name": "Testing fixtures", "planned": 0, "actual": 0 },
-          { "name": "Certification", "planned": 0, "actual": 0 },
-          { "name": "Others", "planned": 0, "actual": 0 }
+          {
+            "name": "Testing instruments",
+            "planned": 250000,
+            "actual": 240000
+          },
+          { "name": "Testing fixtures", "planned": 85000, "actual": 88000 },
+          { "name": "Certification", "planned": 120000, "actual": 130000 },
+          { "name": "Others", "planned": 15000, "actual": 12000 }
         ]
       },
       {
         "category": "Capital equipments",
         "items": [
-          { "name": "Testing equipments", "planned": 0, "actual": 0 },
-          { "name": "Special machines", "planned": 0, "actual": 0 },
-          { "name": "Others", "planned": 0, "actual": 0 }
+          {
+            "name": "Testing equipments",
+            "planned": 1500000,
+            "actual": 1500000
+          },
+          { "name": "Special machines", "planned": 850000, "actual": 875000 },
+          { "name": "Others", "planned": 50000, "actual": 45000 }
         ]
       },
       {
         "category": "Field validation",
         "items": [
-          { "name": "Product development", "planned": 0, "actual": 0 }
+          { "name": "Product development", "planned": 200000, "actual": 0 }
         ]
       }
     ]

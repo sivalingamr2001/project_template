@@ -23,7 +23,7 @@ export default function AppLayout() {
               Janatics India Pvt. Ltd.
             </h1>
             <p className="text-xs text-muted-foreground mt-1">
-              R&D Budget Management
+              R&D Manufacturing Budget Portal
             </p>
           </div>
 

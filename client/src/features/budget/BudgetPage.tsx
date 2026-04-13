@@ -1,12 +1,11 @@
-import { useEffect, useState } from "react";
 import { useSearch } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
+import { BudgetProvider, useBudget } from "@/features/budget/budget-context";
 import type { ActiveView, PlanTab } from "@/features/budget/budget-page.types";
 import { PerformanceReportSection } from "@/features/budget/components/PerformanceReportSection";
 import { PlanEntrySection } from "@/features/budget/components/PlanEntrySection";
-import { ProjectHeader } from "@/features/budget/components/ProjectHeader";
 import { ProjectSearchPage } from "@/features/budget/components/ProjectSearchPage";
-import { BudgetProvider, useBudget } from "@/features/budget/budget-context";
 import {
   Tabs,
   TabsContent,
@@ -57,13 +56,13 @@ function BudgetWorkspace() {
   }, [activeRecord, activeView]);
 
   return (
-    <div className="flex h-[calc(100vh-12.5rem)] min-h-152 flex-col overflow-hidden">
+    <div className="flex flex-col">
       <Tabs
         value={activeView}
         onValueChange={(value) => setActiveView(value as ActiveView)}
         className="flex flex-1 flex-col"
       >
-        <div className="shrink-0 space-y-5">
+        <div className="">
           <TabsList>
             <TabsTrigger value="project-search">Search</TabsTrigger>
             <TabsTrigger value="plan-entry" disabled={!activeRecord}>
@@ -73,38 +72,25 @@ function BudgetWorkspace() {
               Performance
             </TabsTrigger>
           </TabsList>
-          {activeView !== "project-search" && activeRecord && <ProjectHeader />}
         </div>
 
         <div>
-          <TabsContent
-            value="project-search"
-            className="m-0 h-full outline-none"
-          >
+          <TabsContent value="project-search" className="m-0  outline-none">
             <ProjectSearchPage
               onOpenPlanEntry={() => setActiveView("plan-entry")}
             />
           </TabsContent>
 
-          <TabsContent value="plan-entry" className="m-0 h-full outline-none">
+          <TabsContent value="plan-entry" className="m-0  outline-none">
             {activeRecord && (
               <PlanEntrySection
-                activeTab={planTab}
-                onTabChange={setPlanTab}
                 onViewReport={() => setActiveView("performance-report")}
               />
             )}
           </TabsContent>
 
-          <TabsContent
-            value="performance-report"
-            className="m-0 h-full outline-none"
-          >
-            {activeRecord && (
-              <PerformanceReportSection
-                onBackToPlan={() => setActiveView("plan-entry")}
-              />
-            )}
+          <TabsContent value="performance-report" className="m-0  outline-none">
+            {activeRecord && <PerformanceReportSection />}
           </TabsContent>
         </div>
       </Tabs>

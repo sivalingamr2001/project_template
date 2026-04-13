@@ -1,9 +1,18 @@
-"use client"
+"use client";
 
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/shared/components/ui/sidebar"
-import { File, Inbox, Layers, Send, TrendingUp } from "lucide-react"
-import * as React from "react"
-import { Link, useLocation } from "@tanstack/react-router"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar
+} from "@/shared/components/ui/sidebar";
+import { Link, useLocation } from "@tanstack/react-router";
+import { Layers, TrendingUp } from "lucide-react";
+import * as React from "react";
 
 const data = {
   navMain: [
@@ -17,12 +26,12 @@ const data = {
       to: "/app/budget",
       icon: Layers,
     },
-  ]
-}
+  ],
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const location = useLocation()
-  const { setOpen } = useSidebar()
+  const location = useLocation();
+  const { setOpen } = useSidebar();
 
   return (
     <Sidebar
@@ -63,5 +72,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarContent>
       </Sidebar>
     </Sidebar>
-  )
+  );
 }
