@@ -1,4 +1,8 @@
-import { IconBell, IconLayoutSidebarLeftCollapse } from "@tabler/icons-react"
+import {
+  IconBell,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarRightCollapse,
+} from "@tabler/icons-react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 
@@ -14,7 +18,7 @@ type AppHeaderProps = {
   onToggleSidebar?: () => void
 }
 
-export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
+export function AppHeader({ isSidebarCollapsed, onToggleSidebar }: AppHeaderProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const { markNotificationAsRead, notifications } =
@@ -47,7 +51,11 @@ export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
           )}
           onClick={onToggleSidebar}
         >
-          <IconLayoutSidebarLeftCollapse className="h-5 w-5" />
+          {isSidebarCollapsed ? (
+            <IconLayoutSidebarRightCollapse className="h-5 w-5"/>
+          ) : (
+            <IconLayoutSidebarLeftCollapse className="h-5 w-5" />
+          )}
         </button>
       </div>
       <div className="flex items-center gap-2">
@@ -57,7 +65,7 @@ export function AppHeader({ onToggleSidebar }: AppHeaderProps) {
         >
           <IconBell className="size-5" />
           {hasUnread ? (
-            <span className="absolute top-2 right-2 size-2 rounded-full bg-primary" />
+            <span className="absolute top-2 right-2 size-2 rounded-full bg-red-500" />
           ) : null}
         </button>
         <UserMenu

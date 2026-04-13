@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+             targetNamespace="http://example.com/bpmn">
+  <process id="AccessRequestProcess" name="Access Request Approval" isExecutable="true">
+    <startEvent id="StartEvent_RequestSubmitted" name="Request Submitted">
+      <outgoing>Flow_Start_to_HOD</outgoing>
+    </startEvent>
+
+    <sequenceFlow id="Flow_Start_to_HOD" sourceRef="StartEvent_RequestSubmitted" targetRef="UserTask_HODApproval" />
+
+    <userTask id="UserTask_HODApproval" name="HOD Approval" camunda:assignee="hod">
+      <incoming>Flow_Start_to_HOD</incoming>
+      <outgoing>Flow_HOD_to_Decision</outgoing>
+    </userTask>
+
+    <sequenceFlow id="Flow_HOD_to_Decision" sourceRef="UserTask_HODApproval" targetRef="Gateway_HODDecision" />
+
+    <exclusiveGateway id="Gateway_HODDecision" name="HOD Decision">
+      <incoming>Flow_HOD_to_Decision</incoming>
+      <outgoing>Flow_HOD_Approved</outgoing>
+      <outgoing>Flow_HOD_Rejected</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="Flow_HOD_Approved" sourceRef="Gateway_HODDecision" targetRef="UserTask_ITApproval">
+      <conditionExpression xsi:type="tFormalExpression">${hodApproved == true}</conditionExpression>
+    </sequenceFlow>
+
+    <sequenceFlow id="Flow_HOD_Rejected" sourceRef="Gateway_HODDecision" targetRef="UserTask_RequestUpdate">
+      <conditionExpression xsi:type="tFormalExpression">${hodApproved == false}</conditionExpression>
+    </sequenceFlow>
+
+    <userTask id="UserTask_RequestUpdate" name="Request Update" camunda:assignee="employee">
+      <incoming>Flow_HOD_Rejected</incoming>
+      <outgoing>Flow_Update_back_to_HOD</outgoing>
+    </userTask>
+
+    <sequenceFlow id="Flow_Update_back_to_HOD" sourceRef="UserTask_RequestUpdate" targetRef="UserTask_HODApproval" />
+
+    <userTask id="UserTask_ITApproval" name="IT Team Approval" camunda:assignee="it_team">
+      <incoming>Flow_HOD_Approved</incoming>
+      <outgoing>Flow_IT_to_Decision</outgoing>
+    </userTask>
+
+    <sequenceFlow id="Flow_IT_to_Decision" sourceRef="UserTask_ITApproval" targetRef="Gateway_ITDecision" />
+
+    <exclusiveGateway id="Gateway_ITDecision" name="IT Decision">
+      <incoming>Flow_IT_to_Decision</incoming>
+      <outgoing>Flow_IT_Approved</outgoing>
+      <outgoing>Flow_IT_Rejected</outgoing>
+    </exclusiveGateway>
+
+    <sequenceFlow id="Flow_IT_Approved" sourceRef="Gateway_ITDecision" targetRef="IntermediateTimer_AccessExpiry">
+      <conditionExpression xsi:type="tFormalExpression">${itApproved == true}</conditionExpression>
+    </sequenceFlow>
+
+    <sequenceFlow id="Flow_IT_Rejected" sourceRef="Gateway_ITDecision" targetRef="EndEvent_ITRejected">
+      <conditionExpression xsi:type="tFormalExpression">${itApproved == false}</conditionExpression>
+    </sequenceFlow>
+
+    <endEvent id="EndEvent_ITRejected" name="Access Rejected">
+      <incoming>Flow_IT_Rejected</incoming>
+    </endEvent>
+
+    <intermediateCatchEvent id="IntermediateTimer_AccessExpiry" name="Access Duration Timer">
+      <incoming>Flow_IT_Approved</incoming>
+      <outgoing>Flow_Timer_to_Revoke</outgoing>
+      <timerEventDefinition>
+        <timeDuration>PT365D</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+
+    <serviceTask id="ServiceTask_RevokeAccess" name="Revoke Access" camunda:class="com.example.RevokeAccessDelegate">
+      <incoming>Flow_Timer_to_Revoke</incoming>
+      <outgoing>Flow_Revoke_to_End</outgoing>
+    </serviceTask>
+
+    <sequenceFlow id="Flow_Timer_to_Revoke" sourceRef="IntermediateTimer_AccessExpiry" targetRef="ServiceTask_RevokeAccess" />
+    <sequenceFlow id="Flow_Revoke_to_End" sourceRef="ServiceTask_RevokeAccess" targetRef="EndEvent_AccessRevoked" />
+
+    <endEvent id="EndEvent_AccessRevoked" name="Access Revoked">
+      <incoming>Flow_Revoke_to_End</incoming>
+    </endEvent>
+  </process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_AccessRequest">
+    <bpmndi:BPMNPlane id="BPMNPlane_AccessRequest" bpmnElement="AccessRequestProcess">
+      <bpmndi:BPMNShape id="Shape_StartEvent" bpmnElement="StartEvent_RequestSubmitted">
+        <dc:Bounds x="100" y="100" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_HODApproval" bpmnElement="UserTask_HODApproval">
+        <dc:Bounds x="220" y="90" width="100" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_HODDecision" bpmnElement="Gateway_HODDecision" isMarkerVisible="true">
+        <dc:Bounds x="360" y="100" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_RequestUpdate" bpmnElement="UserTask_RequestUpdate">
+        <dc:Bounds x="470" y="40" width="100" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_ITApproval" bpmnElement="UserTask_ITApproval">
+        <dc:Bounds x="470" y="220" width="100" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_ITDecision" bpmnElement="Gateway_ITDecision" isMarkerVisible="true">
+        <dc:Bounds x="620" y="230" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_Timer" bpmnElement="IntermediateTimer_AccessExpiry">
+        <dc:Bounds x="750" y="230" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_RevokeAccess" bpmnElement="ServiceTask_RevokeAccess">
+        <dc:Bounds x="860" y="220" width="100" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndRevoked" bpmnElement="EndEvent_AccessRevoked">
+        <dc:Bounds x="1020" y="230" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Shape_EndRejected" bpmnElement="EndEvent_ITRejected">
+        <dc:Bounds x="720" y="40" width="36" height="36" />
+      </bpmndi:BPMNShape>
+
+      <bpmndi:BPMNEdge id="Flow_Start_to_HOD_di" bpmnElement="Flow_Start_to_HOD">
+        <di:waypoint x="136" y="118" />
+        <di:waypoint x="220" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HOD_to_Decision_di" bpmnElement="Flow_HOD_to_Decision">
+        <di:waypoint x="320" y="118" />
+        <di:waypoint x="360" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HOD_Approved_di" bpmnElement="Flow_HOD_Approved">
+        <di:waypoint x="385" y="125" />
+        <di:waypoint x="470" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HOD_Rejected_di" bpmnElement="Flow_HOD_Rejected">
+        <di:waypoint x="385" y="118" />
+        <di:waypoint x="470" y="70" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Update_back_to_HOD_di" bpmnElement="Flow_Update_back_to_HOD">
+        <di:waypoint x="570" y="70" />
+        <di:waypoint x="570" y="118" />
+        <di:waypoint x="360" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_IT_to_Decision_di" bpmnElement="Flow_IT_to_Decision">
+        <di:waypoint x="570" y="260" />
+        <di:waypoint x="620" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_IT_Approved_di" bpmnElement="Flow_IT_Approved">
+        <di:waypoint x="665" y="255" />
+        <di:waypoint x="750" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_IT_Rejected_di" bpmnElement="Flow_IT_Rejected">
+        <di:waypoint x="645" y="245" />
+        <di:waypoint x="720" y="118" />
+        <di:waypoint x="720" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Timer_to_Revoke_di" bpmnElement="Flow_Timer_to_Revoke">
+        <di:waypoint x="786" y="248" />
+        <di:waypoint x="860" y="248" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Revoke_to_End_di" bpmnElement="Flow_Revoke_to_End">
+        <di:waypoint x="960" y="250" />
+        <di:waypoint x="1020" y="250" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

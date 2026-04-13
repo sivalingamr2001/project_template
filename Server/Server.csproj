@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
@@ -7,10 +7,18 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" />
         <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
         <PackageReference Include="MySqlConnector" />
+        <PackageReference Include="Oracle.ManagedDataAccess.Core" />
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
         <PackageReference Include="Serilog.AspNetCore" />
         <PackageReference Include="Swashbuckle.AspNetCore" />
+        <PackageReference Include="zb-client" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="ConnectionDll">
+        <HintPath>Infrastructure\External Sources\ConnectionDll.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
     <Target Name="CopyReactBuild" AfterTargets="Publish">

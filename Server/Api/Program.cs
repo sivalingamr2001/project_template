@@ -1,5 +1,6 @@
 using Server.Api.Config;
 using Server.Api.Middleware;
+using Server.Shared.Camunda;
 using Server.Shared.Constants;
 
 var builder = WebApplication.CreateBuilder(args);

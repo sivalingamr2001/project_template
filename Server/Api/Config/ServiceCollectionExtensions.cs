@@ -7,6 +7,7 @@ using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
 using Server.Infrastructure.Db;
+using Server.Shared.Camunda;
 using Server.Shared.Constants;
 using Server.Shared.Helpers;
 
@@ -52,6 +53,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetAccessRequestsService>();
         services.AddScoped<GetDashboardService>();
         services.AddScoped<GetAuditLogsService>();
+        services.Configure<CamundaOptions>(configuration.GetSection("Zeebe"));
+        services.AddSingleton<CamundaService>();
 
         services.AddCors(options =>
         {

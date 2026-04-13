@@ -108,7 +108,7 @@ export function buildStageCards(
     card4Tone = "pending"
   } else if (status === "Access Granted") {
     card4Label = "Access Granted"
-    card4Tone = "active"
+    card4Tone = "complete"
   } else if (status === "Revoked" || status === "Expired") {
     if (isRecent) {
       card4Label = status
@@ -131,4 +131,3 @@ export function buildStageCards(
 
   return [card1, card2, card3, card4]
 }
-

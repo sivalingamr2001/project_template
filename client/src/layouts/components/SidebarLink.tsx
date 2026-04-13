@@ -6,14 +6,16 @@ type SidebarLinkProps = {
   icon: React.ComponentType<{ className?: string }>
   isCollapsed: boolean
   label: string
+  onClick?: () => void
   to: string
 }
 
-function SidebarLink({ icon: Icon, isCollapsed, label, to }: SidebarLinkProps) {
+function SidebarLink({ icon: Icon, isCollapsed, label, onClick, to }: SidebarLinkProps) {
   return (
     <NavLink
       to={to}
       title={label}
+      onClick={onClick}
       className={({ isActive }) =>
         cn(
           "group relative flex items-center rounded-xl px-3 py-2.5 text-sm transition",

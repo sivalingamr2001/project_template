@@ -10,16 +10,20 @@ export function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-background">
+    <div className="h-screen w-screen overflow-auto bg-background">
       <div
         className={cn(
-          "grid h-full w-full gap-4 p-4",
+          "relative h-full w-full max-w-full gap-4 p-4 md:grid",
           isSidebarCollapsed
             ? "md:grid-cols-[5rem_minmax(0,1fr)]"
             : "md:grid-cols-[18rem_minmax(0,1fr)]"
         )}
       >
-        <AppSidebar isCollapsed={isSidebarCollapsed} />
+        <AppSidebar
+          isCollapsed={isSidebarCollapsed}
+          onClose={() => setIsSidebarCollapsed(true)}
+          onItemClick={() => setIsSidebarCollapsed(true)}
+        />
         <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden">
           <AppHeader
             isSidebarCollapsed={isSidebarCollapsed}

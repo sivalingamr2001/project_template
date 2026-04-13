@@ -5,9 +5,10 @@ import SidebarLink from "./SidebarLink"
 type SidebarGroupProps = {
   isCollapsed: boolean
   section: NavigationSection
+  onItemClick?: () => void
 }
 
-function SidebarGroup({ isCollapsed, section }: SidebarGroupProps) {
+function SidebarGroup({ isCollapsed, section, onItemClick }: SidebarGroupProps) {
   return (
     <div>
       {isCollapsed ? null : (
@@ -22,6 +23,7 @@ function SidebarGroup({ isCollapsed, section }: SidebarGroupProps) {
             icon={item.icon}
             isCollapsed={isCollapsed}
             label={item.label}
+            onClick={onItemClick}
             to={item.to}
           />
         ))}
