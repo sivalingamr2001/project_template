@@ -25,7 +25,9 @@ export function GetCurrentUser(): AuthUser | null {
     const session = JSON.parse(sessionData)
 
     return {
+      userId: session.userId ?? 0,
       employeeId: session.employeeId,
+      userName: session.userName ?? "",
       name: session.name,
       email: session.email,
       phone: session.phone,

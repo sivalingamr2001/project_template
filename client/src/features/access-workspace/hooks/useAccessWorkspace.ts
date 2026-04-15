@@ -4,8 +4,6 @@ import { useAuth } from "@/context/AuthContext"
 
 import type {
   AccessRequest,
-  AuditLogItem,
-  EmployeeRecord,
   NotificationItem,
   QueueMode,
 } from "../types"
@@ -16,8 +14,6 @@ import {
 } from "../utils/accessSelectors"
 import {
   fetchAccessRequests,
-  fetchAuditLogs,
-  fetchAllUsers,
   fetchNotifications,
   markNotificationRead,
 } from "../utils/requestApi"
@@ -29,8 +25,6 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
     user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
   const [apiRequests, setApiRequests] = useState<AccessRequest[]>([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
-  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])
-  const [employees, setEmployees] = useState<EmployeeRecord[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [reloadKey, setReloadKey] = useState(0)
@@ -41,24 +35,17 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
     setIsLoading(true)
     void (async () => {
       try {
-        const [requests, notificationsResponse, auditLogsResponse, users] =
-          await Promise.all([
-            fetchAccessRequests(employeeId),
-            fetchNotifications(employeeId),
-            fetchAuditLogs(),
-            fetchAllUsers(),
-          ])
+        const [requests, notificationsResponse] = await Promise.all([
+          fetchAccessRequests(employeeId),
+          fetchNotifications(employeeId, 1, 50),
+        ])
 
         setApiRequests(requests)
-        setNotifications(notificationsResponse)
-        setAuditLogs(auditLogsResponse)
-        setEmployees(users)
+        setNotifications(notificationsResponse.data)
         setErrorMessage(null)
       } catch (error) {
         setApiRequests([])
         setNotifications([])
-        setAuditLogs([])
-        setEmployees([])
         if (error instanceof Error) {
           setErrorMessage(error.message)
         } else {
@@ -95,9 +82,7 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   }
 
   return {
-    auditLogs,
     defaultRoute: getDefaultRoute(role),
-    employees,
     errorMessage,
     isLoading,
     markNotificationAsRead,

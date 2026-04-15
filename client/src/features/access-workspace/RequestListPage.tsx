@@ -11,7 +11,7 @@ type RequestListPageProps = {
 }
 
 function RequestListPage({ description, mode, title }: RequestListPageProps) {
-  const { errorMessage, isLoading, requests } = useAccessWorkspace(mode)
+  const { errorMessage, isLoading, refetch, requests } = useAccessWorkspace(mode)
 
   return (
     <PageSection title={title} description={description}>
@@ -24,6 +24,7 @@ function RequestListPage({ description, mode, title }: RequestListPageProps) {
           `${row.accessReqId}-${row.accessItems[0]?.accessItemId ?? "request"}`
         }
         pageSize={5}
+        onRefresh={refetch}
         rows={isLoading ? [] : requests}
         emptyMessage={isLoading ? "Loading..." : "No requests found."}
       />

@@ -1,4 +1,4 @@
-﻿using Zeebe.Client;
+using Zeebe.Client;
 using Zeebe.Client.Impl.Builder;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
@@ -8,7 +8,7 @@ namespace Server.Shared.Camunda;
 public class CamundaService
 {
     private readonly CamundaOptions _options;
-    private readonly IZeebeClient _client;
+    private readonly IZeebeClient _client = null!;
 
     public CamundaService(IOptions<CamundaOptions> options)
     {

@@ -32,6 +32,7 @@ export const NOTIFICATIONS: NotificationItem[] = [
 
 export const EMPLOYEES: EmployeeRecord[] = [
   {
+    userId: 1,
     employeeId: 1001,
     name: "Anitha",
     departmentName: "Finance",
@@ -39,6 +40,7 @@ export const EMPLOYEES: EmployeeRecord[] = [
     email: "anitha@company.com",
   },
   {
+    userId: 2,
     employeeId: 2201,
     name: "Meera",
     departmentName: "Finance",
@@ -46,6 +48,7 @@ export const EMPLOYEES: EmployeeRecord[] = [
     email: "meera@company.com",
   },
   {
+    userId: 3,
     employeeId: 3001,
     name: "Arun",
     departmentName: "IT Infrastructure",

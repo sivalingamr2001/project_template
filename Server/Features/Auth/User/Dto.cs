@@ -1,22 +1,54 @@
-﻿using Server.Shared.Helpers;
+﻿namespace Server.Features.Auth.User;
 
-namespace Server.Features.Auth.User;
+using Server.Shared.Helpers;
 
-public sealed class GetAllUsersQuery : PagedRequest;
+public sealed class GetUsersQuery : PagedRequest;
 
-public record UserListResponse(IEnumerable<UserDto> Users);
+public record DepartmentHodDto(int EmployeeId, string Name, string Email);
 
-public record UserDto(
+public record UserProfileDto(
+    int UserId,
     int EmployeeId,
+    string UserName,
+    string Name,
+    string Email,
+    string Phone,
+    int DepartmentId,
+    string DepartmentName,
+    string Role,
+    DepartmentHodDto DepartmentHod);
+
+public record UserListItemDto(
+    int UserId,
+    int EmployeeId,
+    string Name,
+    string Email,
+    string DepartmentName,
+    string Role);
+
+public sealed record UpdateUserRequest(
+    string? UserName,
     string? FirstName,
     string? LastName,
-    string UserName,
-    string? Mobile,
-    string? Location,
     string? Email,
-    int? DeptId,
+    string? Phone,
+    string? Location,
+    int? DepartmentId,
     string? DepartmentName,
     string? Role,
-    int? HodID,
-    string? HodName,
-    string? HodEmail);
+    int? HodEmployeeId);
+
+public sealed record CreateUserRequest(
+    int EmployeeId,
+    string UserName,
+    string? FirstName,
+    string? LastName,
+    string? Email,
+    string? Phone,
+    int? DepartmentId,
+    string? DepartmentName,
+    string? Role,
+    int? HodEmployeeId,
+    string Password);
+
+public sealed record UpdatePasswordRequest(string Password);

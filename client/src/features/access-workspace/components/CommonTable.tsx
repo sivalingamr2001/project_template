@@ -1,17 +1,34 @@
 import { useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { IconMinus, IconPlus } from "@tabler/icons-react"
+import { Input } from "@/components/ui/input"
+import {
+  IconMinus,
+  IconPlus,
+  IconRefresh,
+  IconSearch,
+} from "@tabler/icons-react"
 
 import CommonTablePagination from "./CommonTablePagination"
 import CommonTableRow from "./CommonTableRow"
 import type { TableColumn } from "../types"
 
+type ServerPagination = {
+  onPageChange: (page: number) => void
+  page: number
+  pageSize: number
+  totalCount: number
+}
+
 type CommonTableProps<T> = {
   columns: TableColumn<T>[]
   emptyMessage: string
   getRowId?: (row: T, index: number) => string | number
+  onRefresh?: () => void
   pageSize?: number
+  pagination?: ServerPagination
+  searchPlaceholder?: string
+  toolbarActions?: React.ReactNode
   renderExpandedRow?: (row: T) => React.ReactNode
   rows: T[]
 }
@@ -20,27 +37,69 @@ function CommonTable<T>({
   columns,
   emptyMessage,
   getRowId,
+  onRefresh,
   pageSize = 5,
+  pagination,
+  searchPlaceholder = "Search",
+  toolbarActions,
   renderExpandedRow,
   rows,
 }: CommonTableProps<T>) {
-  const [currentPage, setCurrentPage] = useState(1)
+  const isServerPaginated = Boolean(pagination)
+  const [currentPage, setCurrentPage] = useState(pagination?.page ?? 1)
+  const [searchTerm, setSearchTerm] = useState("")
   const [expandedRowId, setExpandedRowId] = useState<string | number | null>(
     null
   )
 
   useEffect(() => {
-    setCurrentPage(1)
+    if (!isServerPaginated) {
+      setCurrentPage(1)
+    }
     setExpandedRowId(null)
-  }, [rows])
+  }, [isServerPaginated, rows])
 
-  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize))
-  const currentRows = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize
-    return rows.slice(startIndex, startIndex + pageSize)
-  }, [currentPage, pageSize, rows])
+  useEffect(() => {
+    if (isServerPaginated && pagination) {
+      setCurrentPage(pagination.page)
+    }
+  }, [isServerPaginated, pagination?.page])
 
-  if (!rows.length) {
+  const resolvedPageSize = pagination?.pageSize ?? pageSize
+  const filteredRows = useMemo(() => {
+    const normalizedSearchTerm = searchTerm.trim().toLowerCase()
+    if (!normalizedSearchTerm) {
+      return rows
+    }
+
+    return rows.filter((row) => {
+      try {
+        return JSON.stringify(row).toLowerCase().includes(normalizedSearchTerm)
+      } catch {
+        return false
+      }
+    })
+  }, [rows, searchTerm])
+
+  const visibleRows = useMemo(() => {
+    if (isServerPaginated) {
+      return filteredRows
+    }
+
+    const startIndex = (currentPage - 1) * resolvedPageSize
+    return filteredRows.slice(startIndex, startIndex + resolvedPageSize)
+  }, [currentPage, filteredRows, isServerPaginated, resolvedPageSize])
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / resolvedPageSize))
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    if (pagination) {
+      pagination.onPageChange(page)
+    }
+  }
+
+  if (!filteredRows.length) {
     return (
       <div className="rounded-[1.4rem] border border-border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
         {emptyMessage}
@@ -50,8 +109,37 @@ function CommonTable<T>({
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="relative w-full lg:max-w-xl">
+          <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            aria-label="Search table"
+            className="h-12 rounded-2xl border-input/80 bg-background pr-4 pl-10 text-sm shadow-sm placeholder:text-muted-foreground/80"
+            onChange={(event) => {
+              setSearchTerm(event.target.value)
+              setCurrentPage(1)
+            }}
+            placeholder={searchPlaceholder}
+            value={searchTerm}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {onRefresh ? (
+            <Button
+              size="sm"
+              type="button"
+              variant="outline"
+              onClick={onRefresh}
+            >
+              <IconRefresh className="mr-2 size-4" />
+              Refresh
+            </Button>
+          ) : null}
+          {toolbarActions}
+        </div>
+      </div>
       <div className="md:hidden space-y-4">
-        {currentRows.map((row, index) => {
+        {visibleRows.map((row, index) => {
           const rowId = getRowId?.(row, index) ?? index
           const isExpanded = expandedRowId === rowId
           const isExpandable = Boolean(renderExpandedRow)
@@ -113,7 +201,7 @@ function CommonTable<T>({
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-background">
-              {currentRows.map((row, index) => {
+              {visibleRows.map((row, index) => {
                 const rowId = getRowId?.(row, index) ?? index
                 const isExpanded = expandedRowId === rowId
                 const isExpandable = Boolean(renderExpandedRow)
@@ -137,7 +225,7 @@ function CommonTable<T>({
 
       <CommonTablePagination
         currentPage={currentPage}
-        onPageChange={setCurrentPage}
+        onPageChange={handlePageChange}
         totalPages={totalPages}
       />
     </div>

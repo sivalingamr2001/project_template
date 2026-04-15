@@ -14,7 +14,9 @@ export type HODDetails = {
 }
 
 export type AuthUser = {
+  userId: number
   employeeId: number
+  userName: string
   name: string
   email: string
   phone: string
@@ -29,6 +31,7 @@ type AuthContextValue = {
   isLoading: boolean
   login: (identifier: string, password: string) => Promise<void>
   logout: () => void
+  setSessionUser: (user: AuthUser) => void
   user: AuthUser | null
 }
 
@@ -85,8 +88,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
+  const setSessionUser = (nextUser: AuthUser) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextUser))
+    setUser(nextUser)
+  }
+
   const value = useMemo(
-    () => ({ isAuthenticated: Boolean(user), isLoading, login, logout, user }),
+    () => ({
+      isAuthenticated: Boolean(user),
+      isLoading,
+      login,
+      logout,
+      setSessionUser,
+      user,
+    }),
     [isLoading, user]
   )
 

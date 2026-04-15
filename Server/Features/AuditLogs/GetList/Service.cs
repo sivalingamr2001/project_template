@@ -1,16 +1,24 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Infrastructure.Db;
+using Server.Shared.Helpers;
 
 namespace Server.Features.AuditLogs.GetList;
 
 public sealed class GetAuditLogsService(AppDbContext dbContext)
 {
-    public async Task<IReadOnlyList<AuditLogDto>> GetAsync(CancellationToken cancellationToken)
+    public async Task<PaginatedResponse<AuditLogDto>> GetAsync(
+        GetAuditLogsQuery query,
+        CancellationToken cancellationToken)
     {
-        var rows = await dbContext.AccessReqAudits
+        var baseQuery = dbContext.AccessReqAudits
             .AsNoTracking()
-            .OrderByDescending(audit => audit.CreatedOn)
-            .Take(100)
+            .OrderByDescending(audit => audit.CreatedOn);
+
+        var totalCount = await baseQuery.CountAsync(cancellationToken);
+
+        var rows = await baseQuery
+            .Skip(query.Skip)
+            .Take(query.NormalizedPageSize)
             .Select(audit => new
             {
                 audit.AuditId,
@@ -34,7 +42,7 @@ public sealed class GetAuditLogsService(AppDbContext dbContext)
             .Where(employee => actorIds.Contains(employee.EmployeeId))
             .ToDictionaryAsync(employee => employee.EmployeeId, employee => employee.UserName, cancellationToken);
 
-        return rows
+        var data = rows
             .Select(row =>
             {
                 var actorName = int.TryParse(row.CreatedBy, out var actorId)
@@ -51,5 +59,7 @@ public sealed class GetAuditLogsService(AppDbContext dbContext)
                     row.Message);
             })
             .ToList();
+
+        return new PaginatedResponse<AuditLogDto>(data, totalCount, query.NormalizedPage, query.NormalizedPageSize);
     }
 }

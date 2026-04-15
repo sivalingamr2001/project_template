@@ -62,6 +62,12 @@ export type PaginatedResponse<T> = {
   pageSize: number
   totalCount: number
 }
+
+export type Department = {
+  id: number
+  name: string
+}
+
 export type NotificationItem = {
   accessReqId: number
   auditId: number
@@ -75,6 +81,7 @@ export type EmployeeRecord = {
   departmentName: string
   email: string
   employeeId: number
+  userId: number
   name: string
   role: AppRole
 }

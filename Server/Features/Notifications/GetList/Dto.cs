@@ -1,4 +1,8 @@
+using Server.Shared.Helpers;
+
 namespace Server.Features.Notifications.GetList;
+
+public sealed class GetNotificationsQuery : PagedRequest;
 
 public sealed record NotificationDto(
     int AuditId,

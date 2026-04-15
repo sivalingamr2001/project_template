@@ -18,7 +18,9 @@ public sealed class GetDashboardService(AppDbContext dbContext)
         var profile = await dbContext.Employees
             .AsNoTracking()
             .Where(employee => employee.EmployeeId == employeeId)
-            .Select(employee => new EmployeeProfile(employee.DeptName, employee.UserRole))
+            .Select(employee => new EmployeeProfile(
+                employee.DeptName ?? string.Empty,
+                employee.UserRole ?? string.Empty))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (profile is null)

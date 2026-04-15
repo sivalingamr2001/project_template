@@ -11,6 +11,9 @@ using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
+using Server.Features.Departments.GetList;
+using Server.Features.Departments.Create;
+using Server.Features.Departments.Update;
 using Server.Features.Notifications.GetList;
 using Server.Features.Notifications.MarkRead;
 
@@ -26,6 +29,10 @@ public static class EndpointMappingExtensions
         var userGroup = app.MapGroup("/api/User").WithTags("User");
         GetAllUsersEndpoint.Map(userGroup);
 
+        var departmentsGroup = app.MapGroup("/api/departments").WithTags("Departments");
+        GetDepartmentsEndpoint.Map(departmentsGroup);
+        CreateDepartmentEndpoint.Map(departmentsGroup);
+        UpdateDepartmentEndpoint.Map(departmentsGroup);
 
         var accessRequestsGroup = app.MapGroup("/api/access-requests").WithTags("Access Requests");
         CreateAccessRequestEndpoint.Map(accessRequestsGroup);

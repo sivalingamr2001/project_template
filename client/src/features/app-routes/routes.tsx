@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom"
 import {
   AuditLogPage,
   DashboardPage,
+  DepartmentsPage,
   EmployeePage,
   ProfilePage,
   RequestCreatePage,
@@ -105,6 +106,7 @@ export const router = createBrowserRouter([
                 ),
               },
               { path: "it/employees", element: <EmployeePage /> },
+              { path: "it/departments", element: <DepartmentsPage /> },
               { path: "it/audit-log", element: <AuditLogPage /> },
             ],
           },

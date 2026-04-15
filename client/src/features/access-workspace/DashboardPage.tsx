@@ -1,35 +1,21 @@
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
+import { Button } from "@/components/ui/button"
 import CommonTable from "./components/CommonTable"
 import CreateRequestModal from "./components/CreateRequestModal"
-import HeaderBar from "./components/HeaderBar"
 import PageSection from "./components/PageSection"
 import { useAccessWorkspace } from "./hooks/useAccessWorkspace"
 import { requestColumns } from "./utils/tableColumns"
 
 function DashboardPage() {
-  const { errorMessage, isLoading, refetch, searchRequests } =
+  const { errorMessage, isLoading, refetch, requests } =
     useAccessWorkspace("dashboard")
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [searchValue, setSearchValue] = useState("")
-
-  const filteredRequests = useMemo(() => {
-    return searchRequests(searchValue) || []
-  }, [searchRequests, searchValue])
 
   return (
     <div className="space-y-4">
       {/* <StatsGrid cards={summaryCards} /> */}
       <PageSection title="My Requests" description="">
-        <div className="mb-4">
-          <HeaderBar
-            searchValue={searchValue}
-            setSearchValue={setSearchValue}
-            onRefresh={refetch}
-            onCreate={() => setIsModalOpen(true)}
-          />
-        </div>
-
         {errorMessage && (
           <p className="mb-4 text-sm text-destructive">{errorMessage}</p>
         )}
@@ -40,8 +26,15 @@ function DashboardPage() {
             `${row.accessReqId}-${row.accessItems[0]?.accessItemId ?? "request"}`
           }
           pageSize={5}
-          rows={isLoading ? [] : filteredRequests}
+          rows={isLoading ? [] : requests}
           emptyMessage={isLoading ? "Loading..." : "No requests found."}
+          onRefresh={refetch}
+          searchPlaceholder="Search folder, request, or status"
+          toolbarActions={
+            <Button type="button" onClick={() => setIsModalOpen(true)}>
+              Create Request
+            </Button>
+          }
         />
       </PageSection>
 

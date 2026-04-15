@@ -9,7 +9,6 @@ using Server.Features.Dashboard.GetDashboard;
 using Server.Infrastructure.Db;
 using Server.Shared.Camunda;
 using Server.Shared.Constants;
-using Server.Shared.Helpers;
 
 namespace Server.Api.Config;
 
@@ -26,12 +25,20 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<AppDbContext>(options =>
         {
             var isMySql = string.Equals(databaseOptions.Provider, "MySql", StringComparison.OrdinalIgnoreCase);
+            var serverVersion = ServerVersion.Parse(databaseOptions.MySqlServerVersion);
 
             if (isMySql)
             {
                 options.UseMySql(
                     databaseOptions.MySqlConnectionString,
-                    ServerVersion.AutoDetect(databaseOptions.MySqlConnectionString));
+                    serverVersion);
+
+                return;
+            } else if (string.Equals(databaseOptions.Provider, "local_mysql", StringComparison.OrdinalIgnoreCase))
+            {
+                options.UseMySql(
+                    databaseOptions.MySqlConnectionString_local,
+                    serverVersion);
 
                 return;
             }
@@ -44,7 +51,7 @@ public static class ServiceCollectionExtensions
         services.AddSwaggerGen();
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
 
-        services.AddSingleton<PasswordHasher>();
+        services.AddScoped<DatabaseInitializer>();
         services.AddTransient<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();
         services.AddScoped<UserService>();
@@ -59,7 +66,7 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy(CorsPolicyNames.ReactClient, policy =>
             {
-                policy.WithOrigins("http://localhost:5174")
+                policy.WithOrigins("http://localhost:5173")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();

@@ -6,13 +6,16 @@ public sealed record LoginResponse(SessionDto Session);
 
 public sealed record SessionDto(LoggedInUserDto User);
 
+public sealed record DepartmentHodDto(int EmployeeId, string Name, string Email);
+
 public sealed record LoggedInUserDto(
+    int UserId,
     int EmployeeId,
+    string UserName,
     string Name,
     string Email,
-    int? DeptId,
+    string Phone,
+    int DepartmentId,
     string DepartmentName,
     string Role,
-    int HodEmployeeId, 
-    string HodName, 
-    string HodEmail);
+    DepartmentHodDto DepartmentHod);

@@ -9,7 +9,11 @@ builder.Services.AddApplicationServices(builder.Configuration);
 
 var app = builder.Build();
 
-//await app.InitializeDatabaseAsync();
+var databaseOptions = builder.Configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>();
+if (databaseOptions?.AutoMigrateOnStartup != false)
+{
+    await app.InitializeDatabaseAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {

@@ -6,10 +6,13 @@ import type {
   AggregateStatus,
   AppRole,
   AuditLogItem,
+  Department,
   EmployeeRecord,
   NotificationItem,
+  PaginatedResponse,
   RequestStatus,
 } from "../types"
+import type { AuthUser } from "@/context/AuthContext"
 
 const API_URL =
   import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001/api"
@@ -184,24 +187,33 @@ export async function fetchAccessRequestDetails(
 }
 
 export async function fetchNotifications(
-  employeeId: number
-): Promise<NotificationItem[]> {
-  const response = await fetch(`${API_URL}/notifications/${employeeId}`)
+  employeeId: number,
+  page = 1,
+  pageSize = 50
+): Promise<PaginatedResponse<NotificationItem>> {
+  const response = await fetch(
+    `${API_URL}/notifications/${employeeId}?Page=${page}&PageSize=${pageSize}`
+  )
   if (!response.ok) throw new Error("Unable to load notifications.")
 
   const payload = await response.json()
-  return payload.map((item: any) => ({
-    auditId: item.auditId,
-    accessReqId: item.accessReqId,
-    eventType: item.eventType,
-    message: item.message,
-    recipientRole: item.recipientRole as AppRole,
-    createdOn:
-      typeof item.createdOn === "string"
-        ? item.createdOn
-        : new Date(item.createdOn).toLocaleString(),
-    isRead: item.isRead,
-  }))
+  return {
+    data: payload.data.map((item: any) => ({
+      auditId: item.auditId,
+      accessReqId: item.accessReqId,
+      eventType: item.eventType,
+      message: item.message,
+      recipientRole: item.recipientRole as AppRole,
+      createdOn:
+        typeof item.createdOn === "string"
+          ? item.createdOn
+          : new Date(item.createdOn).toLocaleString(),
+      isRead: item.isRead,
+    })),
+    page: payload.page,
+    pageSize: payload.pageSize,
+    totalCount: payload.totalCount,
+  }
 }
 
 export async function markNotificationRead(
@@ -216,36 +228,181 @@ export async function markNotificationRead(
   if (!response.ok) throw new Error("Unable to update notification status.")
 }
 
-export async function fetchAuditLogs(): Promise<AuditLogItem[]> {
-  const response = await fetch(`${API_URL}/audit-logs`)
+export async function fetchAuditLogs(
+  page = 1,
+  pageSize = 50
+): Promise<PaginatedResponse<AuditLogItem>> {
+  const response = await fetch(`${API_URL}/audit-logs?Page=${page}&PageSize=${pageSize}`)
   if (!response.ok) throw new Error("Unable to load audit logs.")
 
   const payload = await response.json()
-  return payload.map((item: any) => ({
-    auditId: item.auditId,
-    actor: item.actor,
-    eventType: item.eventType,
-    requestId: item.requestId,
-    createdOn:
-      typeof item.createdOn === "string"
-        ? item.createdOn
-        : new Date(item.createdOn).toLocaleString(),
-    details: item.details,
-  }))
+  return {
+    data: payload.data.map((item: any) => ({
+      auditId: item.auditId,
+      actor: item.actor,
+      eventType: item.eventType,
+      requestId: item.requestId,
+      createdOn:
+        typeof item.createdOn === "string"
+          ? item.createdOn
+          : new Date(item.createdOn).toLocaleString(),
+      details: item.details,
+    })),
+    page: payload.page,
+    pageSize: payload.pageSize,
+    totalCount: payload.totalCount,
+  }
 }
 
-export async function fetchAllUsers(): Promise<EmployeeRecord[]> {
-  const response = await fetch(`${API_URL}/User/GetAllUsers`)
+export async function fetchAllUsers(
+  page = 1,
+  pageSize = 50
+): Promise<PaginatedResponse<EmployeeRecord>> {
+  const response = await fetch(
+    `${API_URL}/User/GetAllUsers?Page=${page}&PageSize=${pageSize}`
+  )
   if (!response.ok) throw new Error("Unable to load employees.")
 
   const payload = await response.json()
-  return payload.users.map((item: any) => ({
-    employeeId: item.employeeId,
-    name: item.name,
-    departmentName: item.departmentName,
-    role: item.role as AppRole,
-    email: item.email,
-  }))
+  return {
+    data: payload.data.map((item: any) => ({
+      userId: item.userId,
+      employeeId: item.employeeId,
+      name: item.name,
+      departmentName: item.departmentName,
+      role: item.role as AppRole,
+      email: item.email,
+    })),
+    page: payload.page,
+    pageSize: payload.pageSize,
+    totalCount: payload.totalCount,
+  }
+}
+
+export async function fetchUserProfile(employeeId: number): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/User/${employeeId}`)
+  if (!response.ok) throw new Error("Unable to load user profile.")
+  return response.json()
+}
+
+export type UpdateUserPayload = {
+  userName?: string
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  location?: string
+  departmentId?: number
+  departmentName?: string
+  role?: AppRole
+  hodEmployeeId?: number
+}
+
+export async function updateUserProfile(
+  userId: number,
+  payload: UpdateUserPayload
+): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/User/${userId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error("Unable to update user profile.")
+  return response.json()
+}
+
+export type CreateUserPayload = {
+  employeeId: number
+  userName: string
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  departmentId?: number
+  departmentName?: string
+  role?: AppRole
+  hodEmployeeId?: number
+  password: string
+}
+
+export async function createUser(payload: CreateUserPayload): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/User`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const message = await response
+      .json()
+      .then((data) => data?.message as string)
+      .catch(() => null)
+    throw new Error(message || "Unable to create user.")
+  }
+
+  return response.json()
+}
+
+export async function fetchDepartments(): Promise<Department[]> {
+  const response = await fetch(`${API_URL}/departments/`)
+  if (!response.ok) throw new Error("Unable to load departments.")
+  const payload = await response.json()
+  return (payload.departments ?? []) as Department[]
+}
+
+export async function createDepartment(department: Department): Promise<Department> {
+  const response = await fetch(`${API_URL}/departments/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(department),
+  })
+
+  if (!response.ok) {
+    const message = await response
+      .json()
+      .then((data) => data?.message as string)
+      .catch(() => null)
+    throw new Error(message || "Unable to create department.")
+  }
+
+  return response.json()
+}
+
+export async function updateDepartment(department: Department): Promise<Department> {
+  const response = await fetch(`${API_URL}/departments/${department.id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: department.name }),
+  })
+
+  if (!response.ok) {
+    const message = await response
+      .json()
+      .then((data) => data?.message as string)
+      .catch(() => null)
+    throw new Error(message || "Unable to update department.")
+  }
+
+  return response.json()
+}
+
+export async function updateUserPassword(
+  employeeId: number,
+  password: string
+): Promise<void> {
+  const response = await fetch(`${API_URL}/User/${employeeId}/password`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  })
+
+  if (!response.ok) {
+    const message = await response
+      .json()
+      .then((data) => data?.message as string)
+      .catch(() => null)
+    throw new Error(message || "Unable to update password.")
+  }
 }
 
 export async function reviewAccessRequestByHod(

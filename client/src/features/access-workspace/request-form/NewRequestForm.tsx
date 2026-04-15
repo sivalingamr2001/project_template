@@ -10,6 +10,9 @@ import type { NewRequestFormProps } from "./types"
 import { UserInfoSection } from "./UserInfoSection"
 import { createDefaultPayload } from "./utils/accessRequestForm"
 
+const API_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001/api"
+
 export function NewRequestForm({
   initialData,
   isPending,
@@ -41,7 +44,7 @@ export function NewRequestForm({
         setIsFetchingUser(true)
         try {
           const res = await fetch(
-            `https://localhost:5001/api/User/${formData.empId}`
+            `${API_URL}/User/${formData.empId}`
           )
           if (res.ok) {
             const data = await res.json()

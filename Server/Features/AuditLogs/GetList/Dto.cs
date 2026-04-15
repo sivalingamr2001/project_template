@@ -1,4 +1,8 @@
+using Server.Shared.Helpers;
+
 namespace Server.Features.AuditLogs.GetList;
+
+public sealed class GetAuditLogsQuery : PagedRequest;
 
 public sealed record AuditLogDto(
     int AuditId,

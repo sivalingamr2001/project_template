@@ -1,0 +1,213 @@
+import { useEffect, useMemo, useState } from "react"
+
+import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { useAuth } from "@/context/AuthContext"
+
+import { useDepartments } from "../hooks/useDepartments"
+import { getDepartmentName } from "../utils/departments"
+import { updateUserProfile } from "../utils/requestApi"
+
+function splitName(fullName: string) {
+  const trimmed = fullName.trim()
+  if (!trimmed) return { firstName: "", lastName: "" }
+  const [firstName, ...rest] = trimmed.split(/\s+/)
+  return { firstName, lastName: rest.join(" ") }
+}
+
+function isProfileIncomplete(user: any) {
+  return !!user && (
+    [null, undefined, 0, "0"].includes(user.employeeId) ||
+    [null, undefined, 0, "0"].includes(user.departmentId)
+  )
+}
+
+export default function UserProfileCompletionModal() {
+  const { user, setSessionUser } = useAuth()
+  const open = useMemo(() => isProfileIncomplete(user), [user])
+  const { departments } = useDepartments()
+
+  const initialName = useMemo(() => splitName(user?.name ?? ""), [user?.name])
+  const [firstName, setFirstName] = useState(initialName.firstName)
+  const [lastName, setLastName] = useState(initialName.lastName)
+  const [userName, setUserName] = useState(user?.userName ?? "")
+  const [email, setEmail] = useState(user?.email ?? "")
+  const [phone, setPhone] = useState(user?.phone ?? "")
+  const [departmentId, setDepartmentId] = useState(
+    user?.departmentId ? String(user.departmentId) : ""
+  )
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!user) return
+    const name = splitName(user.name ?? "")
+    setFirstName(name.firstName)
+    setLastName(name.lastName)
+    setUserName(user.userName ?? "")
+    setEmail(user.email ?? "")
+    setPhone(user.phone ?? "")
+    setDepartmentId(user.departmentId ? String(user.departmentId) : "")
+    setError(null)
+  }, [user?.employeeId])
+
+  if (!user) return null
+
+  const departmentName = departmentId
+    ? getDepartmentName(departments, Number(departmentId))
+    : ""
+
+  const onSubmit = async () => {
+    setIsSaving(true)
+    setError(null)
+    try {
+      const updated = await updateUserProfile(user.userId, {
+        userName,
+        firstName,
+        lastName,
+        email,
+        phone,
+        departmentId: departmentId ? Number(departmentId) : undefined,
+        departmentName,
+      })
+      setSessionUser(updated)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to update profile.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open}>
+      <DialogContent
+        showCloseButton={false}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        className="sm:max-w-xl"
+      >
+        <DialogHeader>
+          <DialogTitle>Complete your profile</DialogTitle>
+          <DialogDescription>
+            Please fill in your details to continue using the portal.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="employeeId">EmployeeId</Label>
+              <Input
+                id="employeeId"
+                value={String(user.employeeId)}
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="userName">User Name</Label>
+              <Input
+                id="userName"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First name</Label>
+              <Input
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last name</Label>
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                inputMode="numeric"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Department</Label>
+            <Select value={departmentId} onValueChange={setDepartmentId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select department" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((dept) => (
+                  <SelectItem key={dept.id} value={String(dept.id)}>
+                    {dept.id} - {dept.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : null}
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            onClick={onSubmit}
+            disabled={
+              isSaving ||
+              !userName.trim() ||
+              !firstName.trim() ||
+              !email.trim() ||
+              !phone.trim() ||
+              !departmentId
+            }
+          >
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

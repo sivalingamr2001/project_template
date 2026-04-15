@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Server.Features.Auth.User;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
-using Server.Shared.Helpers;
 
 namespace Server.Features.Auth.Login;
 
@@ -32,17 +31,21 @@ public sealed class LoginService(
         try
         {
             user = await query
-                .Where(e => e.Password == request.Password)
                 .Select(employee => new LoginUserProjection(
+                    employee.UserId,
                     employee.EmployeeId,
-                    employee.UserName ?? string.Empty,
-                    employee.Email ?? string.Empty,
-                    employee.DeptId ?? 0,
-                    employee.DeptName ?? "N/A",
-                    employee.UserRole ?? "User",
-                    employee.HodId ?? 0,
-                    employee.HodName ?? string.Empty,
-                    employee.HodEmail ?? string.Empty))
+                    employee.FirstName,
+                    employee.LastName,
+                    employee.UserName,
+                    employee.Email,
+                    employee.Mobile,
+                    employee.DeptId,
+                    employee.DeptName,
+                    employee.UserRole,
+                    employee.HodId,
+                    employee.HodName,
+                    employee.HodEmail,
+                    employee.Password))
                 .SingleOrDefaultAsync(cancellationToken);
         }
         catch (InvalidOperationException ex)
@@ -61,28 +64,62 @@ public sealed class LoginService(
             return null;
         }
 
+        if (!string.Equals(request.Password, user.Password, StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var name = BuildDisplayName(user.FirstName, user.LastName, user.UserName);
+        var departmentName = string.IsNullOrWhiteSpace(user.DepartmentName) ? "N/A" : user.DepartmentName!;
+        var role = string.IsNullOrWhiteSpace(user.Role) ? "User" : user.Role!;
+
         return new LoginResponse(
            new SessionDto(
                new LoggedInUserDto(
+                   user.UserId,
                    user.EmployeeId,
-                   user.Name ?? string.Empty,
+                   user.UserName,
+                   name,
                    user.Email ?? string.Empty,
+                   user.Phone ?? string.Empty,
                    user.DeptId ?? 0,
-                   user.DepartmentName ?? "N/A",
-                   user.Role ?? "User",
-                   user.HodID ?? 0,
-                   user.HodName ?? string.Empty,
-                   user.HodEmail ?? string.Empty)));
+                   departmentName,
+                   role,
+                   new DepartmentHodDto(
+                       user.HodID ?? 0,
+                       user.HodName ?? string.Empty,
+                       user.HodEmail ?? string.Empty))));
     }
 
     private sealed record LoginUserProjection(
+          int UserId,
           int EmployeeId,
-          string? Name,
+          string? FirstName,
+          string? LastName,
+          string UserName,
           string? Email,
+          string? Phone,
           int? DeptId,
           string? DepartmentName,
           string? Role,
           int? HodID,
           string? HodName,
-          string? HodEmail);
+          string? HodEmail,
+          string Password);
+
+    private static string BuildDisplayName(string? firstName, string? lastName, string userName)
+    {
+        var combined = $"{firstName ?? string.Empty} {lastName ?? string.Empty}".Trim();
+        if (!string.IsNullOrWhiteSpace(combined))
+        {
+            return combined;
+        }
+
+        return userName;
+    }
 }
+
+
+
+
+
