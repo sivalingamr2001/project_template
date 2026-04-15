@@ -6,7 +6,7 @@ import { getDefaultRoute } from "@/features/access-workspace/utils/accessSelecto
 function HomeRedirect() {
   const { user } = useAuth()
   const role =
-    user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
+    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
 
   return <Navigate to={getDefaultRoute(role)} replace />
 }

@@ -13,7 +13,7 @@ import {
   revokeAccessRequest,
 } from "../../utils/requestApi"
 
-type Role = "Hod" | "ItTeam" | "User"
+type Role = "Hod" | "Admin" | "User"
 
 export function useRequestDetailsPage(
   details: AccessRequestDetails | null,
@@ -37,7 +37,7 @@ export function useRequestDetailsPage(
   const canRevoke =
     details &&
     selectedItem?.status === "Access Granted" &&
-    role === "ItTeam"
+    role === "Admin"
   const canResubmit =
     role === "User" &&
     details?.empId === reviewerEmployeeId &&
@@ -51,7 +51,7 @@ export function useRequestDetailsPage(
   const canReviewAsHod =
     role === "Hod" && selectedItem?.status === "Pending HOD"
   const canReviewAsIt =
-    role === "ItTeam" && selectedItem?.status === "Pending IT"
+    role === "Admin" && selectedItem?.status === "Pending IT"
   const resubmitPayload = details ? buildResubmitPayload(details) : undefined
   const handleBack = () => navigate(-1)
   const handleResubmitSuccess = () => navigate(getDefaultRoute("User"))

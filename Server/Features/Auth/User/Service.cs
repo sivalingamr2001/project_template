@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Server.Infrastructure.Db;
+using Server.Shared.Constants;
 
 namespace Server.Features.Auth.User;
 
@@ -11,15 +12,15 @@ public sealed class UserService(AppDbContext dbContext)
             .AsNoTracking()
             .Select(e => new UserDto(
                 e.EmployeeId,
-                e.Name,
+                e.UserName,
                 e.Email,
-                e.Phone, // Ensure this exists in your Entity
-                e.DepartmentId,
-                e.DepartmentName,
-                e.Role,
+                e.Mobile,
+                e.DeptId ?? 0,
+                e.DeptName,
+                e.UserRole,
                 dbContext.Employees
-                    .Where(h => h.DepartmentId == e.DepartmentId && h.Role == "Hod")
-                    .Select(h => new HodDto(h.EmployeeId, h.Name, h.Email))
+                    .Where(h => h.DeptId == e.DeptId && h.UserRole == RoleNames.Hod)
+                    .Select(h => new HodDto(h.EmployeeId, h.UserName, h.Email))
                     .FirstOrDefault()
             ))
             .ToListAsync(cancellationToken);
@@ -34,15 +35,15 @@ public sealed class UserService(AppDbContext dbContext)
             .Where(e => e.EmployeeId == employeeId)
             .Select(e => new UserDto(
                 e.EmployeeId,
-                e.Name,
+                e.UserName,
                 e.Email,
-                e.Phone,
-                e.DepartmentId,
-                e.DepartmentName,
-                e.Role,
+                e.Mobile,
+                e.DeptId ?? 0,
+                e.DeptName,
+                e.UserRole,
                 dbContext.Employees
-                    .Where(h => h.DepartmentId == e.DepartmentId && h.Role == "Hod")
-                    .Select(h => new HodDto(h.EmployeeId, h.Name, h.Email))
+                    .Where(h => h.DeptId == e.DeptId && h.UserRole == RoleNames.Hod)
+                    .Select(h => new HodDto(h.EmployeeId, h.UserName, h.Email))
                     .FirstOrDefault()
             ))
             .SingleOrDefaultAsync(cancellationToken);

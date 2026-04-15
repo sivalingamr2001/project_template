@@ -12,7 +12,7 @@ type RoleRouteProps = {
 function RoleRoute({ allowedRoles }: RoleRouteProps) {
   const { user } = useAuth()
   const role =
-    user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
+    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
 
   if (!allowedRoles.includes(role)) {
     return <Navigate to={getDefaultRoute(role)} replace />

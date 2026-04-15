@@ -17,7 +17,7 @@ export type AuthUser = {
   employeeId: number
   name: string
   email: string
-  phone: number
+  phone: string
   departmentId: number
   departmentName: string
   role: string
@@ -27,7 +27,7 @@ export type AuthUser = {
 type AuthContextValue = {
   isAuthenticated: boolean
   isLoading: boolean
-  login: (employeeId: number, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
   logout: () => void
   user: AuthUser | null
 }
@@ -54,14 +54,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const login = async (employeeId: number, password: string) => {
+  const login = async (identifier: string, password: string) => {
     setIsLoading(true)
 
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employeeId, password }),
+        body: JSON.stringify({ identifier, password }),
       })
 
       if (!response.ok) {

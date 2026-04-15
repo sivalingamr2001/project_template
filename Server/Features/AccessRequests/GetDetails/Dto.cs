@@ -6,7 +6,7 @@ public sealed record AccessRequestDetailsDto(
     int AccessReqId,
     int EmpId,
     string RequesterName,
-    int DepartmentId,
+    int DeptId,
     string DepartmentName,
     int ReqTo,
     string CurrentApproverName,

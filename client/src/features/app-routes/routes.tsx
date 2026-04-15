@@ -72,7 +72,7 @@ export const router = createBrowserRouter([
             ],
           },
           {
-            element: <RoleRoute allowedRoles={["ItTeam"]} />,
+            element: <RoleRoute allowedRoles={["Admin"]} />,
             children: [
               {
                 path: "it/approval-queue",

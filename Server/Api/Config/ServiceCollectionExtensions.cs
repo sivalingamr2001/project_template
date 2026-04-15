@@ -45,7 +45,6 @@ public static class ServiceCollectionExtensions
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
 
         services.AddSingleton<PasswordHasher>();
-        services.AddScoped<DatabaseInitializer>();
         services.AddTransient<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();
         services.AddScoped<UserService>();
@@ -60,7 +59,7 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy(CorsPolicyNames.ReactClient, policy =>
             {
-                policy.WithOrigins("http://localhost:5173")
+                policy.WithOrigins("http://localhost:5174")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();

@@ -16,7 +16,7 @@ function AppSidebar({ isCollapsed, onClose, onItemClick }: AppSidebarProps) {
   const isMobile = useIsMobile()
   const { user } = useAuth()
   const role =
-    user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
+    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
   const sections = NAVIGATION_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter((item) => item.roles.includes(role)),

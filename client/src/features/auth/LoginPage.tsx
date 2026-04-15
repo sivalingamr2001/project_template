@@ -10,20 +10,20 @@ const INPUT_CLASS =
 
 function LoginPage() {
   const { isAuthenticated, isLoading, login, user } = useAuth()
-  const [employeeId, setEmployeeId] = useState("")
+  const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
   const role =
-    user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
-  const handleEmployeeIdChange = (event: ChangeEvent<HTMLInputElement>) =>
-    setEmployeeId(event.target.value)
+    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
+  const handleIdentifierChange = (event: ChangeEvent<HTMLInputElement>) =>
+    setIdentifier(event.target.value)
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) =>
     setPassword(event.target.value)
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setErrorMessage("")
     try {
-      await login(Number(employeeId), password)
+      await login(identifier, password)
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Login failed.")
     }
@@ -49,10 +49,9 @@ function LoginPage() {
         <div className="mt-6 grid gap-4">
           <input
             className={INPUT_CLASS}
-            inputMode="numeric"
-            value={employeeId}
-            onChange={handleEmployeeIdChange}
-            placeholder="Employee ID"
+            value={identifier}
+            onChange={handleIdentifierChange}
+            placeholder="Employee ID or Username"
           />
           <input
             className={INPUT_CLASS}

@@ -16,7 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<EmployeeEntity>().ToTable("jan_employees").HasKey(employee => employee.EmployeeId);
+        modelBuilder.Entity<EmployeeEntity>().ToTable("jan_portal_users").HasKey(employee => employee.EmployeeId);
         modelBuilder.Entity<AccessRequestEntity>(entity =>
         {
             entity.ToTable("jan_accessrequest").HasKey(request => request.AccessReqId);

@@ -1,4 +1,4 @@
- export type AppRole = "User" | "Hod" | "ItTeam"
+ export type AppRole = "User" | "Hod" | "Admin"
 export type QueueMode =
   | "dashboard"
   | "hodPending"

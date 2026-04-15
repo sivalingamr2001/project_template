@@ -24,7 +24,7 @@ export const NOTIFICATIONS: NotificationItem[] = [
     accessReqId: 4107,
     eventType: "it.review.pending",
     message: "A request is waiting in the IT queue.",
-    recipientRole: "ItTeam",
+    recipientRole: "Admin",
     createdOn: "2026-04-07 08:10",
     isRead: false,
   },
@@ -49,7 +49,7 @@ export const EMPLOYEES: EmployeeRecord[] = [
     employeeId: 3001,
     name: "Arun",
     departmentName: "IT Infrastructure",
-    role: "ItTeam",
+    role: "Admin",
     email: "arun@company.com",
   },
 ]

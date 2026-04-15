@@ -22,7 +22,7 @@ function RequestDetailsPage() {
   const selectedItemFromUrl = itemId ? Number(itemId) : undefined
   const reviewerEmployeeId = user?.employeeId ?? 0
   const role =
-    user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
+    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
   const { details, errorMessage, isLoading, refetch } = useRequestDetails(
     accessReqId,
     reviewerEmployeeId
@@ -115,7 +115,7 @@ function RequestDetailsPage() {
         onSubmit={(comments, confirmAccessType) =>
           page.handleReview(comments, confirmAccessType)
         }
-        role={role === "Hod" ? "Hod" : "ItTeam"}
+        role={role === "Hod" ? "Hod" : "Admin"}
       />
       <CreateRequestModal
         initialData={page.resubmitPayload}

@@ -26,7 +26,7 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   const { user } = useAuth()
   const employeeId = user?.employeeId ?? 0
   const role =
-    user?.role === "Hod" || user?.role === "ItTeam" ? user.role : "User"
+    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
   const [apiRequests, setApiRequests] = useState<AccessRequest[]>([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])

@@ -1,36 +1,62 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Features.Auth.User;
 using Server.Infrastructure.Db;
+using Server.Shared.Constants;
 using Server.Shared.Helpers;
 
 namespace Server.Features.Auth.Login;
 
 public sealed class LoginService(
-    AppDbContext dbContext,
-    PasswordHasher passwordHasher)
+    AppDbContext dbContext)
 {
     public async Task<LoginResponse?> AuthenticateAsync(LoginRequest request, CancellationToken cancellationToken)
     {
-        var user = await dbContext.Employees
-            .AsNoTracking()
-            .Where(employee => employee.EmployeeId == request.EmployeeId)
-            .Select(employee => new LoginUserProjection(
-                employee.EmployeeId,
-                employee.Name,
-                employee.Email,
-                employee.DepartmentId,
-                employee.DepartmentName,
-                employee.Role,
-                employee.PasswordHash,
-                employee.PasswordSalt,
-                // Find HOD for this department
-                dbContext.Employees
-                    .Where(h => h.DepartmentId == employee.DepartmentId && h.Role == "Hod")
-                    .Select(h => new HodProjection(h.EmployeeId, h.Name, h.Email))
-                    .FirstOrDefault()))
-            .SingleOrDefaultAsync(cancellationToken);
+        var identifier = request.Identifier?.Trim();
+        if (string.IsNullOrWhiteSpace(identifier) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return null;
+        }
 
-        if (user is null || !passwordHasher.Verify(request.Password, user.PasswordHash, user.PasswordSalt))
+        var query = dbContext.Employees.AsNoTracking();
+        if (int.TryParse(identifier, out var employeeId))
+        {
+            query = query.Where(employee => employee.EmployeeId == employeeId);
+        }
+        else
+        {
+            query = query.Where(employee => employee.UserName == identifier);
+        }
+
+        LoginUserProjection? user;
+
+        try
+        {
+            user = await query
+                .Where(e => e.Password == request.Password)
+                .Select(employee => new LoginUserProjection(
+                    employee.EmployeeId,
+                    employee.UserName ?? string.Empty,
+                    employee.Email ?? string.Empty,
+                    employee.DeptId ?? 0,
+                    employee.DeptName ?? "N/A",
+                    employee.UserRole ?? "User",
+                    employee.HodId ?? 0,
+                    employee.HodName ?? string.Empty,
+                    employee.HodEmail ?? string.Empty))
+                .SingleOrDefaultAsync(cancellationToken);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Thrown if SingleOrDefault finds more than one matching record
+            throw new Exception($"Authentication failed: Multiple records found for {identifier}.", ex);
+        }
+        catch (Exception ex)
+        {
+            // Thrown for DB connection issues or mapping errors
+            throw new Exception($"Database error during authentication: {ex.Message}", ex);
+        }
+
+        if (user is null)
         {
             return null;
         }
@@ -41,10 +67,12 @@ public sealed class LoginService(
                    user.EmployeeId,
                    user.Name,
                    user.Email,
-                   user.DepartmentId,
+                   user.DeptId ?? 0,
                    user.DepartmentName,
                    user.Role,
-                   user.Hod != null ? new HodDto(user.Hod.EmployeeId, user.Hod.Name, user.Hod.Email) : null)));
+                   user.HodID ?? 0,
+                   user.HodName,
+                   user.HodEmail)));
     }
 
     public async Task<UserListResponse> GetAllUsersAsync(CancellationToken cancellationToken)
@@ -53,17 +81,16 @@ public sealed class LoginService(
             .AsNoTracking()
             .Select(e => new UserDto(
                 e.EmployeeId,
-                e.Name,
+                e.UserName,
                 e.Email,
-                e.Phone, // Ensure this exists in your Entity
-                e.DepartmentId,
-                e.DepartmentName,
-                e.Role,
+                e.Mobile,
+                e.DeptId ?? 0,
+                e.DeptName,
+                e.UserRole,
                 dbContext.Employees
-                    .Where(h => h.DepartmentId == e.DepartmentId && h.Role == "Hod")
-                    .Select(h => new User.HodDto(h.EmployeeId, h.Name, h.Email))
-                    .FirstOrDefault()
-            ))
+                    .Where(h => h.DeptId == e.DeptId && h.UserRole == RoleNames.Hod)
+                    .Select(h => new User.HodDto(h.EmployeeId, h.UserName, h.Email))
+                    .FirstOrDefault()))
             .ToListAsync(cancellationToken);
 
         return new UserListResponse(users);
@@ -76,30 +103,27 @@ public sealed class LoginService(
             .Where(e => e.EmployeeId == employeeId)
             .Select(e => new UserDto(
                 e.EmployeeId,
-                e.Name,
+                e.UserName,
                 e.Email,
-                e.Phone,
-                e.DepartmentId,
-                e.DepartmentName,
-                e.Role,
+                e.Mobile,
+                e.DeptId ?? 0,
+                e.DeptName,
+                e.UserRole,
                 dbContext.Employees
-                    .Where(h => h.DepartmentId == e.DepartmentId && h.Role == "Hod")
-                    .Select(h => new User.HodDto(h.EmployeeId, h.Name, h.Email))
-                    .FirstOrDefault()
-            ))
+                    .Where(h => h.DeptId == e.DeptId && h.UserRole == RoleNames.Hod)
+                    .Select(h => new User.HodDto(h.EmployeeId, h.UserName, h.Email))
+                    .FirstOrDefault()))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
     private sealed record LoginUserProjection(
-        int EmployeeId,
-        string Name,
-        string Email,
-        int DepartmentId,
-        string DepartmentName,
-        string Role,
-        string PasswordHash,
-        string PasswordSalt,
-        HodProjection? Hod);
-
-    private sealed record HodProjection(int EmployeeId, string Name, string Email);
+          int EmployeeId,
+          string Name,
+          string Email,
+          int? DeptId,
+          string DepartmentName,
+          string Role,
+          int? HodID,
+          string HodName,
+          string HodEmail);
 }

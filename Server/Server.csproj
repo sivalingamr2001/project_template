@@ -21,6 +21,10 @@
       </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Migrations\" />
+    </ItemGroup>
+
     <Target Name="CopyReactBuild" AfterTargets="Publish">
         <ItemGroup>
             <ReactFiles Include="$(MSBuildThisFileDirectory)../Artifact/client/**" />

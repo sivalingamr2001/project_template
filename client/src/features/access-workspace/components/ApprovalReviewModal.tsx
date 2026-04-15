@@ -29,7 +29,7 @@ type ApprovalReviewModalProps = {
   selectedItemId?: number
   onClose: () => void
   onSubmit: (comments: string, confirmAccessType: number) => void
-  role: "Hod" | "ItTeam"
+  role: "Hod" | "Admin"
 }
 
 function ApprovalReviewModal({

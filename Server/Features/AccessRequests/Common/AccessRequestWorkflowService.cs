@@ -27,7 +27,7 @@ public sealed class AccessRequestWorkflowService(
         ValidateCreateRequest(request);
 
         var requester = await GetEmployeeOrThrowAsync(request.EmpId, cancellationToken);
-        var hodApprover = await ResolveHodApproverAsync(requester.DepartmentId, request.ReqTo, cancellationToken);
+        var hodApprover = await ResolveHodApproverAsync(requester.DeptId ?? 0, request.ReqTo, cancellationToken);
         var utcNow = DateTime.UtcNow;
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -90,7 +90,7 @@ public sealed class AccessRequestWorkflowService(
 
         // 6. Audit and Finalize
         var actionKey = isUpdate ? "request.updated" : "request.submitted";
-        var message = $"{requester.Name} {(isUpdate ? "updated" : "submitted")} access request #{accessRequest.AccessReqId}.";
+        var message = $"{requester.UserName} {(isUpdate ? "updated" : "submitted")} access request #{accessRequest.AccessReqId}.";
         var recipients = new[] { requester, hodApprover };
 
         await AddAuditEntriesAsync(accessRequest.AccessReqId, null, null, actionKey, message, recipients, requester.EmployeeId.ToString(), utcNow, cancellationToken);
@@ -198,10 +198,10 @@ public sealed class AccessRequestWorkflowService(
         }
 
         // 2. Fetch dependencies
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.ItTeam, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Admin, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
-        var hodRecipients = await GetDepartmentHodsAsync(requester.DepartmentId, cancellationToken);
+        var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId ?? 0, cancellationToken);
 
         // 3. Load items and find the specific target
         var accessItems = await dbContext.AccessItems
@@ -293,10 +293,10 @@ public sealed class AccessRequestWorkflowService(
             throw new AppValidationException("Comments are required when revoking access.");
         }
 
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.ItTeam, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Admin, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
-        var hodRecipients = await GetDepartmentHodsAsync(requester.DepartmentId, cancellationToken);
+        var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId ?? 0, cancellationToken);
 
         var accessItems = await dbContext.AccessItems
             .Where(x => x.AccessReqId == accessReqId)
@@ -395,7 +395,7 @@ public sealed class AccessRequestWorkflowService(
             throw new AppValidationException("Only rejected or revoked access items can be resubmitted.");
         }
 
-        var hodRecipients = await GetDepartmentHodsAsync(requester.DepartmentId, cancellationToken);
+        var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId ?? 0, cancellationToken);
         var utcNow = DateTime.UtcNow;
 
         accessItem.Status = RequestStatus.PendingHOD;
@@ -456,7 +456,7 @@ public sealed class AccessRequestWorkflowService(
             throw new AppValidationException("Only granted, expired, or revoked requests can be renewed.");
         }
 
-        var hodApprover = await ResolveHodApproverAsync(requester.DepartmentId, null, cancellationToken);
+        var hodApprover = await ResolveHodApproverAsync(requester.DeptId ?? 0, null, cancellationToken);
 
         if (sourceItems.Count == 0)
         {
@@ -556,8 +556,8 @@ public sealed class AccessRequestWorkflowService(
             {
                 approval.AccessApproveId,
                 approval.ApproverId,
-                employee.Name,
-                employee.Role,
+                employee.UserName,
+                employee.UserRole,
                 approval.ApprovalStatus,
                 approval.Comments,
                 approval.CreatedOn
@@ -568,8 +568,8 @@ public sealed class AccessRequestWorkflowService(
             .Select(approval => new AccessRequestApprovalDto(
                 approval.AccessApproveId,
                 approval.ApproverId,
-                approval.Name,
-                approval.Role,
+                approval.UserName,
+                approval.UserRole,
                 approval.ApprovalStatus,
                 approval.Comments,
                 approval.CreatedOn))
@@ -596,12 +596,12 @@ public sealed class AccessRequestWorkflowService(
         return new AccessRequestDetailsDto(
             accessRequest.AccessReqId,
             accessRequest.EmpId,
-            requester.Name,
-            requester.DepartmentId,
-            requester.DepartmentName,
+            requester.UserName,
+            requester.DeptId ?? 0,
+            requester.DeptName,
             accessRequest.ReqTo,
-            currentApprover?.Name ?? string.Empty,
-            currentApprover?.Role ?? string.Empty,
+            currentApprover?.UserName ?? string.Empty,
+            currentApprover?.UserRole ?? string.Empty,
             accessRequest.ItsrNo,
             accessRequest.CreatedOn,
             accessRequest.ModifiedOn,
@@ -696,7 +696,7 @@ public sealed class AccessRequestWorkflowService(
     {
         var employee = await GetEmployeeOrThrowAsync(employeeId, cancellationToken);
 
-        if (!string.Equals(employee.Role, role, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(employee.UserRole, role, StringComparison.OrdinalIgnoreCase))
         {
             throw new AppValidationException($"Employee {employeeId} is not authorized for this action.");
         }
@@ -711,9 +711,9 @@ public sealed class AccessRequestWorkflowService(
             ?? throw new AppValidationException($"Access request {accessReqId} was not found.");
     }
 
-    private async Task<EmployeeEntity> ResolveHodApproverAsync(int departmentId, int? requestedApproverId, CancellationToken cancellationToken)
+    private async Task<EmployeeEntity> ResolveHodApproverAsync(int DeptId, int? requestedApproverId, CancellationToken cancellationToken)
     {
-        var hods = await GetDepartmentHodsAsync(departmentId, cancellationToken);
+        var hods = await GetDepartmentHodsAsync(DeptId, cancellationToken);
 
         if (hods.Count == 0)
         {
@@ -729,10 +729,10 @@ public sealed class AccessRequestWorkflowService(
         return requested ?? throw new AppValidationException("The requested approver is not a valid HOD for the requester department.");
     }
 
-    private async Task<List<EmployeeEntity>> GetDepartmentHodsAsync(int departmentId, CancellationToken cancellationToken)
+    private async Task<List<EmployeeEntity>> GetDepartmentHodsAsync(int DeptId, CancellationToken cancellationToken)
     {
         return await dbContext.Employees
-            .Where(employee => employee.DepartmentId == departmentId && employee.Role == RoleNames.Hod)
+            .Where(employee => employee.DeptId == DeptId && employee.UserRole == RoleNames.Hod)
             .OrderBy(employee => employee.EmployeeId)
             .ToListAsync(cancellationToken);
     }
@@ -740,7 +740,7 @@ public sealed class AccessRequestWorkflowService(
     private async Task<EmployeeEntity> ResolveItApproverAsync(CancellationToken cancellationToken)
     {
         return await dbContext.Employees
-            .Where(employee => employee.Role == RoleNames.ItTeam)
+            .Where(employee => employee.UserRole == RoleNames.Admin)
             .OrderBy(employee => employee.EmployeeId)
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new AppValidationException("No IT approver is configured.");
@@ -748,12 +748,12 @@ public sealed class AccessRequestWorkflowService(
 
     private static void EnsureCanView(EmployeeEntity viewer, EmployeeEntity requester, AccessRequestEntity accessRequest)
     {
-        if (viewer.Role == RoleNames.ItTeam)
+        if (viewer.UserRole == RoleNames.Admin)
         {
             return;
         }
 
-        if (viewer.Role == RoleNames.Hod && viewer.DepartmentId == requester.DepartmentId)
+        if (viewer.UserRole == RoleNames.Hod && viewer.DeptId == requester.DeptId)
         {
             return;
         }
@@ -837,8 +837,8 @@ public sealed class AccessRequestWorkflowService(
                 EventType = eventType,
                 Message = message,
                 RecipientEmpId = recipient.EmployeeId,
-                RecipientName = recipient.Name,
-                RecipientRole = recipient.Role,
+                RecipientName = recipient.UserName,
+                RecipientRole = recipient.UserRole,
                 IsRead = false,
                 CreatedBy = actor,
                 CreatedOn = utcNow,

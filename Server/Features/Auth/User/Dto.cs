@@ -6,13 +6,10 @@ public record UserDto(
     int EmployeeId,
     string Name,
     string Email,
-    int Phone,
-    int DepartmentId,
+    string Phone,
+    int DeptId,
     string DepartmentName,
     string Role,
     HodDto? DepartmentHod);
 
-public record HodDto(
-    int EmployeeId,
-    string Name,
-    string Email);
+public record HodDto(int EmployeeId, string Name, string Email);
