@@ -65,65 +65,24 @@ public sealed class LoginService(
            new SessionDto(
                new LoggedInUserDto(
                    user.EmployeeId,
-                   user.Name,
-                   user.Email,
+                   user.Name ?? string.Empty,
+                   user.Email ?? string.Empty,
                    user.DeptId ?? 0,
-                   user.DepartmentName,
-                   user.Role,
+                   user.DepartmentName ?? "N/A",
+                   user.Role ?? "User",
                    user.HodID ?? 0,
-                   user.HodName,
-                   user.HodEmail)));
-    }
-
-    public async Task<UserListResponse> GetAllUsersAsync(CancellationToken cancellationToken)
-    {
-        var users = await dbContext.Employees
-            .AsNoTracking()
-            .Select(e => new UserDto(
-                e.EmployeeId,
-                e.UserName,
-                e.Email,
-                e.Mobile,
-                e.DeptId ?? 0,
-                e.DeptName,
-                e.UserRole,
-                dbContext.Employees
-                    .Where(h => h.DeptId == e.DeptId && h.UserRole == RoleNames.Hod)
-                    .Select(h => new User.HodDto(h.EmployeeId, h.UserName, h.Email))
-                    .FirstOrDefault()))
-            .ToListAsync(cancellationToken);
-
-        return new UserListResponse(users);
-    }
-
-    public async Task<UserDto?> GetUserByIdAsync(int employeeId, CancellationToken cancellationToken)
-    {
-        return await dbContext.Employees
-            .AsNoTracking()
-            .Where(e => e.EmployeeId == employeeId)
-            .Select(e => new UserDto(
-                e.EmployeeId,
-                e.UserName,
-                e.Email,
-                e.Mobile,
-                e.DeptId ?? 0,
-                e.DeptName,
-                e.UserRole,
-                dbContext.Employees
-                    .Where(h => h.DeptId == e.DeptId && h.UserRole == RoleNames.Hod)
-                    .Select(h => new User.HodDto(h.EmployeeId, h.UserName, h.Email))
-                    .FirstOrDefault()))
-            .SingleOrDefaultAsync(cancellationToken);
+                   user.HodName ?? string.Empty,
+                   user.HodEmail ?? string.Empty)));
     }
 
     private sealed record LoginUserProjection(
           int EmployeeId,
-          string Name,
-          string Email,
+          string? Name,
+          string? Email,
           int? DeptId,
-          string DepartmentName,
-          string Role,
+          string? DepartmentName,
+          string? Role,
           int? HodID,
-          string HodName,
-          string HodEmail);
+          string? HodName,
+          string? HodEmail);
 }

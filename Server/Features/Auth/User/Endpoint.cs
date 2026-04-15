@@ -1,9 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
-using Server.Features.AccessRequests.Common;
-using Server.Features.Auth.Login;
-
-namespace Server.Features.Auth.User;
+﻿namespace Server.Features.Auth.User;
 
 public static class GetAllUsersEndpoint
 {

@@ -11,51 +11,54 @@ public sealed class EmployeeEntity
     public int UserId { get; set; }
 
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("employee_id")]
     public int EmployeeId { get; set; }
 
-    [Column("first_name", TypeName = "varchar(150)")]
-    public string FirstName { get; set; } = string.Empty;
+    // Change to string? because the DB likely contains NULLs
+    [Column("first_name")]
+    public string? FirstName { get; set; }
 
-    [Column("last_name", TypeName = "varchar(150)")]
-    public string LastName { get; set; } = string.Empty;
+    [Column("last_name")]
+    public string? LastName { get; set; }
 
-    [Required]
-    [Column("user_name", TypeName = "varchar(150)")]
+    // Even if [Required] in validation, if the DB column is NULL, 
+    // it MUST be string? to prevent the Cast Exception during fetch.
+    [Column("user_name")]
     [EmailAddress]
-    public string UserName { get; set; } = string.Empty;
+    public string? UserName { get; set; }
 
     [Required]
-    [Column("password", TypeName = "varchar(255)")]
+    [Column("password")]
     public string Password { get; set; } = string.Empty;
 
-    [Column("email", TypeName = "varchar(100)")]
-    public string Email { get; set; } = string.Empty;
+    [Column("email")]
+    public string? Email { get; set; }
 
-    [Column("mobile", TypeName = "varchar(20)")]
-    public string Mobile { get; set; } = string.Empty;
+    // Note: If your DB 'mobile' column is a VARCHAR, change this to string?
+    // If it's an INT, int? is correct.
+    [Column("mobile")]
+    public string? Mobile { get; set; }
 
     [Column("dept_id")]
     public int? DeptId { get; set; }
 
-    [Column("dept_name", TypeName = "varchar(100)")]
-    public string DeptName { get; set; } = string.Empty;
+    [Column("dept_name")]
+    public string? DeptName { get; set; }
 
-    [Column("location", TypeName = "varchar(100)")]
-    public string Location { get; set; } = string.Empty;
+    [Column("location")]
+    public string? Location { get; set; }
 
-    [Column("user_role", TypeName = "varchar(100)")]
-    public string UserRole { get; set; } = string.Empty;
+    [Column("user_role")]
+    public string? UserRole { get; set; }
 
     [Column("hod_id")]
     public int? HodId { get; set; }
 
-    [Column("hod_name", TypeName = "varchar(150)")]
-    public string? HodName { get; set; } = string.Empty;
+    [Column("hod_name")]
+    public string? HodName { get; set; }
 
-    [Column("hod_email", TypeName = "varchar(100)")]
-    public string? HodEmail { get; set; } = string.Empty;
+    [Column("hod_email")]
+    public string? HodEmail { get; set; }
 
     [Column("IsActive")]
     public bool IsActive { get; set; } = true;
