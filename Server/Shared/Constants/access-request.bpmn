@@ -1,166 +1,194 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
-             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-             xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
-             targetNamespace="http://example.com/bpmn">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" targetNamespace="http://example.com/bpmn" exporter="Camunda Web Modeler" exporterVersion="77a9099" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
   <process id="AccessRequestProcess" name="Access Request Approval" isExecutable="true">
+    <extensionElements>
+      <zeebe:userTaskForm id="userTaskForm_HOD">{"components":[{"label":"Approve Request?","type":"checkbox","id":"Field_HOD","key":"hodApproved"}]}</zeebe:userTaskForm>
+      <zeebe:userTaskForm id="userTaskForm_Update">{"components":[{"label":"Update Request Details","type":"textfield","id":"Field_Update","key":"requestDetails"}]}</zeebe:userTaskForm>
+      <zeebe:userTaskForm id="userTaskForm_IT">{"components":[{"label":"IT Final Approval","type":"checkbox","id":"Field_IT","key":"itApproved"}]}</zeebe:userTaskForm>
+    </extensionElements>
     <startEvent id="StartEvent_RequestSubmitted" name="Request Submitted">
       <outgoing>Flow_Start_to_HOD</outgoing>
     </startEvent>
-
-    <sequenceFlow id="Flow_Start_to_HOD" sourceRef="StartEvent_RequestSubmitted" targetRef="UserTask_HODApproval" />
-
-    <userTask id="UserTask_HODApproval" name="HOD Approval" camunda:assignee="hod">
+    <exclusiveGateway id="Gateway_Join_HOD">
       <incoming>Flow_Start_to_HOD</incoming>
+      <incoming>Flow_Update_back_to_HOD</incoming>
+      <outgoing>Flow_to_HOD_Task</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_Start_to_HOD" sourceRef="StartEvent_RequestSubmitted" targetRef="Gateway_Join_HOD" />
+    <sequenceFlow id="Flow_to_HOD_Task" sourceRef="Gateway_Join_HOD" targetRef="UserTask_HODApproval" />
+    <userTask id="UserTask_HODApproval" name="HOD Approval">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="userTaskForm_HOD" />
+        <zeebe:assignmentDefinition assignee="hod" />
+      </extensionElements>
+      <incoming>Flow_to_HOD_Task</incoming>
       <outgoing>Flow_HOD_to_Decision</outgoing>
     </userTask>
-
     <sequenceFlow id="Flow_HOD_to_Decision" sourceRef="UserTask_HODApproval" targetRef="Gateway_HODDecision" />
-
     <exclusiveGateway id="Gateway_HODDecision" name="HOD Decision">
       <incoming>Flow_HOD_to_Decision</incoming>
       <outgoing>Flow_HOD_Approved</outgoing>
       <outgoing>Flow_HOD_Rejected</outgoing>
     </exclusiveGateway>
-
-    <sequenceFlow id="Flow_HOD_Approved" sourceRef="Gateway_HODDecision" targetRef="UserTask_ITApproval">
-      <conditionExpression xsi:type="tFormalExpression">${hodApproved == true}</conditionExpression>
+    <sequenceFlow id="Flow_HOD_Approved" name="Approved" sourceRef="Gateway_HODDecision" targetRef="UserTask_ITApproval">
+      <conditionExpression xsi:type="tFormalExpression">=hodApproved = true</conditionExpression>
     </sequenceFlow>
-
-    <sequenceFlow id="Flow_HOD_Rejected" sourceRef="Gateway_HODDecision" targetRef="UserTask_RequestUpdate">
-      <conditionExpression xsi:type="tFormalExpression">${hodApproved == false}</conditionExpression>
+    <sequenceFlow id="Flow_HOD_Rejected" name="Rejected" sourceRef="Gateway_HODDecision" targetRef="UserTask_RequestUpdate">
+      <conditionExpression xsi:type="tFormalExpression">=hodApproved = false</conditionExpression>
     </sequenceFlow>
-
-    <userTask id="UserTask_RequestUpdate" name="Request Update" camunda:assignee="employee">
+    <userTask id="UserTask_RequestUpdate" name="Request Update">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="userTaskForm_Update" />
+        <zeebe:assignmentDefinition assignee="employee" />
+      </extensionElements>
       <incoming>Flow_HOD_Rejected</incoming>
       <outgoing>Flow_Update_back_to_HOD</outgoing>
     </userTask>
-
-    <sequenceFlow id="Flow_Update_back_to_HOD" sourceRef="UserTask_RequestUpdate" targetRef="UserTask_HODApproval" />
-
-    <userTask id="UserTask_ITApproval" name="IT Team Approval" camunda:assignee="it_team">
+    <sequenceFlow id="Flow_Update_back_to_HOD" sourceRef="UserTask_RequestUpdate" targetRef="Gateway_Join_HOD" />
+    <userTask id="UserTask_ITApproval" name="IT Team Approval">
+      <extensionElements>
+        <zeebe:userTask />
+        <zeebe:formDefinition formId="userTaskForm_IT" />
+        <zeebe:assignmentDefinition assignee="it_team" />
+      </extensionElements>
       <incoming>Flow_HOD_Approved</incoming>
       <outgoing>Flow_IT_to_Decision</outgoing>
     </userTask>
-
     <sequenceFlow id="Flow_IT_to_Decision" sourceRef="UserTask_ITApproval" targetRef="Gateway_ITDecision" />
-
     <exclusiveGateway id="Gateway_ITDecision" name="IT Decision">
       <incoming>Flow_IT_to_Decision</incoming>
       <outgoing>Flow_IT_Approved</outgoing>
       <outgoing>Flow_IT_Rejected</outgoing>
     </exclusiveGateway>
-
-    <sequenceFlow id="Flow_IT_Approved" sourceRef="Gateway_ITDecision" targetRef="IntermediateTimer_AccessExpiry">
-      <conditionExpression xsi:type="tFormalExpression">${itApproved == true}</conditionExpression>
+    <sequenceFlow id="Flow_IT_Approved" name="Approved" sourceRef="Gateway_ITDecision" targetRef="IntermediateTimer_AccessExpiry">
+      <conditionExpression xsi:type="tFormalExpression">=itApproved = true</conditionExpression>
     </sequenceFlow>
-
-    <sequenceFlow id="Flow_IT_Rejected" sourceRef="Gateway_ITDecision" targetRef="EndEvent_ITRejected">
-      <conditionExpression xsi:type="tFormalExpression">${itApproved == false}</conditionExpression>
+    <sequenceFlow id="Flow_IT_Rejected" name="Rejected" sourceRef="Gateway_ITDecision" targetRef="EndEvent_ITRejected">
+      <conditionExpression xsi:type="tFormalExpression">=itApproved = false</conditionExpression>
     </sequenceFlow>
-
     <endEvent id="EndEvent_ITRejected" name="Access Rejected">
       <incoming>Flow_IT_Rejected</incoming>
     </endEvent>
-
     <intermediateCatchEvent id="IntermediateTimer_AccessExpiry" name="Access Duration Timer">
       <incoming>Flow_IT_Approved</incoming>
       <outgoing>Flow_Timer_to_Revoke</outgoing>
-      <timerEventDefinition>
-        <timeDuration>PT365D</timeDuration>
+      <timerEventDefinition id="TimerEventDefinition_1">
+        <timeDuration xsi:type="tFormalExpression">="PT365D"</timeDuration>
       </timerEventDefinition>
     </intermediateCatchEvent>
-
-    <serviceTask id="ServiceTask_RevokeAccess" name="Revoke Access" camunda:class="com.example.RevokeAccessDelegate">
-      <incoming>Flow_Timer_to_Revoke</incoming>
-      <outgoing>Flow_Revoke_to_End</outgoing>
-    </serviceTask>
-
     <sequenceFlow id="Flow_Timer_to_Revoke" sourceRef="IntermediateTimer_AccessExpiry" targetRef="ServiceTask_RevokeAccess" />
-    <sequenceFlow id="Flow_Revoke_to_End" sourceRef="ServiceTask_RevokeAccess" targetRef="EndEvent_AccessRevoked" />
-
+    <serviceTask id="ServiceTask_RevokeAccess" name="Revoke Access">
+      <extensionElements>
+        <zeebe:taskDefinition type="revoke-access-worker" />
+      </extensionElements>
+      <incoming>Flow_Timer_to_Revoke</incoming>
+      <outgoing>Flow_Revoke_to_Log</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_Revoke_to_Log" sourceRef="ServiceTask_RevokeAccess" targetRef="ServiceTask_UpdateCostDashboard" />
+    <serviceTask id="ServiceTask_UpdateCostDashboard" name="Log Actual Costs">
+      <extensionElements>
+        <zeebe:taskDefinition type="cost-logger-worker" />
+      </extensionElements>
+      <incoming>Flow_Revoke_to_Log</incoming>
+      <outgoing>Flow_Log_to_End</outgoing>
+    </serviceTask>
+    <sequenceFlow id="Flow_Log_to_End" sourceRef="ServiceTask_UpdateCostDashboard" targetRef="EndEvent_AccessRevoked" />
     <endEvent id="EndEvent_AccessRevoked" name="Access Revoked">
-      <incoming>Flow_Revoke_to_End</incoming>
+      <incoming>Flow_Log_to_End</incoming>
     </endEvent>
   </process>
-
-  <bpmndi:BPMNDiagram id="BPMNDiagram_AccessRequest">
-    <bpmndi:BPMNPlane id="BPMNPlane_AccessRequest" bpmnElement="AccessRequestProcess">
-      <bpmndi:BPMNShape id="Shape_StartEvent" bpmnElement="StartEvent_RequestSubmitted">
-        <dc:Bounds x="100" y="100" width="36" height="36" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="AccessRequestProcess">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_RequestSubmitted">
+        <dc:Bounds x="152" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_HODApproval" bpmnElement="UserTask_HODApproval">
-        <dc:Bounds x="220" y="90" width="100" height="60" />
+      <bpmndi:BPMNShape id="Gateway_Join_HOD_di" bpmnElement="Gateway_Join_HOD" isMarkerVisible="true">
+        <dc:Bounds x="235" y="95" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_HODDecision" bpmnElement="Gateway_HODDecision" isMarkerVisible="true">
-        <dc:Bounds x="360" y="100" width="50" height="50" />
+      <bpmndi:BPMNShape id="Activity_HOD_di" bpmnElement="UserTask_HODApproval">
+        <dc:Bounds x="320" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_RequestUpdate" bpmnElement="UserTask_RequestUpdate">
-        <dc:Bounds x="470" y="40" width="100" height="60" />
+      <bpmndi:BPMNShape id="Gateway_HOD_Decision_di" bpmnElement="Gateway_HODDecision" isMarkerVisible="true">
+        <dc:Bounds x="465" y="95" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_ITApproval" bpmnElement="UserTask_ITApproval">
-        <dc:Bounds x="470" y="220" width="100" height="60" />
+      <bpmndi:BPMNShape id="Activity_Update_di" bpmnElement="UserTask_RequestUpdate">
+        <dc:Bounds x="560" y="10" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_ITDecision" bpmnElement="Gateway_ITDecision" isMarkerVisible="true">
-        <dc:Bounds x="620" y="230" width="50" height="50" />
+      <bpmndi:BPMNShape id="Activity_IT_di" bpmnElement="UserTask_ITApproval">
+        <dc:Bounds x="560" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_Timer" bpmnElement="IntermediateTimer_AccessExpiry">
-        <dc:Bounds x="750" y="230" width="36" height="36" />
+      <bpmndi:BPMNShape id="Gateway_IT_Decision_di" bpmnElement="Gateway_ITDecision" isMarkerVisible="true">
+        <dc:Bounds x="715" y="205" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_RevokeAccess" bpmnElement="ServiceTask_RevokeAccess">
-        <dc:Bounds x="860" y="220" width="100" height="60" />
+      <bpmndi:BPMNShape id="Event_Rejected_di" bpmnElement="EndEvent_ITRejected">
+        <dc:Bounds x="822" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_EndRevoked" bpmnElement="EndEvent_AccessRevoked">
-        <dc:Bounds x="1020" y="230" width="36" height="36" />
+      <bpmndi:BPMNShape id="Event_Timer_di" bpmnElement="IntermediateTimer_AccessExpiry">
+        <dc:Bounds x="822" y="212" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Shape_EndRejected" bpmnElement="EndEvent_ITRejected">
-        <dc:Bounds x="720" y="40" width="36" height="36" />
+      <bpmndi:BPMNShape id="Activity_Revoke_di" bpmnElement="ServiceTask_RevokeAccess">
+        <dc:Bounds x="910" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
-
-      <bpmndi:BPMNEdge id="Flow_Start_to_HOD_di" bpmnElement="Flow_Start_to_HOD">
-        <di:waypoint x="136" y="118" />
-        <di:waypoint x="220" y="118" />
+      <bpmndi:BPMNShape id="Activity_Log_di" bpmnElement="ServiceTask_UpdateCostDashboard">
+        <dc:Bounds x="1060" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Revoked_di" bpmnElement="EndEvent_AccessRevoked">
+        <dc:Bounds x="1222" y="212" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_Start_to_HOD">
+        <di:waypoint x="188" y="120" />
+        <di:waypoint x="235" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_HOD_to_Decision_di" bpmnElement="Flow_HOD_to_Decision">
-        <di:waypoint x="320" y="118" />
-        <di:waypoint x="360" y="118" />
+      <bpmndi:BPMNEdge id="Flow_to_HOD_Task_di" bpmnElement="Flow_to_HOD_Task">
+        <di:waypoint x="285" y="120" />
+        <di:waypoint x="320" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_HOD_Approved_di" bpmnElement="Flow_HOD_Approved">
-        <di:waypoint x="385" y="125" />
-        <di:waypoint x="470" y="250" />
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_HOD_to_Decision">
+        <di:waypoint x="420" y="120" />
+        <di:waypoint x="465" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_HOD_Rejected_di" bpmnElement="Flow_HOD_Rejected">
-        <di:waypoint x="385" y="118" />
-        <di:waypoint x="470" y="70" />
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_HOD_Approved">
+        <di:waypoint x="490" y="145" />
+        <di:waypoint x="490" y="230" />
+        <di:waypoint x="560" y="230" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Update_back_to_HOD_di" bpmnElement="Flow_Update_back_to_HOD">
-        <di:waypoint x="570" y="70" />
-        <di:waypoint x="570" y="118" />
-        <di:waypoint x="360" y="118" />
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_HOD_Rejected">
+        <di:waypoint x="490" y="95" />
+        <di:waypoint x="490" y="50" />
+        <di:waypoint x="560" y="50" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_IT_to_Decision_di" bpmnElement="Flow_IT_to_Decision">
-        <di:waypoint x="570" y="260" />
-        <di:waypoint x="620" y="260" />
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_Update_back_to_HOD">
+        <di:waypoint x="610" y="10" />
+        <di:waypoint x="610" y="-20" />
+        <di:waypoint x="260" y="-20" />
+        <di:waypoint x="260" y="95" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_IT_Approved_di" bpmnElement="Flow_IT_Approved">
-        <di:waypoint x="665" y="255" />
-        <di:waypoint x="750" y="255" />
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_IT_to_Decision">
+        <di:waypoint x="660" y="230" />
+        <di:waypoint x="715" y="230" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_IT_Rejected_di" bpmnElement="Flow_IT_Rejected">
-        <di:waypoint x="645" y="245" />
-        <di:waypoint x="720" y="118" />
-        <di:waypoint x="720" y="118" />
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_IT_Approved">
+        <di:waypoint x="765" y="230" />
+        <di:waypoint x="822" y="230" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Timer_to_Revoke_di" bpmnElement="Flow_Timer_to_Revoke">
-        <di:waypoint x="786" y="248" />
-        <di:waypoint x="860" y="248" />
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_IT_Rejected">
+        <di:waypoint x="740" y="205" />
+        <di:waypoint x="740" y="120" />
+        <di:waypoint x="822" y="120" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_Revoke_to_End_di" bpmnElement="Flow_Revoke_to_End">
-        <di:waypoint x="960" y="250" />
-        <di:waypoint x="1020" y="250" />
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_Timer_to_Revoke">
+        <di:waypoint x="858" y="230" />
+        <di:waypoint x="910" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_Revoke_to_Log">
+        <di:waypoint x="1010" y="230" />
+        <di:waypoint x="1060" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_Log_to_End">
+        <di:waypoint x="1160" y="230" />
+        <di:waypoint x="1222" y="230" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
