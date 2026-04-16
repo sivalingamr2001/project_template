@@ -1,38 +1,25 @@
 import { useMemo, useState } from "react";
 import { BadgeCheck, Briefcase, Search, PlusCircle } from "lucide-react";
 import { Button } from "../../shared/components/ui/button";
-// 1. Import useNavigate from TanStack
 import { useNavigate } from "@tanstack/react-router";
+import { useBudget } from "@/features/budget/budget-context";
 import CreateBudgetModal from "../budget/components/CreateBudgetModal";
-
-const portalStats = [
-  { label: "Total active projects", value: "38", icon: Briefcase },
-  { label: "Approved budget items", value: "26", icon: BadgeCheck },
-  { label: "Search ready", value: "Instant", icon: Search },
-];
-
-const actions = [
-  {
-    label: "Create Project",
-    description: "Start a new budget entry and capture project details.",
-    to: "/app/budget",
-    search: { view: "plan-entry" },
-    icon: PlusCircle,
-    variant: "default",
-  },
-  {
-    label: "Search Project",
-    description: "Find an existing project by code or number.",
-    to: "/app/budget",
-    search: { view: "project-search" },
-    icon: Search,
-    variant: "secondary",
-  },
-] as const;
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { createRecord, state } = useBudget();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const totalProjects = useMemo(() => state.records.length, [state.records.length]);
+
+  const portalStats = useMemo(
+    () => [
+      { label: "Total active projects", value: String(totalProjects), icon: Briefcase },
+      { label: "Create budget track the Status", value: "Planed vs Actual", icon: BadgeCheck },
+      { label: "Search ready", value: "Instant", icon: Search },
+    ],
+    [totalProjects],
+  );
 
   const summaryText = useMemo(
     () =>
@@ -113,7 +100,7 @@ export default function DashboardPage() {
               </p>
               <Button
                 variant="secondary"
-                onClick={() => navigate({ to: "/app/budget" })}
+                onClick={() => navigate({ to: "/budget" })}
                 className="w-full justify-between h-14 rounded-2xl px-5"
               >
                 Search Project
@@ -127,6 +114,13 @@ export default function DashboardPage() {
         <CreateBudgetModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          onSubmit={async (input, saveAsDraft) => {
+            const created = await createRecord(input, saveAsDraft);
+            if (created) {
+              setIsModalOpen(false);
+              void navigate({ to: "/budget/plan-entry" });
+            }
+          }}
         />
       </main>
     </div>

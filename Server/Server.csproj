@@ -7,10 +7,22 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="MySqlConnector" />
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="System.Data.OracleClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="External Sources\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ConnectionDll">
+      <HintPath>..\..\..\project_template\Server\Infrastructure\External Sources\ConnectionDll.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <Target Name="CopyReactBuild" AfterTargets="Publish">

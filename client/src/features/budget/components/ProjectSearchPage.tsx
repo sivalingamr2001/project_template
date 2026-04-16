@@ -1,7 +1,13 @@
+import axios from "axios";
 import { useMemo, useState } from "react";
 import { Eye, Search, Trash2 } from "lucide-react";
 
 import { useBudget } from "@/features/budget/budget-context";
+import {
+  getBudgetByProjectCode,
+  getBudgetByProjectCodeAndProductNo,
+  mapBudgetApiToUi,
+} from "@/features/budget/budgetApi";
 import { formatDate, formatINR } from "@/features/budget/budget-format";
 import type { BudgetRecord } from "@/features/budget/budget.types";
 import { Button } from "@/shared/components/ui/button";
@@ -14,7 +20,7 @@ export function ProjectSearchPage({
 }: {
   onOpenPlanEntry: () => void;
 }) {
-  const { createRecord, deleteRecord, getRecordTotals, loadRecord, state } =
+  const { createRecord, deleteRecord, getRecordTotals, importRecord, loadRecord, state } =
     useBudget();
   const [searchInputs, setSearchInputs] = useState({
     productNo: "",
@@ -120,7 +126,7 @@ export function ProjectSearchPage({
     }
   }
 
-  function handleSearch() {
+  async function handleSearch() {
     if (!searchInputs.productNo.trim() && !searchInputs.projectCode.trim()) {
       toast.info("Enter a product number or project number to search.");
       return;
@@ -128,6 +134,42 @@ export function ProjectSearchPage({
 
     setSearchCriteria(searchInputs);
     setHasSearched(true);
+
+    const projectCode = searchInputs.projectCode.trim();
+    const productNo = searchInputs.productNo.trim();
+
+    if (projectCode && productNo) {
+      try {
+        const recordResponse = await getBudgetByProjectCodeAndProductNo(
+          projectCode,
+          productNo,
+        );
+        importRecord(mapBudgetApiToUi(recordResponse));
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          toast.info("No matching project record found.");
+        } else {
+          console.error(error);
+          toast.error("Unable to search the budget record.");
+        }
+      }
+
+      return;
+    }
+
+    if (projectCode) {
+      try {
+        const recordResponse = await getBudgetByProjectCode(projectCode);
+        importRecord(mapBudgetApiToUi(recordResponse));
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          toast.info("No matching project record found.");
+        } else {
+          console.error(error);
+          toast.error("Unable to search the budget record.");
+        }
+      }
+    }
   }
 
   function handleOpenRecord(recordId: string) {
@@ -136,13 +178,40 @@ export function ProjectSearchPage({
     onOpenPlanEntry();
   }
 
-  function handleDeleteRecord(recordId: string, projectCode: string) {
-    deleteRecord(recordId);
-    toast.info(`Project record ${projectCode} removed from the local list.`);
+  async function handleDeleteRecord(recordId: string, projectCode: string) {
+    try {
+      await deleteRecord(recordId);
+      toast.success(`Project record ${projectCode} removed from the server.`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to delete the selected budget record.");
+    }
+  }
+
+  async function handleCreateBudget(
+    input: {
+      productName: string;
+      projectCode: string;
+      productNo: string;
+    },
+    saveAsDraft: boolean,
+  ) {
+    const created = await createRecord(input, saveAsDraft);
+    if (created) {
+      toast.success(
+        saveAsDraft
+          ? "Draft budget record created. Complete the plan entry to save it."
+          : "Budget record created and saved successfully.",
+      );
+      setIsModalOpen(false);
+      onOpenPlanEntry();
+    } else {
+      toast.error("Failed to create a new budget record.");
+    }
   }
 
   const searchResultsContent = !hasSearched ? (
-    <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 p-8 text-center text-muted-foreground">
+    <div className="flex min-h-70 flex-col items-center justify-center gap-2 p-8 text-center text-muted-foreground">
       <div className="text-lg font-semibold text-foreground">
         Search for a project
       </div>
@@ -151,7 +220,7 @@ export function ProjectSearchPage({
       </p>
     </div>
   ) : records.length === 0 ? (
-    <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 p-8 text-center">
+    <div className="flex min-h-70 flex-col items-center justify-center gap-3 p-8 text-center">
       <div className="text-xl font-semibold text-foreground">
         No project found
       </div>
@@ -211,7 +280,7 @@ export function ProjectSearchPage({
               handleSearch();
             }}
           >
-            <div className="flex-1 min-w-[240px]">
+            <div className="flex-1 min-w-60">
               <SearchField
                 label="Product Number *"
                 onChange={(value) =>
@@ -221,7 +290,7 @@ export function ProjectSearchPage({
                 value={searchInputs.productNo}
               />
             </div>
-            <div className="flex-1 min-w-[240px]">
+            <div className="flex-1 min-w-60">
               <SearchField
                 label="Project Number *"
                 onChange={(value) =>
@@ -243,6 +312,7 @@ export function ProjectSearchPage({
       <CreateBudgetModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateBudget}
       />
     </div>
   );

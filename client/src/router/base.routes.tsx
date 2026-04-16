@@ -1,6 +1,7 @@
 import {
   createRootRouteWithContext,
   createRoute,
+  redirect,
 } from "@tanstack/react-router";
 
 import { AppLayout, RootLayout } from "@/layouts";
@@ -11,9 +12,21 @@ export const rootRoute = createRootRouteWithContext<RouterAppContext>()({
   component: RootLayout,
 });
 
-export const appRoute = createRoute({
+export const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/app",
+  path: "/",
+  beforeLoad: ({ context }) => {
+    if (context.auth.isLoggedIn) {
+      throw redirect({ to: "/budget/dashboard" });
+    }
+
+    throw redirect({ to: "/login" });
+  },
+});
+
+export const appRoute = createRoute({
+  id: "appRoute",
+  getParentRoute: () => rootRoute,
   beforeLoad: requireAuth,
   component: AppLayout,
 });

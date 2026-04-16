@@ -1,10 +1,13 @@
 import type { LoginInput, User } from "@/features/auth/auth.types";
 
-const SESSION_KEY = "tanstack-mastery-session";
+const auth_session = "tanstack-mastery-session";
 
 const demoUsers: User[] = [
-  { id: 1, name: "Maya Thompson", email: "admin@mastery.dev", role: "admin" },
-  { id: 2, name: "Ari Bennett", email: "user@mastery.dev", role: "user" },
+  { id: 1001, name: "Anitha", email: "anitha@corp.local", role: "user" },
+  { id: 2001, name: "Rahul", email: "rahul@corp.local", role: "user" },
+  { id: 1002, name: "Meena", email: "meena@corp.local", role: "user" },
+  { id: 2002, name: "Karthik", email: "karthik@corp.local", role: "user" },
+  { id: 3001, name: "Sanjay", email: "sanjay@corp.local", role: "admin" },
 ];
 
 function wait(ms = 450) {
@@ -22,15 +25,15 @@ export async function loginRequest(input: LoginInput) {
     );
   }
 
-  window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  window.localStorage.setItem(auth_session, JSON.stringify(user));
   return user;
 }
 
 export function getStoredSession() {
-  const session = window.localStorage.getItem(SESSION_KEY);
+  const session = window.localStorage.getItem(auth_session);
   return session ? (JSON.parse(session) as User) : null;
 }
 
 export function logoutRequest() {
-  window.localStorage.removeItem(SESSION_KEY);
+  window.localStorage.removeItem(auth_session);
 }

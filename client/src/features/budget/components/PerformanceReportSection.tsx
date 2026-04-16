@@ -76,25 +76,7 @@ const MONTHS = [
   "Dec",
 ];
 
-export function PerformanceReportSection({
-  onBackToPlan,
-}: {
-  onBackToPlan: () => void;
-}) {
-  async function handleShare() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success("Report link copied to the clipboard.");
-    } catch {
-      toast.info("Clipboard access is unavailable in this browser.");
-    }
-  }
-
-  function handlePrint() {
-    window.print();
-    toast.info("Use your browser print dialog to save the report as PDF.");
-  }
-
+export function PerformanceReportSection() {
   return (
     <Card className="flex min-h-0 flex-col overflow-hidden">
       <div className="shrink-0 border-b border-border/70 px-5 py-4">
@@ -119,19 +101,6 @@ export function PerformanceReportSection({
           </div>
         </div>
         <AuditTable />
-      </div>
-      <div className="shrink-0 flex flex-col gap-3 border-t border-border/70 bg-muted/20 px-5 py-4 md:flex-row md:items-center md:justify-end">
-        <Button onClick={onBackToPlan} size="sm" variant="outline">
-          Back to Plan Entry
-        </Button>
-        <Button onClick={handlePrint} size="sm" variant="outline">
-          <Printer className="mr-2 h-4 w-4" />
-          Print or Save PDF
-        </Button>
-        <Button onClick={handleShare} size="sm">
-          <Copy className="mr-2 h-4 w-4" />
-          Share Report
-        </Button>
       </div>
     </Card>
   );

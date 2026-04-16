@@ -224,7 +224,7 @@ function BudgetAmountInput({
         }}
         placeholder="0"
         value={draftValue}
-        // disabled={type === "actual"}
+        disabled={type === "actual"}
       />
     </div>
   );

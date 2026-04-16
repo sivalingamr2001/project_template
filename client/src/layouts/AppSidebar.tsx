@@ -18,12 +18,12 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      to: "/app/dashboard",
+      to: "/budget/dashboard",
       icon: TrendingUp,
     },
     {
       title: "Budget",
-      to: "/app/budget",
+      to: "/budget",
       icon: Layers,
     },
   ],

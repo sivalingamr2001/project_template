@@ -99,6 +99,16 @@ public static class BudgetRecordsEndpoint
         })
         .WithName("UpdateBudget")
         .WithOpenApi();
+
+        group.MapDelete("/{budgetId:int}", async (int budgetId, BudgetRecordsService service, CancellationToken cancellationToken) =>
+        {
+            var result = await service.DeleteAsync(budgetId, cancellationToken);
+            return result.IsSuccess
+                ? Results.NoContent()
+                : ToProblem(result.Error!);
+        })
+        .WithName("DeleteBudget")
+        .WithOpenApi();
     }
 
     private static void ValidateCreateRequest(CreateBudgetRecordRequest request)

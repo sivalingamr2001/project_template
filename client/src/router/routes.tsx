@@ -1,14 +1,28 @@
 import { createRouter } from "@tanstack/react-router";
 
 import { loginRoute } from "@/router/auth.routes";
-import { appRoute, rootRoute } from "@/router/base.routes";
-import { budgetRoute, dashboardRoute } from "@/router/budget.routes";
+import { appRoute, homeRoute, rootRoute } from "@/router/base.routes";
+import {
+  budgetRoute,
+  dashboardRoute,
+  budgetSearchRoute,
+  budgetPlanEntryRoute,
+  budgetPerformanceReportRoute,
+} from "@/router/budget.routes";
 
 export type { RouterAppContext } from "@/router/router.types";
 
 const routeTree = rootRoute.addChildren([
+  homeRoute,
   loginRoute,
-  appRoute.addChildren([dashboardRoute, budgetRoute]),
+  appRoute.addChildren([
+    dashboardRoute,
+    budgetRoute.addChildren([
+      budgetSearchRoute,
+      budgetPlanEntryRoute,
+      budgetPerformanceReportRoute,
+    ]),
+  ]),
 ]);
 
 export const router = createRouter({

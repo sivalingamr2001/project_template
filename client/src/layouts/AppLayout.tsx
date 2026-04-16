@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarInset } from "@/shared/components/ui/sidebar";
 import { Separator } from "@/shared/components/ui/separator";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/shared/components/ui/button";
+import { BudgetProvider } from "@/features/budget/budget-context";
 
 export default function AppLayout() {
   const auth = useAuthContext();
@@ -42,7 +43,9 @@ export default function AppLayout() {
         </header>
 
         <main className="flex-1 h-screen overflow-auto p-6">
-          <Outlet />
+          <BudgetProvider>
+            <Outlet />
+          </BudgetProvider>
         </main>
       </SidebarInset>
     </SidebarProvider>

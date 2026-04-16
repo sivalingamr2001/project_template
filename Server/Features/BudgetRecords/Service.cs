@@ -261,4 +261,22 @@ public sealed class BudgetRecordsService(
 
         return await GetByIdAsync(budgetId, cancellationToken);
     }
+
+    public async Task<Result> DeleteAsync(int budgetId, CancellationToken cancellationToken)
+    {
+        var budget = await dbContext.Budgets
+            .Include(b => b.Categories)
+            .ThenInclude(c => c.Items)
+            .SingleOrDefaultAsync(b => b.BudgetId == budgetId, cancellationToken);
+
+        if (budget is null)
+        {
+            return Result.Failure(BudgetErrors.NotFound(budgetId));
+        }
+
+        dbContext.Budgets.Remove(budget);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
+    }
 }

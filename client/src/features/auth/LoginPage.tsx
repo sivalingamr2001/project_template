@@ -26,7 +26,9 @@ export default function LoginPage() {
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
 
   const redirectTo =
-    typeof search.redirect === "string" ? search.redirect : "/app/budget";
+    typeof search.redirect === "string"
+      ? search.redirect
+      : "/budget/dashboard";
 
   useEffect(() => {
     if (auth.isLoggedIn && pendingRedirect) {

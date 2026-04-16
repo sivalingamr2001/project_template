@@ -1,25 +1,31 @@
 import { createRoute } from "@tanstack/react-router";
-import { z } from "zod";
 import { appRoute } from "@/router/base.routes";
 import BudgetPage from "@/features/budget/BudgetPage";
 import DashboardPage from "@/features/Dashboard";
 
+export const dashboardRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "budget/dashboard",
+  component: DashboardPage,
+});
+
 export const budgetRoute = createRoute({
   getParentRoute: () => appRoute,
   path: "budget",
-  validateSearch: (search) =>
-    z
-      .object({
-        view: z
-          .enum(["project-search", "plan-entry", "performance-report"])
-          .optional(),
-      })
-      .parse(search),
   component: BudgetPage,
 });
 
-export const dashboardRoute = createRoute({
-  getParentRoute: () => appRoute,
-  path: "dashboard",
-  component: DashboardPage,
+export const budgetSearchRoute = createRoute({
+  getParentRoute: () => budgetRoute,
+  path: "search",
+});
+
+export const budgetPlanEntryRoute = createRoute({
+  getParentRoute: () => budgetRoute,
+  path: "plan-entry",
+});
+
+export const budgetPerformanceReportRoute = createRoute({
+  getParentRoute: () => budgetRoute,
+  path: "performance-report",
 });

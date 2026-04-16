@@ -1,10 +1,12 @@
 export interface BudgetItem {
+  itemId?: number;
   name: string;
   planned: number;
   actual: number;
 }
 
 export interface BudgetCategory {
+  categoryId?: number;
   category: string;
   items: BudgetItem[];
 }

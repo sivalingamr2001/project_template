@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { useBudget } from "@/features/budget/budget-context";
 import { formatDate } from "@/features/budget/budget-format";
 import { Badge } from "@/shared/components/ui/badge";
 import { Button } from "@/shared/components/ui/button";
 import { Card } from "@/shared/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/shared/components/ui/alert-dialog";
 import { FileDown, RefreshCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
-  const { activeRecord, saveDraft } = useBudget();
+  const [isRefreshConfirmOpen, setIsRefreshConfirmOpen] = useState(false);
+  const { activeRecord, saveDraft, loadRecord } = useBudget();
 
   const isFormValid = Boolean(
     activeRecord?.projectHeader.projectCode &&
@@ -56,9 +59,29 @@ export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
     toast.success("Budget CSV exported for spreadsheet review.");
   }
 
-  function handleSaveDraft() {
-    saveDraft();
-    toast.success("Budget draft saved and project status refreshed.");
+  async function handleSaveDraft() {
+    try {
+      await saveDraft();
+      toast.success("Budget draft saved and project status refreshed.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to save the budget draft.");
+    }
+  }
+
+  function handleRefreshClick() {
+    if (activeRecord?.id.startsWith("draft-")) {
+      setIsRefreshConfirmOpen(true);
+      return;
+    }
+
+    toast.success("Budget refreshed.");
+  }
+
+  function confirmRefresh() {
+    loadRecord(null);
+    setIsRefreshConfirmOpen(false);
+    toast.success("Draft session cleared. Returning to the project search view.");
   }
 
   if (!activeRecord) {
@@ -90,7 +113,7 @@ export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
             </div>
           </div>
           <div className="shrink-0 flex flex-col gap-3 px-2 md:flex-row md:items-center md:justify-end">
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={handleRefreshClick}>
               <RefreshCcw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
@@ -110,6 +133,29 @@ export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
           </div>
         </div>
       </div>
+      <AlertDialog open={isRefreshConfirmOpen} onOpenChange={setIsRefreshConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard draft changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Refreshing now will clear your current draft session and return you
+              to the project search view. Continue or keep editing?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              <Button size="sm" variant="outline">
+                Keep Editing
+              </Button>
+            </AlertDialogCancel>
+            <AlertDialogAction>
+              <Button size="sm" variant="default" onClick={confirmRefresh}>
+                Reload Drafts
+              </Button>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
