@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
   const [isRefreshConfirmOpen, setIsRefreshConfirmOpen] = useState(false);
-  const { activeRecord, saveDraft, loadRecord } = useBudget();
+  const { activeRecord, discardDraft, loadRecord, saveDraft } = useBudget();
 
   const isFormValid = Boolean(
     activeRecord?.projectHeader.projectCode &&
@@ -62,7 +62,8 @@ export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
   async function handleSaveDraft() {
     try {
       await saveDraft();
-      toast.success("Budget draft saved and project status refreshed.");
+      loadRecord(null);
+      toast.success("Budget saved. Returning to search.");
     } catch (error) {
       console.error(error);
       toast.error("Unable to save the budget draft.");
@@ -79,6 +80,7 @@ export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
   }
 
   function confirmRefresh() {
+    discardDraft();
     loadRecord(null);
     setIsRefreshConfirmOpen(false);
     toast.success("Draft session cleared. Returning to the project search view.");
@@ -101,7 +103,6 @@ export function ProjectHeader({ onViewReport }: { onViewReport: () => void }) {
             <span className="text-foreground font-medium">Project:</span>{" "}
             {projectHeader.projectCode} |{" "}
             <span className="text-foreground font-medium">Product No:</span>{" "}
-            {projectHeader.productNo}
             {projectHeader.productNo}
           </p>
         </div>

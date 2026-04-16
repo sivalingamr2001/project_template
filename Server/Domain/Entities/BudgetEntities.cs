@@ -20,6 +20,8 @@ public class Budget : BaseEntity
     public string ProjectTitle { get; set; } = string.Empty;
 
     public ICollection<BudgetCategory> Categories { get; set; } = new List<BudgetCategory>();
+
+    public int IsActive { get; set; } = 1;
 }
 
 public class BudgetCategory

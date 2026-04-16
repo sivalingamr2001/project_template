@@ -15,8 +15,10 @@ public sealed class OracleService : IDisposable
         _logger = logger;
 
         _oracleProvider = new Class1();
-
-        _oracleProvider.oracon_prod_new.ConnectionString
+        if (string.IsNullOrWhiteSpace(_oracleProvider.oracon_prod_new.ConnectionString))
+        {
+            _logger.LogWarning("Oracle connection string from ConnectionDll is empty.");
+        }
     }
 
     public DataTable GetData(string sql)

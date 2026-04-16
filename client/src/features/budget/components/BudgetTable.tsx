@@ -172,7 +172,6 @@ function BudgetItemRow({
             updateBudgetItem(categoryIndex, itemIndex, "planned", value)
           }
           value={item.planned}
-          type="planned"
         />
       </td>
       <td className="px-4 py-3">
@@ -181,7 +180,6 @@ function BudgetItemRow({
             updateBudgetItem(categoryIndex, itemIndex, "actual", value)
           }
           value={item.actual}
-          type="actual"
         />
       </td>
       <td className={`px-4 py-3 text-right ${varianceClassName(variance)}`}>
@@ -197,11 +195,9 @@ function BudgetItemRow({
 function BudgetAmountInput({
   onValueChange,
   value,
-  type,
 }: {
   onValueChange: (value: number) => void;
   value: number;
-  type?: "planned" | "actual";
 }) {
   const [draftValue, setDraftValue] = useState(
     value === 0 ? "" : String(value),
@@ -224,7 +220,6 @@ function BudgetAmountInput({
         }}
         placeholder="0"
         value={draftValue}
-        disabled={type === "actual"}
       />
     </div>
   );

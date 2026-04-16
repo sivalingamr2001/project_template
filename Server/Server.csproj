@@ -8,6 +8,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="MySqlConnector" />
     <PackageReference Include="Oracle.ManagedDataAccess.Core" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
     <PackageReference Include="Serilog.AspNetCore" />
@@ -21,15 +22,18 @@
 
   <ItemGroup>
     <Reference Include="ConnectionDll">
-      <HintPath>..\..\..\project_template\Server\Infrastructure\External Sources\ConnectionDll.dll</HintPath>
+      <HintPath>Infrastructure\Oracle\ConnectionDll.dll</HintPath>
     </Reference>
   </ItemGroup>
 
-  <Target Name="CopyReactBuild" AfterTargets="Publish">
+  <Target Name="CopyReactBuild" AfterTargets="Publish" Condition="Exists('$(MSBuildThisFileDirectory)../Artifact/client/index.html')">
     <ItemGroup>
       <ReactFiles Include="$(MSBuildThisFileDirectory)../Artifact/client/**" />
     </ItemGroup>
-    <Copy SourceFiles="@(ReactFiles)" DestinationFiles="@(ReactFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy
+      SourceFiles="@(ReactFiles)"
+      DestinationFiles="@(ReactFiles->'$(PublishDir)wwwroot/%(RecursiveDir)%(Filename)%(Extension)')"
+      SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

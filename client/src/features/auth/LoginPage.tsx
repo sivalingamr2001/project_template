@@ -19,8 +19,8 @@ export default function LoginPage() {
   const search = useSearch({ strict: false });
   const auth = useAuthContext();
 
-  const [email, setEmail] = useState("admin@mastery.dev");
-  const [password, setPassword] = useState("mastery");
+  const [employeeId, setEmployeeId] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState<string | null>(null);
@@ -43,7 +43,12 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      await auth.login({ email, password });
+      const parsedEmployeeId = Number(employeeId);
+      if (!Number.isFinite(parsedEmployeeId) || parsedEmployeeId <= 0) {
+        throw new Error("Employee ID is required.");
+      }
+
+      await auth.login({ employeeId: parsedEmployeeId, password });
       setPendingRedirect(redirectTo);
     } catch (submitError) {
       setError(
@@ -60,7 +65,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* LEFT: Branding Panel */}
-      <div className="hidden lg:flex flex-col justify-between bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#020617] p-10 text-white">
+      <div className="hidden lg:flex flex-col justify-between bg-linear-to-br from-[#0f172a] via-[#1e293b] to-[#020617] p-10 text-white">
         {/* Top */}
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-white">
@@ -88,49 +93,33 @@ export default function LoginPage() {
 
           <div className="mt-6 space-y-3 text-sm text-white/80">
             <div>✔ Real-time budget vs actual tracking</div>
-            <div>✔ Phase-level utilization insights</div>
             <div>✔ Export-ready audit reports</div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="text-xs text-white/50">© 2026 Internal Platform</div>
+        <div className="text-xs text-white/50"></div>
       </div>
 
       {/* RIGHT: Login */}
       <div className="flex items-center justify-center p-6 bg-background">
         <Card className="w-full max-w-md border-white/10 bg-card/95 rounded-none">
           <CardHeader>
-            <Badge className="w-fit" variant="secondary">
-              Demo sign in
-            </Badge>
-
             <CardTitle className="mt-2 flex items-center gap-2 text-3xl">
               <Lock className="h-6 w-6 text-primary" />
               Access the platform
             </CardTitle>
-
-            <CardDescription>
-              Use{" "}
-              <span className="font-semibold text-foreground">
-                admin@mastery.dev
-              </span>{" "}
-              or{" "}
-              <span className="font-semibold text-foreground">
-                user@mastery.dev
-              </span>
-              . Any password (4+ chars).
-            </CardDescription>
           </CardHeader>
 
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {/* Email */}
+              {/* Employee Id */}
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">Employee ID</label>
                 <Input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  inputMode="numeric"
+                  value={employeeId}
+                  onChange={(e) => setEmployeeId(e.target.value)}
                 />
               </div>
 

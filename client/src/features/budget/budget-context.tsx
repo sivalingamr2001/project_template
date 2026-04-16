@@ -84,7 +84,10 @@ import {
   getBudgetSummaries,
   mapBudgetApiToUi,
   updateBudget,
+  type CreateBudgetRequest,
+  type UpdateBudgetRequest,
 } from "@/features/budget/budgetApi";
+import type { ApiError } from "@/shared/lib/axios";
 import { useAuthContext } from "../auth";
 
 interface BudgetContextValue {
@@ -100,6 +103,7 @@ interface BudgetContextValue {
   ) => Promise<BudgetRecord | null>;
   importRecord: (record: BudgetRecord) => void;
   deleteRecord: (recordId: string) => Promise<void>;
+  discardDraft: (recordId?: string) => void;
   getCategoryTotals: (
     categoryIndex: number,
     record?: BudgetRecord | null,
@@ -122,6 +126,46 @@ const initialState: BudgetStoreState = {
 };
 
 const BudgetContext = createContext<BudgetContextValue | null>(null);
+
+const DRAFT_STORAGE_VERSION = 1;
+const DRAFT_STORAGE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+type BudgetDraftStoragePayload = {
+  version: number;
+  updatedAt: number;
+  records: BudgetRecord[];
+  activeRecordId: string | null;
+};
+
+function getBudgetDraftStorageKey(employeeId?: number) {
+  return `draft:budget-records:${employeeId ?? "guest"}`;
+}
+
+function readBudgetDraftStorage(key: string): BudgetDraftStoragePayload | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as BudgetDraftStoragePayload;
+    if (parsed.version !== DRAFT_STORAGE_VERSION) {
+      return null;
+    }
+
+    if (Date.now() - parsed.updatedAt > DRAFT_STORAGE_TTL_MS) {
+      return null;
+    }
+
+    if (!Array.isArray(parsed.records)) {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 function getCategoryTotalsForRecord(
   record: BudgetRecord | null,
@@ -164,27 +208,90 @@ function getTotalsForRecord(record: BudgetRecord | null): BudgetTotals {
 
 export function BudgetProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<BudgetStoreState>(initialState);
+  const { user } = useAuthContext();
+  const employeeId: number | undefined = user?.employeeId;
+  const draftStorageKey = useMemo(
+    () => getBudgetDraftStorageKey(employeeId),
+    [employeeId],
+  );
 
   useEffect(() => {
     async function loadBudgets() {
+      const storedDrafts = readBudgetDraftStorage(draftStorageKey);
+      const draftRecords = storedDrafts?.records?.filter((record) =>
+        record.id.startsWith("draft-"),
+      );
+      const storedActiveRecordId = storedDrafts?.activeRecordId ?? null;
+
       try {
         const summaries = await getBudgetSummaries();
 
         const fullRecords = await Promise.all(
-          summaries.map(async (summary) => {
+          summaries.map(async (summary: { budgetId: number }) => {
             const detail = await getBudgetById(summary.budgetId);
             return mapBudgetApiToUi(detail);
           }),
         );
 
-        setState({ activeRecordId: null, records: fullRecords });
+        const mergedRecords = [
+          ...(draftRecords ?? []),
+          ...fullRecords.filter(
+            (record) => !(draftRecords ?? []).some((draft) => draft.id === record.id),
+          ),
+        ];
+
+        setState({
+          activeRecordId:
+            storedActiveRecordId &&
+            mergedRecords.some((record) => record.id === storedActiveRecordId)
+              ? storedActiveRecordId
+              : null,
+          records: mergedRecords,
+        });
       } catch (error) {
         console.error("Failed to load budgets", error);
+        setState((current) => ({
+          activeRecordId:
+            storedActiveRecordId &&
+            (draftRecords ?? []).some((record) => record.id === storedActiveRecordId)
+              ? storedActiveRecordId
+              : current.activeRecordId,
+          records: draftRecords && draftRecords.length > 0 ? draftRecords : current.records,
+        }));
       }
     }
 
     loadBudgets();
-  }, []);
+  }, [draftStorageKey]);
+
+  const draftRecords = useMemo(
+    () => state.records.filter((record) => record.id.startsWith("draft-")),
+    [state.records],
+  );
+
+  const activeDraftId = state.activeRecordId?.startsWith("draft-")
+    ? state.activeRecordId
+    : null;
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      if (draftRecords.length === 0 && !activeDraftId) {
+        window.localStorage.removeItem(draftStorageKey);
+        return;
+      }
+
+      const payload: BudgetDraftStoragePayload = {
+        version: DRAFT_STORAGE_VERSION,
+        updatedAt: Date.now(),
+        records: draftRecords,
+        activeRecordId: activeDraftId,
+      };
+
+      window.localStorage.setItem(draftStorageKey, JSON.stringify(payload));
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [activeDraftId, draftRecords, draftStorageKey]);
 
   const activeRecord =
     state.records.find((record) => record.id === state.activeRecordId) ?? null;
@@ -228,38 +335,8 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
         productNo: string;
         projectCode: string;
       },
-      saveAsDraft = true,
+      _saveAsDraft = true,
     ) => {
-      if (!saveAsDraft) {
-        try {
-          const created = await createBudget({
-            employeeId: 1,
-            projectCode,
-            productNo,
-            projectTitle: productName,
-            budgetData: defaultBudgetTemplate.map((category) => ({
-              category: category.category,
-              items: category.items.map((item) => ({
-                name: item.name,
-                planned: item.planned,
-                actual: item.actual,
-              })),
-            })),
-          });
-
-          const record = mapBudgetApiToUi(created);
-          setState((current) => ({
-            activeRecordId: record.id,
-            records: [record, ...current.records],
-          }));
-
-          return record;
-        } catch (error) {
-          console.error("Failed to create and save budget record", error);
-          return null;
-        }
-      }
-
       const record = createDraftBudgetRecord({
         productName,
         productNo,
@@ -279,6 +356,11 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
   const deleteRecord = useCallback(async (recordId: string) => {
     const budgetId = Number(recordId);
     if (Number.isNaN(budgetId)) {
+      setState((current) => ({
+        activeRecordId:
+          current.activeRecordId === recordId ? null : current.activeRecordId,
+        records: current.records.filter((record) => record.id !== recordId),
+      }));
       return;
     }
 
@@ -290,7 +372,19 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
         records: current.records.filter((record) => record.id !== recordId),
       }));
     } catch (error) {
-      console.error("Failed to delete budget record", error);
+      const statusCode = (error as Partial<ApiError>).statusCode;
+      if (statusCode === 404) {
+        // Soft delete is idempotent. If it's already archived, ensure it's removed locally.
+        setState((current) => ({
+          activeRecordId:
+            current.activeRecordId === recordId ? null : current.activeRecordId,
+          records: current.records.filter((record) => record.id !== recordId),
+        }));
+        return;
+      }
+
+      console.error("Failed to archive budget record", error);
+      throw error;
     }
   }, []);
 
@@ -301,8 +395,19 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const { user } = useAuthContext();
-  const employeeId: number | undefined = user?.id;
+  const discardDraft = useCallback((recordId?: string) => {
+    setState((current) => {
+      const targetId = recordId ?? current.activeRecordId;
+      if (!targetId || !targetId.startsWith("draft-")) {
+        return current;
+      }
+
+      return {
+        activeRecordId: current.activeRecordId === targetId ? null : current.activeRecordId,
+        records: current.records.filter((record) => record.id !== targetId),
+      };
+    });
+  }, []);
 
   const saveDraft = useCallback(async () => {
     if (!activeRecord) {
@@ -310,8 +415,14 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     }
 
     const budgetId = Number(activeRecord.id);
-    const createPayload: any = {
-      employeeId: employeeId,
+    const isDraft = Number.isNaN(budgetId);
+
+    if (!employeeId) {
+      throw new Error("Missing employee session.");
+    }
+
+    const createPayload: CreateBudgetRequest = {
+      employeeId,
       projectCode: activeRecord.projectHeader.projectCode,
       productNo: activeRecord.projectHeader.productNo,
       projectTitle: activeRecord.projectHeader.productName,
@@ -325,36 +436,39 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       })),
     };
 
-    const updateItems = activeRecord.budgetData.flatMap((category) =>
-      category.items.map((item) => ({
-        itemId: item.itemId ?? 0,
+    const updateItems: UpdateBudgetRequest["items"] = activeRecord.budgetData
+      .flatMap((category) => category.items)
+      .filter((item) => typeof item.itemId === "number" && item.itemId > 0)
+      .map((item) => ({
+        itemId: item.itemId!,
         planned: item.planned,
         actual: item.actual,
-      })),
-    );
+      }));
 
     try {
-      const response = Number.isNaN(budgetId)
+      const response = isDraft
         ? await createBudget(createPayload)
         : await updateBudget(budgetId, {
             projectCode: activeRecord.projectHeader.projectCode,
             productNo: activeRecord.projectHeader.productNo,
             projectTitle: activeRecord.projectHeader.productName,
-            items: updateItems,
+            items: updateItems.length > 0 ? updateItems : [],
           });
 
       const record = mapBudgetApiToUi(response);
       setState((current) => ({
         activeRecordId: record.id,
-        records: current.records.map((existing) =>
-          existing.id === record.id ? record : existing,
-        ),
+        records: isDraft
+          ? [record, ...current.records.filter((existing) => existing.id !== activeRecord.id)]
+          : current.records.map((existing) =>
+              existing.id === record.id ? record : existing,
+            ),
       }));
     } catch (error) {
       console.error("Failed to save budget draft", error);
       throw error;
     }
-  }, [activeRecord]);
+  }, [activeRecord, employeeId]);
 
   const importRecord = useCallback((record: BudgetRecord) => {
     setState((current) => ({
@@ -410,6 +524,7 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       createRecord,
       importRecord,
       deleteRecord,
+      discardDraft,
       getCategoryTotals: (categoryIndex, record = activeRecord) =>
         getCategoryTotalsForRecord(record, categoryIndex),
       getRecordTotals: (record) => getTotalsForRecord(record),
@@ -422,6 +537,7 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       activeRecord,
       createRecord,
       deleteRecord,
+      discardDraft,
       importRecord,
       loadRecord,
       saveDraft,

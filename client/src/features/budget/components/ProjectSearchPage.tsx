@@ -1,10 +1,9 @@
 import axios from "axios";
 import { useMemo, useState } from "react";
-import { Eye, Search, Trash2 } from "lucide-react";
+import { Archive, Eye, Search } from "lucide-react";
 
 import { useBudget } from "@/features/budget/budget-context";
 import {
-  getBudgetByProjectCode,
   getBudgetByProjectCodeAndProductNo,
   mapBudgetApiToUi,
 } from "@/features/budget/budgetApi";
@@ -12,8 +11,43 @@ import { formatDate, formatINR } from "@/features/budget/budget-format";
 import type { BudgetRecord } from "@/features/budget/budget.types";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
+import type { ApiError } from "@/shared/lib/axios";
 import { toast } from "sonner";
 import CreateBudgetModal from "./CreateBudgetModal";
+
+function getErrorStatusCode(error: unknown): number | null {
+  if (axios.isAxiosError(error)) {
+    return error.response?.status ?? null;
+  }
+
+  if (error && typeof error === "object") {
+    const maybeApiError = error as Partial<ApiError> & { status?: unknown };
+
+    if (typeof maybeApiError.statusCode === "number") {
+      return maybeApiError.statusCode;
+    }
+
+    if (typeof maybeApiError.status === "number") {
+      return maybeApiError.status;
+    }
+  }
+
+  return null;
+}
+
+function getErrorDetailMessage(error: unknown): string | null {
+  if (error && typeof error === "object") {
+    const details = (error as Partial<ApiError>).details as unknown;
+    if (details && typeof details === "object" && "detail" in details) {
+      const detail = (details as { detail?: unknown }).detail;
+      if (typeof detail === "string" && detail.trim()) {
+        return detail;
+      }
+    }
+  }
+
+  return null;
+}
 
 export function ProjectSearchPage({
   onOpenPlanEntry,
@@ -127,8 +161,8 @@ export function ProjectSearchPage({
   }
 
   async function handleSearch() {
-    if (!searchInputs.productNo.trim() && !searchInputs.projectCode.trim()) {
-      toast.info("Enter a product number or project number to search.");
+    if (!searchInputs.productNo.trim() || !searchInputs.projectCode.trim()) {
+      toast.info("Enter both product number and project number to search.");
       return;
     }
 
@@ -138,36 +172,20 @@ export function ProjectSearchPage({
     const projectCode = searchInputs.projectCode.trim();
     const productNo = searchInputs.productNo.trim();
 
-    if (projectCode && productNo) {
-      try {
-        const recordResponse = await getBudgetByProjectCodeAndProductNo(
-          projectCode,
-          productNo,
-        );
-        importRecord(mapBudgetApiToUi(recordResponse));
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
-          toast.info("No matching project record found.");
-        } else {
-          console.error(error);
-          toast.error("Unable to search the budget record.");
-        }
-      }
+    try {
+      const recordResponse = await getBudgetByProjectCodeAndProductNo(
+        projectCode,
+        productNo,
+      );
+      importRecord(mapBudgetApiToUi(recordResponse));
+    } catch (error) {
+      const statusCode = getErrorStatusCode(error);
 
-      return;
-    }
-
-    if (projectCode) {
-      try {
-        const recordResponse = await getBudgetByProjectCode(projectCode);
-        importRecord(mapBudgetApiToUi(recordResponse));
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
-          toast.info("No matching project record found.");
-        } else {
-          console.error(error);
-          toast.error("Unable to search the budget record.");
-        }
+      if (statusCode === 404) {
+        toast.info(getErrorDetailMessage(error) ?? "No matching project record found.");
+      } else {
+        console.error(error);
+        toast.error("Unable to search the budget record.");
       }
     }
   }
@@ -181,10 +199,10 @@ export function ProjectSearchPage({
   async function handleDeleteRecord(recordId: string, projectCode: string) {
     try {
       await deleteRecord(recordId);
-      toast.success(`Project record ${projectCode} removed from the server.`);
+      toast.success(`Project record ${projectCode} archived.`);
     } catch (error) {
       console.error(error);
-      toast.error("Unable to delete the selected budget record.");
+      toast.error("Unable to archive the selected budget record.");
     }
   }
 
@@ -194,14 +212,11 @@ export function ProjectSearchPage({
       projectCode: string;
       productNo: string;
     },
-    saveAsDraft: boolean,
   ) {
-    const created = await createRecord(input, saveAsDraft);
+    const created = await createRecord(input, true);
     if (created) {
       toast.success(
-        saveAsDraft
-          ? "Draft budget record created. Complete the plan entry to save it."
-          : "Budget record created and saved successfully.",
+        "Draft budget record created. Complete the plan entry to save it.",
       );
       setIsModalOpen(false);
       onOpenPlanEntry();
@@ -286,7 +301,7 @@ export function ProjectSearchPage({
                 onChange={(value) =>
                   handleSearchFieldChange("productNo", value)
                 }
-                placeholder="Ex: PROD-100"
+                placeholder="Enter Product Number"
                 value={searchInputs.productNo}
               />
             </div>
@@ -296,7 +311,7 @@ export function ProjectSearchPage({
                 onChange={(value) =>
                   handleSearchFieldChange("projectCode", value)
                 }
-                placeholder="Ex: PRJ-2024"
+                placeholder="Enter Project Number"
                 value={searchInputs.projectCode}
               />
             </div>
@@ -382,8 +397,13 @@ function ProjectRecordRow({
           <button className="text-primary" onClick={onView} type="button">
             <Eye className="h-5 w-5" />
           </button>
-          <button className="text-red-400" onClick={onDelete} type="button">
-            <Trash2 className="h-5 w-5" />
+          <button
+            className="text-red-400"
+            onClick={onDelete}
+            title="Archive"
+            type="button"
+          >
+            <Archive className="h-5 w-5" />
           </button>
         </div>
       </td>

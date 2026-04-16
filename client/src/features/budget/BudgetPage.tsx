@@ -47,7 +47,7 @@ function BudgetWorkspace() {
   const [planTab, setPlanTab] = useState<PlanTab>("budget-table");
   const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
   const [isDraftRefreshConfirmOpen, setIsDraftRefreshConfirmOpen] = useState(false);
-  const { activeRecord, state, loadRecord } = useBudget();
+  const { activeRecord, state, discardDraft, getRecordTotals, loadRecord } = useBudget();
 
   const draftRecords = useMemo(
     () => state.records.filter((record) => record.id.startsWith("draft-")),
@@ -151,6 +151,34 @@ function BudgetWorkspace() {
                       <div className="text-sm text-muted-foreground">
                         {record.projectHeader.productName}
                       </div>
+                      {(() => {
+                        const totals = getRecordTotals(record);
+
+                        return (
+                          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                            <div>
+                              Planned:{" "}
+                              <span className="font-semibold text-foreground">
+                                {totals.totalPlanned.toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                            <div>
+                              Actual:{" "}
+                              <span className="font-semibold text-foreground">
+                                {totals.totalActual.toLocaleString("en-IN")}
+                              </span>
+                            </div>
+                            <div>
+                              Updated:{" "}
+                              <span className="font-semibold text-foreground">
+                                {new Date(record.projectHeader.lastUpdated).toLocaleDateString(
+                                  "en-IN",
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -163,6 +191,13 @@ function BudgetWorkspace() {
                         }}
                       >
                         Open Draft
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => discardDraft(record.id)}
+                      >
+                        Discard
                       </Button>
                     </div>
                   </div>
@@ -218,6 +253,7 @@ function BudgetWorkspace() {
               size="sm"
               variant="default"
               onClick={() => {
+                discardDraft();
                 loadRecord(null);
                 setIsDraftRefreshConfirmOpen(false);
                 setIsDraftModalOpen(false);

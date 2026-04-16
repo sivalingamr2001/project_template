@@ -1,19 +1,26 @@
 export interface User {
-  id: number;
+  employeeId: number;
   name: string;
   email: string;
-  role: "admin" | "user";
+  departmentId: number;
+  departmentName: string;
+  role: string;
+  departmentHod?: {
+    employeeId: number;
+    name: string;
+    email: string;
+  } | null;
 }
 
 export interface LoginInput {
-  email: string;
+  employeeId: number;
   password: string;
 }
 
 export interface AuthContextValue {
   user: User | null;
   isLoggedIn: boolean;
-  roles: User["role"][];
+  roles: string[];
   login: (input: LoginInput) => Promise<void>;
   logout: () => void;
 }

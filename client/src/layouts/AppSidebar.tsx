@@ -32,6 +32,10 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { setOpen } = useSidebar();
+  const pathname = location.pathname;
+
+  const isDashboardActive = pathname === "/budget/dashboard";
+  const isBudgetActive = pathname.startsWith("/budget") && !isDashboardActive;
 
   return (
     <Sidebar
@@ -52,7 +56,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     <SidebarMenuButton
                       asChild
                       tooltip={item.title}
-                      isActive={location.pathname === item.to}
+                      isActive={
+                        item.to === "/budget/dashboard"
+                          ? isDashboardActive
+                          : item.to === "/budget"
+                            ? isBudgetActive
+                            : pathname === item.to
+                      }
                       className="px-2.5 md:px-2"
                     >
                       <Link

@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAuthContext } from "@/features/auth";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
 } from "@/shared/components/ui/dialog";
+
+const DRAFT_VERSION = 1;
+const DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 type CreateBudgetModalProps = {
   isOpen: boolean;
@@ -19,7 +24,6 @@ type CreateBudgetModalProps = {
       projectCode: string;
       productNo: string;
     },
-    saveAsDraft: boolean,
   ) => Promise<void>;
 };
 
@@ -28,12 +32,143 @@ export default function CreateBudgetModal({
   onClose,
   onSubmit,
 }: CreateBudgetModalProps) {
+  const { user } = useAuthContext();
+  const draftKey = useMemo(
+    () => `draft:create-budget:${user?.employeeId ?? "guest"}`,
+    [user?.employeeId],
+  );
+
   const [formData, setFormData] = useState({
     productName: "",
     projectCode: "",
-    projectNumber: "",
+    productNo: "",
   });
-  const [saveAsDraft, setSaveAsDraft] = useState(true);
+  const [hasStoredDraft, setHasStoredDraft] = useState(false);
+  const [shouldPromptResume, setShouldPromptResume] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setShouldPromptResume(false);
+      return;
+    }
+
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) {
+        setHasStoredDraft(false);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        version: number;
+        updatedAt: number;
+        data: typeof formData;
+      };
+
+      const isValid =
+        parsed?.version === DRAFT_VERSION &&
+        typeof parsed.updatedAt === "number" &&
+        Date.now() - parsed.updatedAt <= DRAFT_TTL_MS &&
+        parsed.data &&
+        typeof parsed.data.productName === "string" &&
+        typeof parsed.data.projectCode === "string" &&
+        typeof parsed.data.productNo === "string";
+
+      if (!isValid) {
+        setHasStoredDraft(false);
+        return;
+      }
+
+      const hasAnyDraftValue = Boolean(
+        parsed.data.productName.trim() ||
+          parsed.data.projectCode.trim() ||
+          parsed.data.productNo.trim(),
+      );
+
+      setHasStoredDraft(hasAnyDraftValue);
+      setShouldPromptResume(
+        hasAnyDraftValue &&
+          !formData.productName &&
+          !formData.projectCode &&
+          !formData.productNo,
+      );
+    } catch {
+      setHasStoredDraft(false);
+    }
+  }, [
+    draftKey,
+    formData.productName,
+    formData.projectCode,
+    formData.productNo,
+    isOpen,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const hasAnyValue = Boolean(
+        formData.productName.trim() ||
+          formData.projectCode.trim() ||
+          formData.productNo.trim(),
+      );
+
+      if (!hasAnyValue) {
+        window.localStorage.removeItem(draftKey);
+        setHasStoredDraft(false);
+        return;
+      }
+
+      window.localStorage.setItem(
+        draftKey,
+        JSON.stringify({
+          version: DRAFT_VERSION,
+          updatedAt: Date.now(),
+          data: formData,
+        }),
+      );
+
+      setHasStoredDraft(true);
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [draftKey, formData, isOpen]);
+
+  function resumeStoredDraft() {
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (!raw) {
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as {
+        version: number;
+        updatedAt: number;
+        data: typeof formData;
+      };
+
+      if (
+        parsed?.version !== DRAFT_VERSION ||
+        typeof parsed.updatedAt !== "number" ||
+        Date.now() - parsed.updatedAt > DRAFT_TTL_MS
+      ) {
+        return;
+      }
+
+      setFormData(parsed.data);
+      setShouldPromptResume(false);
+    } catch {
+      // ignore
+    }
+  }
+
+  function discardStoredDraft() {
+    window.localStorage.removeItem(draftKey);
+    setHasStoredDraft(false);
+    setShouldPromptResume(false);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -44,21 +179,19 @@ export default function CreateBudgetModal({
     e.preventDefault();
 
     if (onSubmit) {
-      await onSubmit(
-        {
-          productName: formData.productName,
-          projectCode: formData.projectCode,
-          productNo: formData.projectNumber,
-        },
-        saveAsDraft,
-      );
+      await onSubmit({
+        productName: formData.productName,
+        projectCode: formData.projectCode,
+        productNo: formData.productNo,
+      });
     }
 
     setFormData({
       productName: "",
       projectCode: "",
-      projectNumber: "",
+      productNo: "",
     });
+    discardStoredDraft();
 
     if (!onSubmit) {
       onClose();
@@ -66,18 +199,52 @@ export default function CreateBudgetModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[480px] rounded-[2rem] p-8">
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-120 rounded-[2rem] p-8">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold tracking-tight">
             Project Plan Entry
           </DialogTitle>
-          <p className="text-sm text-muted-foreground mt-1">
+          <DialogDescription className="text-sm text-muted-foreground mt-1">
             Fill in the details to initialize the project budget.
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-6 py-6">
+          {shouldPromptResume && hasStoredDraft && (
+            <div className="rounded-2xl border border-border/80 bg-muted px-4 py-3 text-sm">
+              <div className="font-semibold text-foreground">
+                Resume your draft?
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                A saved draft was found for your session.
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={resumeStoredDraft}
+                >
+                  Resume
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={discardStoredDraft}
+                >
+                  Discard
+                </Button>
+              </div>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="productName">Product Name</Label>
             <Input
@@ -93,7 +260,7 @@ export default function CreateBudgetModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="projectCode">Project Code</Label>
+              <Label htmlFor="projectCode">Product Number</Label>
               <Input
                 id="projectCode"
                 name="projectCode"
@@ -105,12 +272,12 @@ export default function CreateBudgetModal({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="projectNumber">Project Number</Label>
+              <Label htmlFor="productNo">Project Number</Label>
               <Input
-                id="projectNumber"
-                name="projectNumber"
+                id="productNo"
+                name="productNo"
                 placeholder="PN-1234"
-                value={formData.projectNumber}
+                value={formData.productNo}
                 onChange={handleChange}
                 required
                 className="rounded-xl h-11"
@@ -118,30 +285,25 @@ export default function CreateBudgetModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 rounded-xl border border-border/80 bg-muted px-4 py-3">
-            <input
-              id="saveAsDraft"
-              type="checkbox"
-              checked={saveAsDraft}
-              onChange={(e) => setSaveAsDraft(e.target.checked)}
-              className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-            />
-            <label htmlFor="saveAsDraft" className="text-sm text-foreground">
-              Create project as a draft and save later from plan entry.
-            </label>
-          </div>
-
           <DialogFooter className="mt-4 gap-3 sm:justify-end">
             <Button
               type="button"
               variant="ghost"
-              onClick={onClose}
+              onClick={() => {
+                setFormData({
+                  productName: "",
+                  projectCode: "",
+                  productNo: "",
+                });
+                discardStoredDraft();
+                onClose();
+              }}
               className="rounded-xl"
             >
               Cancel
             </Button>
             <Button type="submit" className="rounded-xl px-8 shadow-md">
-              {saveAsDraft ? "Create Draft" : "Create & Save"}
+              Go To Plan Entry
             </Button>
           </DialogFooter>
         </form>

@@ -14,6 +14,7 @@ public sealed class BudgetRecordsService(
     {
         var budgets = await dbContext.Budgets
             .AsNoTracking()
+            .Where(b => b.IsActive == 1)
             .OrderByDescending(b => b.ModifiedOn)
             .Select(b => new BudgetRecordSummaryDto(
                 b.BudgetId,
@@ -31,7 +32,7 @@ public sealed class BudgetRecordsService(
     {
         var budgetHeader = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.BudgetId == budgetId)
+            .Where(b => b.BudgetId == budgetId && b.IsActive == 1)
             .Select(b => new BudgetRecordHeaderDto(
                 b.BudgetId,
                 b.EmployeeId,
@@ -69,7 +70,7 @@ public sealed class BudgetRecordsService(
 
         var budgetId = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.ProjectCode == code)
+            .Where(b => b.ProjectCode == code && b.IsActive == 1)
             .Select(b => (int?)b.BudgetId)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -88,7 +89,7 @@ public sealed class BudgetRecordsService(
 
         var budgetId = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.ProjectCode == code && b.ProductNo == product)
+            .Where(b => b.ProjectCode == code && b.ProductNo == product && b.IsActive == 1)
             .Select(b => (int?)b.BudgetId)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -203,7 +204,9 @@ public sealed class BudgetRecordsService(
         UpdateBudgetRecordRequest request,
         CancellationToken cancellationToken)
     {
-        var budget = await dbContext.Budgets.SingleOrDefaultAsync(b => b.BudgetId == budgetId, cancellationToken);
+        var budget = await dbContext.Budgets.SingleOrDefaultAsync(
+            b => b.BudgetId == budgetId && b.IsActive == 1,
+            cancellationToken);
         if (budget is null)
         {
             return BudgetErrors.NotFound(budgetId);
@@ -265,16 +268,15 @@ public sealed class BudgetRecordsService(
     public async Task<Result> DeleteAsync(int budgetId, CancellationToken cancellationToken)
     {
         var budget = await dbContext.Budgets
-            .Include(b => b.Categories)
-            .ThenInclude(c => c.Items)
-            .SingleOrDefaultAsync(b => b.BudgetId == budgetId, cancellationToken);
+            .SingleOrDefaultAsync(b => b.BudgetId == budgetId && b.IsActive == 1, cancellationToken);
 
         if (budget is null)
         {
             return Result.Failure(BudgetErrors.NotFound(budgetId));
         }
 
-        dbContext.Budgets.Remove(budget);
+        budget.IsActive = 0;
+        budget.ModifiedOn = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

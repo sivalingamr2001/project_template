@@ -114,10 +114,9 @@ export default function DashboardPage() {
         <CreateBudgetModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSubmit={async (input, saveAsDraft) => {
-            const created = await createRecord(input, saveAsDraft);
+          onSubmit={async (input) => {
+            const created = await createRecord(input, true);
             if (created) {
-              setIsModalOpen(false);
               void navigate({ to: "/budget/plan-entry" });
             }
           }}
