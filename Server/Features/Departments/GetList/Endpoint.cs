@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Server.Infrastructure.Db;
 using Server.Shared.Constants;
 
 namespace Server.Features.Departments.GetList;
@@ -6,12 +8,13 @@ public static class GetDepartmentsEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/", () =>
+        group.MapGet("/", async (AppDbContext dbContext) =>
         {
-            var departments = DepartmentCatalog.All
-                .OrderBy(kvp => kvp.Key)
-                .Select(kvp => new DepartmentDto(kvp.Key, kvp.Value))
-                .ToList();
+            var departments = await dbContext.Departments
+                .Where(d => d.IsActive)
+                .OrderBy(d => d.DeptId)
+                .Select(d => new DepartmentDto(d.DeptId, d.DeptName))
+                .ToListAsync();
 
             return Results.Ok(new DepartmentListResponse(departments));
         })

@@ -169,6 +169,7 @@ public sealed class UserService(AppDbContext dbContext)
     {
         // 1. Fetch the existing employee using FirstOrDefault to avoid "Multiple Elements" crash
         var employee = await dbContext.Employees
+            .Include(e => e.Department)
             .FirstOrDefaultAsync(e => e.UserId == userId, cancellationToken);
 
         if (employee is null)
@@ -227,7 +228,8 @@ public sealed class UserService(AppDbContext dbContext)
 
         // 5. Update Department Info
         if (request.DepartmentId.HasValue) employee.DeptId = request.DepartmentId.Value;
-        if (!string.IsNullOrWhiteSpace(request.DepartmentName)) employee.Department.DeptName = request.DepartmentName.Trim();
+        if (!string.IsNullOrWhiteSpace(request.DepartmentName) && employee.Department != null)
+            employee.Department.DeptName = request.DepartmentName.Trim();
 
         // 6. HOD details are derived from the user's department and role at read time.
 

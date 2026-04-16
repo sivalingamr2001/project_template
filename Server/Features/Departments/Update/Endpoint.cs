@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Server.Infrastructure.Db;
 using Server.Shared.Constants;
 
 namespace Server.Features.Departments.Update;
@@ -7,7 +9,7 @@ public static class UpdateDepartmentEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapPut("/{deptId:int}", (int deptId, [FromBody] UpdateDepartmentRequest request) =>
+        group.MapPut("/{deptId:int}", async (int deptId, [FromBody] UpdateDepartmentRequest request, AppDbContext dbContext) =>
         {
             if (deptId <= 0)
             {
@@ -19,10 +21,19 @@ public static class UpdateDepartmentEndpoint
                 return Results.BadRequest(new { Message = "Department name is required." });
             }
 
-            var updated = DepartmentCatalog.TryUpdate(deptId, request.Name);
-            return updated
-                ? Results.Ok(new DepartmentDto(deptId, request.Name.Trim()))
-                : Results.NotFound(new { Message = $"Department '{deptId}' was not found." });
+            var department = await dbContext.Departments.FirstOrDefaultAsync(d => d.DeptId == deptId);
+            if (department == null)
+            {
+                return Results.NotFound(new { Message = $"Department '{deptId}' was not found." });
+            }
+
+            department.DeptName = request.Name.Trim();
+            department.UpdatedOn = DateTime.UtcNow;
+            // department.ModifiedBy = get from user
+
+            await dbContext.SaveChangesAsync();
+
+            return Results.Ok(new DepartmentDto(department.DeptId, department.DeptName));
         })
         .WithName("UpdateDepartment")
         .WithOpenApi();
