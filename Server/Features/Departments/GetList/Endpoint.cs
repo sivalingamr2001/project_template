@@ -23,4 +23,3 @@ public static class GetDepartmentsEndpoint
 public sealed record DepartmentDto(int Id, string Name);
 
 public sealed record DepartmentListResponse(IReadOnlyList<DepartmentDto> Departments);
-

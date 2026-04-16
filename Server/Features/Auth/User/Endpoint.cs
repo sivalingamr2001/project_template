@@ -1,9 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace Server.Features.Auth.User;
-
-using Server.Shared.Helpers;
-
+﻿namespace Server.Features.Auth.User;
 public static class GetAllUsersEndpoint
 {
     public static void Map(RouteGroupBuilder group)
@@ -19,18 +14,31 @@ public static class GetAllUsersEndpoint
         .WithName("GetAllUsers")
         .WithOpenApi();
 
-        group.MapGet("/{employeeId:int}", async (
-            int employeeId,
+        group.MapGet("/{userId:int}", async (
+            int userId,
             UserService service,
             CancellationToken cancellationToken) =>
         {
-            var user = await service.GetUserByIdAsync(employeeId, cancellationToken);
+            var user = await service.GetUserByIdAsync(userId, cancellationToken);
 
             return user is not null
                 ? Results.Ok(user)
-                : Results.NotFound(new { Message = $"User with ID {employeeId} not found." });
+                : Results.NotFound(new { Message = $"User with ID {userId} not found." });
         })
         .WithName("GetUserById")
+        .WithOpenApi();
+
+        group.MapGet("/ByRole/{role}", async (
+            string role,
+            UserService service,
+            CancellationToken cancellationToken) =>
+        {
+            var user = await service.GetUserByRoleAsync(role, cancellationToken);
+            return user is not null
+                ? Results.Ok(user)
+                : Results.NotFound(new { Message = $"User with role {role} not found." });
+        })
+        .WithName("GetUserByRole")
         .WithOpenApi();
 
         group.MapPut("/{userId:int}", async (

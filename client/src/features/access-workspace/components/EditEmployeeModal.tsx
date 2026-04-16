@@ -62,41 +62,38 @@ export default function EditEmployeeModal({
   const [phone, setPhone] = useState("")
   const [departmentId, setDepartmentId] = useState("")
   const [role, setRole] = useState<AppRole>("User")
-  const [hodEmployeeId, setHodEmployeeId] = useState("0")
   const { departments } = useDepartments()
 
   const departmentName = useMemo(
-    () => (departmentId ? getDepartmentName(departments, Number(departmentId)) : ""),
+    () =>
+      departmentId ? getDepartmentName(departments, Number(departmentId)) : "",
     [departmentId, departments]
   )
 
   useEffect(() => {
-    if (!open || !employeeId) return
+    if (!open || !userId) return
     setIsLoading(true)
     setError(null)
     void (async () => {
       try {
-        const profile = await fetchUserProfile(employeeId)
+        const profile = await fetchUserProfile(userId)
         const name = splitName(profile.name ?? "")
         setUserName(profile.userName ?? "")
         setFirstName(name.firstName)
         setLastName(name.lastName)
         setEmail(profile.email ?? "")
         setPhone(profile.phone ?? "")
-        setDepartmentId(profile.departmentId ? String(profile.departmentId) : "")
-        setRole(profile.role as AppRole)
-        setHodEmployeeId(
-          profile.departmentHod?.employeeId
-            ? String(profile.departmentHod.employeeId)
-            : "0"
+        setDepartmentId(
+          profile.departmentId ? String(profile.departmentId) : ""
         )
+        setRole(profile.role as AppRole)
       } catch (e) {
         setError(e instanceof Error ? e.message : "Unable to load employee.")
       } finally {
         setIsLoading(false)
       }
     })()
-  }, [employeeId, open])
+  }, [userId, open])
 
   const onSubmit = async () => {
     if (!employeeId || !userId) return
@@ -112,7 +109,6 @@ export default function EditEmployeeModal({
         departmentId: departmentId ? Number(departmentId) : undefined,
         departmentName,
         role,
-        hodEmployeeId: hodEmployeeId ? Number(hodEmployeeId) : 0,
       }
       const updated = await updateUserProfile(userId, payload)
       onSaved(updated)
@@ -126,73 +122,90 @@ export default function EditEmployeeModal({
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? null : onClose())}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Edit Employee</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <div className="flex items-center justify-center p-8">
+            <p className="animate-pulse text-sm text-muted-foreground">
+              Loading...
+            </p>
+          </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-4 py-4">
+            {/* Row 1: Employee ID & User Name */}
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="empEmployeeId">EmployeeId</Label>
                 <Input
                   id="empEmployeeId"
                   value={String(employeeId ?? "")}
+                  className="w-full cursor-not-allowed bg-muted"
                   disabled
                 />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="empUserName">User Name</Label>
                 <Input
                   id="empUserName"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
+                  className="w-full"
                   required
                 />
               </div>
-              <div className="space-y-2">
+            </div>
+
+            {/* Row 2: First Name & Last Name */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="empFirstName">First name</Label>
                 <Input
                   id="empFirstName"
                   value={firstName}
+                  className="w-full"
                   onChange={(e) => setFirstName(e.target.value)}
                 />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="empLastName">Last name</Label>
                 <Input
                   id="empLastName"
                   value={lastName}
+                  className="w-full"
                   onChange={(e) => setLastName(e.target.value)}
                 />
               </div>
             </div>
 
+            {/* Row 3: Email & Phone */}
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="empEmail">Email</Label>
                 <Input
                   id="empEmail"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   type="email"
+                  className="w-full"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label htmlFor="empPhone">Phone</Label>
                 <Input
                   id="empPhone"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  className="w-full"
                 />
               </div>
             </div>
 
+            {/* Row 4: Department & Role */}
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Department</Label>
                 <Select value={departmentId} onValueChange={setDepartmentId}>
                   <SelectTrigger className="w-full">
@@ -207,55 +220,37 @@ export default function EditEmployeeModal({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
+                <Select
+                  value={role}
+                  onValueChange={(v) => setRole(v as AppRole)}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="User">User</SelectItem>
                     <SelectItem value="Hod">HOD</SelectItem>
-                    <SelectItem value="Admin">Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Department HOD</Label>
-              <Select
-                value={hodEmployeeId}
-                onValueChange={setHodEmployeeId}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select HOD (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">None</SelectItem>
-                  {employees.map((emp) => (
-                    <SelectItem key={emp.employeeId} value={String(emp.employeeId)}>
-                      {emp.employeeId} - {emp.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? (
+              <p className="text-sm font-medium text-destructive">{error}</p>
+            ) : null}
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" type="button" onClick={onClose}>
             Cancel
           </Button>
           <Button
             type="button"
             onClick={onSubmit}
-            disabled={
-              isSaving || isLoading || !employeeId || !userId || !userName.trim()
-            }
+            disabled={isSaving || isLoading || !employeeId || !userName.trim()}
           >
             {isSaving ? "Saving..." : "Save"}
           </Button>

@@ -16,7 +16,7 @@ import type { TableColumn } from "../types"
 type ServerPagination = {
   onPageChange: (page: number) => void
   page: number
-  pageSize: number
+  pageSize: number | undefined
   totalCount: number
 }
 
@@ -99,22 +99,16 @@ function CommonTable<T>({
     }
   }
 
-  if (!filteredRows.length) {
-    return (
-      <div className="rounded-[1.4rem] border border-border bg-background px-4 py-10 text-center text-sm text-muted-foreground">
-        {emptyMessage}
-      </div>
-    )
-  }
+  const hasRows = filteredRows.length > 0
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="relative w-full lg:max-w-xl">
+        <div className="relative w-full sm:max-w-xl">
           <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             aria-label="Search table"
-            className="h-12 rounded-2xl border-input/80 bg-background pr-4 pl-10 text-sm shadow-sm placeholder:text-muted-foreground/80"
+            className="rounded-2xl border-input/80 bg-background pr-4 pl-10 text-sm shadow-sm placeholder:text-muted-foreground/80"
             onChange={(event) => {
               setSearchTerm(event.target.value)
               setCurrentPage(1)
@@ -139,52 +133,58 @@ function CommonTable<T>({
         </div>
       </div>
       <div className="md:hidden space-y-4">
-        {visibleRows.map((row, index) => {
-          const rowId = getRowId?.(row, index) ?? index
-          const isExpanded = expandedRowId === rowId
-          const isExpandable = Boolean(renderExpandedRow)
+        {hasRows ? (
+          visibleRows.map((row, index) => {
+            const rowId = getRowId?.(row, index) ?? index
+            const isExpanded = expandedRowId === rowId
+            const isExpandable = Boolean(renderExpandedRow)
 
-          return (
-            <div
-              key={rowId}
-              className="rounded-[0.6rem] border border-border bg-background p-4"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 space-y-4">
-                  {columns.map((column) => (
-                    <div key={column.key}>
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                        {column.header}
-                      </p>
-                      <div className="mt-1 text-sm">{column.render(row, index)}</div>
-                    </div>
-                  ))}
+            return (
+              <div
+                key={rowId}
+                className="rounded-[0.6rem] border border-border bg-background p-4"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 space-y-4">
+                    {columns.map((column) => (
+                      <div key={column.key}>
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                          {column.header}
+                        </p>
+                        <div className="mt-1 text-sm">{column.render(row, index)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {isExpandable ? (
+                    <Button
+                      aria-expanded={isExpanded}
+                      size="icon-xs"
+                      type="button"
+                      variant="outline"
+                      onClick={() => setExpandedRowId(isExpanded ? null : rowId)}
+                      className="self-start"
+                    >
+                      {isExpanded ? (
+                        <IconMinus className="size-3.5" />
+                      ) : (
+                        <IconPlus className="size-3.5" />
+                      )}
+                    </Button>
+                  ) : null}
                 </div>
-                {isExpandable ? (
-                  <Button
-                    aria-expanded={isExpanded}
-                    size="icon-xs"
-                    type="button"
-                    variant="outline"
-                    onClick={() => setExpandedRowId(isExpanded ? null : rowId)}
-                    className="self-start"
-                  >
-                    {isExpanded ? (
-                      <IconMinus className="size-3.5" />
-                    ) : (
-                      <IconPlus className="size-3.5" />
-                    )}
-                  </Button>
+                {isExpanded && renderExpandedRow ? (
+                  <div className="mt-4 rounded-xl border border-border bg-card p-4">
+                    {renderExpandedRow(row)}
+                  </div>
                 ) : null}
               </div>
-              {isExpanded && renderExpandedRow ? (
-                <div className="mt-4 rounded-xl border border-border bg-card p-4">
-                  {renderExpandedRow(row)}
-                </div>
-              ) : null}
-            </div>
-          )
-        })}
+            )
+          })
+        ) : (
+          <div className="rounded-[0.6rem] border border-border bg-background p-4 text-center text-sm text-muted-foreground">
+            {emptyMessage}
+          </div>
+        )}
       </div>
 
       <div className="hidden md:block overflow-hidden rounded-[0.4rem] border border-border">
@@ -201,33 +201,46 @@ function CommonTable<T>({
               </tr>
             </thead>
             <tbody className="divide-y divide-border bg-background">
-              {visibleRows.map((row, index) => {
-                const rowId = getRowId?.(row, index) ?? index
-                const isExpanded = expandedRowId === rowId
-                const isExpandable = Boolean(renderExpandedRow)
+              {hasRows ? (
+                visibleRows.map((row, index) => {
+                  const rowId = getRowId?.(row, index) ?? index
+                  const isExpanded = expandedRowId === rowId
+                  const isExpandable = Boolean(renderExpandedRow)
 
-                return (
-                  <CommonTableRow
-                    key={rowId}
-                    columns={columns}
-                    isExpandable={isExpandable}
-                    isExpanded={isExpanded}
-                    onToggle={() => setExpandedRowId(isExpanded ? null : rowId)}
-                    renderExpandedRow={renderExpandedRow}
-                    row={row}
-                  />
-                )
-              })}
+                  return (
+                    <CommonTableRow
+                      key={rowId}
+                      columns={columns}
+                      isExpandable={isExpandable}
+                      isExpanded={isExpanded}
+                      onToggle={() => setExpandedRowId(isExpanded ? null : rowId)}
+                      renderExpandedRow={renderExpandedRow}
+                      row={row}
+                    />
+                  )
+                })
+              ) : (
+                <tr>
+                  <td
+                    colSpan={columns.length + (renderExpandedRow ? 1 : 0)}
+                    className="p-6 text-center text-sm text-muted-foreground"
+                  >
+                    {emptyMessage}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      <CommonTablePagination
-        currentPage={currentPage}
-        onPageChange={handlePageChange}
-        totalPages={totalPages}
-      />
+      {hasRows ? (
+        <CommonTablePagination
+          currentPage={currentPage}
+          onPageChange={handlePageChange}
+          totalPages={totalPages}
+        />
+      ) : null}
     </div>
   )
 }

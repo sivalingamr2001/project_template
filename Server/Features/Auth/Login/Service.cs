@@ -40,11 +40,8 @@ public sealed class LoginService(
                     employee.Email,
                     employee.Mobile,
                     employee.DeptId,
-                    employee.DeptName,
+                    employee.Department.DeptName ?? string.Empty,
                     employee.UserRole,
-                    employee.HodId,
-                    employee.HodName,
-                    employee.HodEmail,
                     employee.Password))
                 .SingleOrDefaultAsync(cancellationToken);
         }
@@ -72,6 +69,7 @@ public sealed class LoginService(
         var name = BuildDisplayName(user.FirstName, user.LastName, user.UserName);
         var departmentName = string.IsNullOrWhiteSpace(user.DepartmentName) ? "N/A" : user.DepartmentName!;
         var role = string.IsNullOrWhiteSpace(user.Role) ? "User" : user.Role!;
+        var departmentHod = await ResolveDepartmentHodAsync(user.DeptId, cancellationToken);
 
         return new LoginResponse(
            new SessionDto(
@@ -85,10 +83,8 @@ public sealed class LoginService(
                    user.DeptId ?? 0,
                    departmentName,
                    role,
-                   new DepartmentHodDto(
-                       user.HodID ?? 0,
-                       user.HodName ?? string.Empty,
-                       user.HodEmail ?? string.Empty))));
+                   departmentHod)));
+;
     }
 
     private sealed record LoginUserProjection(
@@ -102,9 +98,6 @@ public sealed class LoginService(
           int? DeptId,
           string? DepartmentName,
           string? Role,
-          int? HodID,
-          string? HodName,
-          string? HodEmail,
           string Password);
 
     private static string BuildDisplayName(string? firstName, string? lastName, string userName)
@@ -116,6 +109,40 @@ public sealed class LoginService(
         }
 
         return userName;
+    }
+
+    private async Task<DepartmentHodDto> ResolveDepartmentHodAsync(int? departmentId, CancellationToken cancellationToken)
+    {
+        if (!departmentId.HasValue || departmentId.Value <= 0)
+        {
+            return new DepartmentHodDto(0, string.Empty, string.Empty);
+        }
+
+        var department = await dbContext.Departments
+            .AsNoTracking()
+            .Where(d => d.DeptId == departmentId.Value)
+            .Select(d => d.DeptHodId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (department <= 0)
+        {
+            return new DepartmentHodDto(0, string.Empty, string.Empty);
+        }
+
+        var hod = await dbContext.Employees
+            .AsNoTracking()
+            .Where(e => e.EmployeeId == department && e.UserRole == RoleNames.Hod)
+            .Select(e => new
+            {
+                e.EmployeeId,
+                Name = BuildDisplayName(e.FirstName, e.LastName, e.UserName),
+                Email = e.Email ?? string.Empty,
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return hod is not null
+            ? new DepartmentHodDto(hod.EmployeeId, hod.Name, hod.Email)
+            : new DepartmentHodDto(0, string.Empty, string.Empty);
     }
 }
 

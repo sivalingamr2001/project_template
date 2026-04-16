@@ -27,6 +27,7 @@ public record UserListItemDto(
     string Role);
 
 public sealed record UpdateUserRequest(
+    int? EmployeeId,
     string? UserName,
     string? FirstName,
     string? LastName,
@@ -35,8 +36,7 @@ public sealed record UpdateUserRequest(
     string? Location,
     int? DepartmentId,
     string? DepartmentName,
-    string? Role,
-    int? HodEmployeeId);
+    string? Role);
 
 public sealed record CreateUserRequest(
     int EmployeeId,
@@ -48,7 +48,6 @@ public sealed record CreateUserRequest(
     int? DepartmentId,
     string? DepartmentName,
     string? Role,
-    int? HodEmployeeId,
     string Password);
 
 public sealed record UpdatePasswordRequest(string Password);

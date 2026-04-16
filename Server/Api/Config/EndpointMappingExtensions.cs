@@ -3,16 +3,17 @@ using Server.Features.AccessRequests.Create;
 using Server.Features.AccessRequests.GetDetails;
 using Server.Features.AccessRequests.GetList;
 using Server.Features.AccessRequests.Renew;
+using Server.Features.AccessRequests.Resubmit;
 using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
-using Server.Features.AccessRequests.Resubmit;
 using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
-using Server.Features.Departments.GetList;
 using Server.Features.Departments.Create;
+using Server.Features.Departments.GetHodList;
+using Server.Features.Departments.GetList;
 using Server.Features.Departments.Update;
 using Server.Features.Notifications.GetList;
 using Server.Features.Notifications.MarkRead;
@@ -31,6 +32,7 @@ public static class EndpointMappingExtensions
 
         var departmentsGroup = app.MapGroup("/api/departments").WithTags("Departments");
         GetDepartmentsEndpoint.Map(departmentsGroup);
+        GetDepartmentHodEndpoint.Map(departmentsGroup);
         CreateDepartmentEndpoint.Map(departmentsGroup);
         UpdateDepartmentEndpoint.Map(departmentsGroup);
 

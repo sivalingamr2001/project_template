@@ -11,11 +11,12 @@ import PageSection from "./components/PageSection"
 import { employeeColumns } from "./utils/tableColumns"
 import { fetchAllUsers } from "./utils/requestApi"
 import type { EmployeeRecord, TableColumn } from "./types"
+import { IconEditFilled } from "@tabler/icons-react"
 
 function EmployeePage() {
   const { user, setSessionUser } = useAuth()
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(25)
+  const [pageSize] = useState()
   const [totalCount, setTotalCount] = useState(0)
   const [employees, setEmployees] = useState<EmployeeRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -33,39 +34,35 @@ function EmployeePage() {
     return [
       ...employeeColumns,
       {
-        key: "password",
-        header: "Password",
-        render: (row) => (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setSelectedEmployeeId(row.employeeId)
-              setSelectedUserId(row.userId)
-              setIsPasswordOpen(true)
-            }}
-          >
-            Reset
-          </Button>
-        ),
-      },
-      {
         key: "actions",
         header: "Actions",
         render: (row) => (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setSelectedEmployeeId(row.employeeId)
-              setSelectedUserId(row.userId)
-              setIsEditOpen(true)
-            }}
-          >
-            Edit
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelectedEmployeeId(row.employeeId)
+                setSelectedUserId(row.userId)
+                setIsEditOpen(true)
+              }}
+            >
+              <IconEditFilled className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelectedEmployeeId(row.employeeId)
+                setSelectedUserId(row.userId)
+                setIsPasswordOpen(true)
+              }}
+            >
+              Reset Password
+            </Button>
+          </div>
         ),
       },
     ]
@@ -93,11 +90,6 @@ function EmployeePage() {
     <PageSection
       title="Employee"
       description="IT can review employees and roles tied to the access request workflow."
-      action={
-        <Button type="button" onClick={() => setIsCreateOpen(true)}>
-          Create User
-        </Button>
-      }
     >
       {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
       <CommonTable
@@ -111,7 +103,14 @@ function EmployeePage() {
           onPageChange: setPage,
         }}
         rows={isLoading ? [] : employees}
-        emptyMessage={isLoading ? "Loading..." : "No employee records are available."}
+        emptyMessage={
+          isLoading ? "Loading..." : "No employee records are available."
+        }
+        toolbarActions={
+          <Button type="button" size="sm" onClick={() => setIsCreateOpen(true)}>
+            Create User
+          </Button>
+        }
       />
       <EditEmployeeModal
         employeeId={selectedEmployeeId}

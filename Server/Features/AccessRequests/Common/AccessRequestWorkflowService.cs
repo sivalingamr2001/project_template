@@ -602,7 +602,7 @@ public sealed class AccessRequestWorkflowService(
             accessRequest.EmpId,
             requester.UserName,
             requester.DeptId ?? 0,
-            string.IsNullOrWhiteSpace(requester.DeptName) ? "N/A" : requester.DeptName!,
+            requester.Department?.DeptName ?? string.Empty,
             accessRequest.ReqTo,
             currentApprover?.UserName ?? string.Empty,
             string.IsNullOrWhiteSpace(currentApprover?.UserRole) ? "User" : currentApprover!.UserRole!,
@@ -759,10 +759,23 @@ public sealed class AccessRequestWorkflowService(
             return new List<EmployeeEntity>();
         }
 
-        return await dbContext.Employees
-            .Where(employee => employee.DeptId == deptId && employee.UserRole == RoleNames.Hod)
+        var hodId = await dbContext.Departments
+            .AsNoTracking()
+            .Where(department => department.DeptId == deptId.Value)
+            .Select(department => department.DeptHodId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (hodId <= 0)
+        {
+            return new List<EmployeeEntity>();
+        }
+
+        var hod = await dbContext.Employees
+            .Where(employee => employee.EmployeeId == hodId && employee.UserRole == RoleNames.Hod)
             .OrderBy(employee => employee.EmployeeId)
             .ToListAsync(cancellationToken);
+
+        return hod;
     }
 
     private async Task<EmployeeEntity> ResolveItApproverAsync(CancellationToken cancellationToken)

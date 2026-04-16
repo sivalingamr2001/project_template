@@ -14,7 +14,7 @@ public sealed class EmployeeEntity
 
     [Required]
     [Column("employee_id")]
-    public int EmployeeId { get; set; }
+    public int EmployeeId { get; set; } // Business ID
 
     [Column("first_name")]
     public string? FirstName { get; set; }
@@ -40,8 +40,9 @@ public sealed class EmployeeEntity
     [Column("dept_id")]
     public int? DeptId { get; set; }
 
-    [Column("dept_name")]
-    public string? DeptName { get; set; }
+    // Navigation Property: Link to Department
+    [ForeignKey("DeptId")]                                                      
+    public DepartmentEntity? Department { get; set; }
 
     [Column("location")]
     public string? Location { get; set; }
@@ -50,26 +51,17 @@ public sealed class EmployeeEntity
     [Column("user_role")]
     public string UserRole { get; set; } = null!;
 
-    [Column("hod_id")]
-    public int? HodId { get; set; }
-
-    [Column("hod_name")]
-    public string? HodName { get; set; }
-
-    [Column("hod_email")]
-    public string? HodEmail { get; set; }
-
     [Column("IsActive")]
     public bool IsActive { get; set; } = true;
 
     [Column("CreatedOn")]
-    public DateTime CreatedOn { get; set; }
+    public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
 
     [Column("CreatedBy")]
     public string? CreatedBy { get; set; }
 
     [Column("UpdatedOn")]
-    public DateTime UpdatedOn { get; set; }
+    public DateTime UpdatedOn { get; set; } = DateTime.UtcNow;
 
     [Column("ModifiedBy")]
     public string? ModifiedBy { get; set; }

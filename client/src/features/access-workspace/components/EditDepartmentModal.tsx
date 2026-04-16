@@ -31,6 +31,7 @@ export default function EditDepartmentModal({
 }: EditDepartmentModalProps) {
   const [id, setId] = useState("")
   const [name, setName] = useState("")
+  const [departmentHodEmployeeId, setDepartmentHodEmployeeId] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,11 +51,20 @@ export default function EditDepartmentModal({
     if (!canSubmit) return
     setIsSaving(true)
     setError(null)
+
+    const numericId = Number(id)
+
+    const departmentData: any = {
+      id: numericId,
+      name: name,
+      hodEmployeeId: departmentHodEmployeeId ?? department?.hodEmployeeId,
+    }
+
     try {
       if (mode === "create") {
-        await createDepartment({ id: Number(id), name })
+        await createDepartment(departmentData)
       } else if (department) {
-        await updateDepartment({ id: department.id, name })
+        await updateDepartment(departmentData)
       }
       onSaved()
       onClose()
@@ -96,6 +106,23 @@ export default function EditDepartmentModal({
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="deptHodEmployeeId">HOD Employee ID</Label>
+              <Input
+                id="deptHodEmployeeId"
+                value={String(department?.hodEmployeeId ?? "")}
+                onChange={(e) => {
+                  const value = e.target.value
+                  if (
+                    value === "" ||
+                    (Number.isFinite(Number(value)) && Number(value) > 0)
+                  ) {
+                    setDepartmentHodEmployeeId(value)
+                  }
+                }}
+                inputMode="numeric"
+              />
+            </div>
           </div>
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -113,4 +140,3 @@ export default function EditDepartmentModal({
     </Dialog>
   )
 }
-

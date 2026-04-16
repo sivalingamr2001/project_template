@@ -256,7 +256,7 @@ export async function fetchAuditLogs(
 
 export async function fetchAllUsers(
   page = 1,
-  pageSize = 50
+  pageSize = 10
 ): Promise<PaginatedResponse<EmployeeRecord>> {
   const response = await fetch(
     `${API_URL}/User/GetAllUsers?Page=${page}&PageSize=${pageSize}`
@@ -286,6 +286,7 @@ export async function fetchUserProfile(employeeId: number): Promise<AuthUser> {
 }
 
 export type UpdateUserPayload = {
+  employeeId?: number
   userName?: string
   firstName?: string
   lastName?: string
@@ -295,7 +296,6 @@ export type UpdateUserPayload = {
   departmentId?: number
   departmentName?: string
   role?: AppRole
-  hodEmployeeId?: number
 }
 
 export async function updateUserProfile(
@@ -321,7 +321,6 @@ export type CreateUserPayload = {
   departmentId?: number
   departmentName?: string
   role?: AppRole
-  hodEmployeeId?: number
   password: string
 }
 

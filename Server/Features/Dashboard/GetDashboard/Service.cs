@@ -19,7 +19,7 @@ public sealed class GetDashboardService(AppDbContext dbContext)
             .AsNoTracking()
             .Where(employee => employee.EmployeeId == employeeId)
             .Select(employee => new EmployeeProfile(
-                employee.DeptName ?? string.Empty,
+                employee.Department.DeptName ?? string.Empty,
                 employee.UserRole ?? string.Empty))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -35,7 +35,7 @@ public sealed class GetDashboardService(AppDbContext dbContext)
             requestQuery =
                 from request in requestQuery
                 join employee in dbContext.Employees.AsNoTracking() on request.EmpId equals employee.EmployeeId
-                where employee.DeptName == profile.DepartmentName
+                where employee.Department.DeptName == profile.DepartmentName
                 select request;
         }
         else if (profile.Role != RoleNames.Admin)

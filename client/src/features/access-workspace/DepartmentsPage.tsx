@@ -22,6 +22,7 @@ export default function DepartmentsPage() {
     return [
       { key: "id", header: "Department ID", render: (row) => row.id },
       { key: "name", header: "Department", render: (row) => row.name },
+      { key: "hod", header: "HOD Employee ID", render: (row) => row.hodEmployeeId },
       {
         key: "actions",
         header: "Actions",
@@ -49,18 +50,6 @@ export default function DepartmentsPage() {
     <PageSection
       title="Departments"
       description="Department reference table."
-      action={
-        <Button
-          type="button"
-          onClick={() => {
-            setMode("create")
-            setSelected(null)
-            setIsModalOpen(true)
-          }}
-        >
-          Add Department
-        </Button>
-      }
     >
       {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
       <CommonTable
@@ -70,6 +59,15 @@ export default function DepartmentsPage() {
         pageSize={8}
         rows={isLoading ? [] : rows}
         emptyMessage={isLoading ? "Loading..." : "No departments are available."}
+        toolbarActions={
+            <Button type="button" size='sm' onClick={() => {
+            setMode("create")
+            setSelected(null)
+            setIsModalOpen(true)
+          }}>
+              Add
+            </Button>
+          }
       />
       <EditDepartmentModal
         mode={mode}

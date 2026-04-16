@@ -49,11 +49,11 @@ export default function CreateEmployeeModal({
   const [phone, setPhone] = useState("")
   const [departmentId, setDepartmentId] = useState("")
   const [role, setRole] = useState<AppRole>("User")
-  const [hodEmployeeId, setHodEmployeeId] = useState("0")
   const [password, setPassword] = useState("")
 
   const departmentName = useMemo(
-    () => (departmentId ? getDepartmentName(departments, Number(departmentId)) : ""),
+    () =>
+      departmentId ? getDepartmentName(departments, Number(departmentId)) : "",
     [departmentId, departments]
   )
 
@@ -75,7 +75,6 @@ export default function CreateEmployeeModal({
     setPhone("")
     setDepartmentId("")
     setRole("User")
-    setHodEmployeeId("0")
     setPassword("")
     setError(null)
   }
@@ -95,7 +94,6 @@ export default function CreateEmployeeModal({
         departmentId: departmentId ? Number(departmentId) : undefined,
         departmentName,
         role,
-        hodEmployeeId: hodEmployeeId ? Number(hodEmployeeId) : 0,
         password,
       }
 
@@ -120,75 +118,85 @@ export default function CreateEmployeeModal({
         }
       }}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Create User</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4">
+        <div className="grid gap-4 py-4">
+          {/* Row 1: Employee ID & User Name */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="createEmployeeId">EmployeeId</Label>
               <Input
                 id="createEmployeeId"
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 inputMode="numeric"
+                className="w-full"
                 required
               />
             </div>
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="createUserName">User Name</Label>
               <Input
                 id="createUserName"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
+                className="w-full"
                 required
               />
             </div>
           </div>
 
+          {/* Row 2: First Name & Last Name */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="createFirstName">First name</Label>
               <Input
                 id="createFirstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
+                className="w-full"
               />
             </div>
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="createLastName">Last name</Label>
               <Input
                 id="createLastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
+                className="w-full"
               />
             </div>
           </div>
 
+          {/* Row 3: Email & Phone */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="createEmail">Email</Label>
               <Input
                 id="createEmail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 type="email"
+                className="w-full"
               />
             </div>
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label htmlFor="createPhone">Phone</Label>
               <Input
                 id="createPhone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                className="w-full"
               />
             </div>
           </div>
 
+          {/* Row 4: Department & Role */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label>Department</Label>
               <Select value={departmentId} onValueChange={setDepartmentId}>
                 <SelectTrigger className="w-full">
@@ -203,7 +211,7 @@ export default function CreateEmployeeModal({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
               <Label>Role</Label>
               <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
                 <SelectTrigger className="w-full">
@@ -212,48 +220,20 @@ export default function CreateEmployeeModal({
                 <SelectContent>
                   <SelectItem value="User">User</SelectItem>
                   <SelectItem value="Hod">HOD</SelectItem>
-                  <SelectItem value="Admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-
-          <div className="space-y-2">
-            <Label>Department HOD</Label>
-            <Select value={hodEmployeeId} onValueChange={setHodEmployeeId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select HOD (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">None</SelectItem>
-                {employees.map((emp) => (
-                  <SelectItem key={emp.employeeId} value={String(emp.employeeId)}>
-                    {emp.employeeId} - {emp.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="createPassword">Password</Label>
-            <Input
-              id="createPassword"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              type="password"
-              required
-            />
-          </div>
-
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
-
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" type="button" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={!canSubmit}>
+          <Button
+            type="submit"
+            onClick={onSubmit}
+            disabled={!canSubmit || isSaving}
+          >
             {isSaving ? "Creating..." : "Create"}
           </Button>
         </DialogFooter>

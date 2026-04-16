@@ -32,9 +32,10 @@ function splitName(fullName: string) {
 }
 
 function isProfileIncomplete(user: any) {
-  return !!user && (
-    [null, undefined, 0, "0"].includes(user.employeeId) ||
-    [null, undefined, 0, "0"].includes(user.departmentId)
+  return (
+    !!user &&
+    ([null, undefined, 0, "0"].includes(user.employeeId) ||
+      [null, undefined, 0, "0"].includes(user.departmentId))
   )
 }
 
@@ -44,6 +45,7 @@ export default function UserProfileCompletionModal() {
   const { departments } = useDepartments()
 
   const initialName = useMemo(() => splitName(user?.name ?? ""), [user?.name])
+  const [employeeId, setEmployeeId] = useState<number | undefined>(user?.employeeId)
   const [firstName, setFirstName] = useState(initialName.firstName)
   const [lastName, setLastName] = useState(initialName.lastName)
   const [userName, setUserName] = useState(user?.userName ?? "")
@@ -58,6 +60,7 @@ export default function UserProfileCompletionModal() {
   useEffect(() => {
     if (!user) return
     const name = splitName(user.name ?? "")
+    setEmployeeId(user.employeeId)
     setFirstName(name.firstName)
     setLastName(name.lastName)
     setUserName(user.userName ?? "")
@@ -65,7 +68,7 @@ export default function UserProfileCompletionModal() {
     setPhone(user.phone ?? "")
     setDepartmentId(user.departmentId ? String(user.departmentId) : "")
     setError(null)
-  }, [user?.employeeId])
+  }, [user])
 
   if (!user) return null
 
@@ -78,6 +81,7 @@ export default function UserProfileCompletionModal() {
     setError(null)
     try {
       const updated = await updateUserProfile(user.userId, {
+        employeeId,
         userName,
         firstName,
         lastName,
@@ -115,8 +119,12 @@ export default function UserProfileCompletionModal() {
               <Label htmlFor="employeeId">EmployeeId</Label>
               <Input
                 id="employeeId"
-                value={String(user.employeeId)}
-                disabled
+                value={String(employeeId ?? "")}
+                onChange={(e) =>
+                  setEmployeeId(e.target.value ? Number(e.target.value) : undefined)
+                }
+                inputMode="numeric"
+                required
               />
             </div>
             <div className="space-y-2">
@@ -186,9 +194,7 @@ export default function UserProfileCompletionModal() {
             </Select>
           </div>
 
-          {error ? (
-            <p className="text-sm text-destructive">{error}</p>
-          ) : null}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
 
         <DialogFooter>
@@ -197,6 +203,7 @@ export default function UserProfileCompletionModal() {
             onClick={onSubmit}
             disabled={
               isSaving ||
+              !employeeId ||
               !userName.trim() ||
               !firstName.trim() ||
               !email.trim() ||
