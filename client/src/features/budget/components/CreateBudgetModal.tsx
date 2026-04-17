@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuthContext } from "@/features/auth";
+import { getBudgetByProductNo } from "@/features/budget/budgetApi";
+import type { BudgetRecordResponse } from "@/features/budget/budgetApi";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
@@ -43,6 +45,9 @@ export default function CreateBudgetModal({
     projectCode: "",
     productNo: "",
   });
+  const [searchResult, setSearchResult] = useState<BudgetRecordResponse | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [hasStoredDraft, setHasStoredDraft] = useState(false);
   const [shouldPromptResume, setShouldPromptResume] = useState(false);
 
@@ -135,6 +140,54 @@ export default function CreateBudgetModal({
 
     return () => window.clearTimeout(timeout);
   }, [draftKey, formData, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const productNo = formData.productNo.trim();
+    if (!productNo) {
+      setSearchResult(null);
+      setSearchError(null);
+      setIsSearching(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(async () => {
+      setIsSearching(true);
+      setSearchError(null);
+
+      try {
+        const result = await getBudgetByProductNo(productNo);
+        setSearchResult(result);
+        setFormData((prev) => ({
+          ...prev,
+          projectCode: prev.projectCode || result.header.projectCode,
+          productName: prev.productName || result.header.projectTitle,
+        }));
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        setSearchResult(null);
+        setSearchError(
+          error instanceof Error ? error.message : "Unable to fetch budget info.",
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsSearching(false);
+        }
+      }
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [draftKey, formData.productNo, isOpen]);
 
   function resumeStoredDraft() {
     try {
@@ -260,7 +313,19 @@ export default function CreateBudgetModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="projectCode">Product Number</Label>
+              <Label htmlFor="productNo">Product Number</Label>
+              <Input
+                id="productNo"
+                name="productNo"
+                placeholder="NPD-2025-07"
+                value={formData.productNo}
+                onChange={handleChange}
+                required
+                className="rounded-xl h-11"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="projectCode">Project Code</Label>
               <Input
                 id="projectCode"
                 name="projectCode"
@@ -271,19 +336,67 @@ export default function CreateBudgetModal({
                 className="rounded-xl h-11"
               />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="productNo">Project Number</Label>
-              <Input
-                id="productNo"
-                name="productNo"
-                placeholder="PN-1234"
-                value={formData.productNo}
-                onChange={handleChange}
-                required
-                className="rounded-xl h-11"
-              />
-            </div>
           </div>
+
+          {searchError && (
+            <div className="rounded-2xl border border-destructive/70 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {searchError}
+            </div>
+          )}
+
+          {isSearching && (
+            <div className="rounded-2xl border border-border/80 bg-muted px-4 py-3 text-sm text-muted-foreground">
+              Looking up product number...
+            </div>
+          )}
+
+          {searchResult && (
+            <div className="rounded-2xl border border-border/80 bg-muted px-4 py-4 text-sm">
+              <div className="mb-3 text-base font-semibold text-foreground">
+                Budget lookup result
+              </div>
+              <div className="grid gap-1 text-xs text-muted-foreground">
+                <div>
+                  <span className="font-semibold text-foreground">Product No:</span>{" "}
+                  {searchResult.header.productNo}
+                </div>
+                <div>
+                  <span className="font-semibold text-foreground">Project Code:</span>{" "}
+                  {searchResult.header.projectCode}
+                </div>
+                <div>
+                  <span className="font-semibold text-foreground">Project Title:</span>{" "}
+                  {searchResult.header.projectTitle}
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-4">
+                {searchResult.categories.map((category) => (
+                  <div key={category.categoryId}>
+                    <div className="text-sm font-semibold text-foreground">
+                      {category.categoryName}
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      {category.items.map((item) => (
+                        <div
+                          className="grid grid-cols-[1fr_auto_auto] gap-2 rounded-2xl border border-border/80 bg-background px-3 py-2 text-sm"
+                          key={item.itemId}
+                        >
+                          <span>{item.itemName}</span>
+                          <span className="text-right text-muted-foreground">
+                            {item.planned}
+                          </span>
+                          <span className="text-right text-muted-foreground">
+                            {item.actual}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <DialogFooter className="mt-4 gap-3 sm:justify-end">
             <Button

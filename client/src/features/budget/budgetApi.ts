@@ -78,6 +78,12 @@ export async function getBudgetByProjectCode(projectCode: string) {
   return response.data;
 }
 
+export async function getBudgetByProductNo(productNo: string) {
+  const encodedProductNo = encodeURIComponent(productNo);
+  const response = await api.get<BudgetRecordResponse>(`/budgets/by-project/${encodedProductNo}`);
+  return response.data;
+}
+
 export async function getBudgetByProjectCodeAndProductNo(
   projectCode: string,
   productNo: string,

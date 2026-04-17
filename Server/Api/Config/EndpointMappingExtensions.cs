@@ -1,6 +1,7 @@
 using Server.Common.Realtime;
 using Server.Features.Auth.Login;
 using Server.Features.BudgetRecords;
+using Server.Features.Employees;
 
 namespace Server.Api.Config;
 
@@ -13,6 +14,9 @@ public static class EndpointMappingExtensions
 
         var budgetGroup = app.MapGroup("/api/budgets").WithTags("Budgets");
         BudgetRecordsEndpoint.Map(budgetGroup);
+
+        var employeeGroup = app.MapGroup("/api/employees").WithTags("Employees");
+        EmployeesEndpoint.Map(employeeGroup);
 
         app.MapHub<NotificationHub>("/hubs/notifications");
 

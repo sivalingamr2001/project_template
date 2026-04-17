@@ -214,7 +214,7 @@ function SummaryCard({
         ? "text-rose-600"
         : accent === "emerald"
           ? "text-emerald-600"
-          : "text-slate-900";
+          : "";
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5 shadow-sm">

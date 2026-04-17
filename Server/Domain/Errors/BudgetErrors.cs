@@ -5,8 +5,8 @@ public static class BudgetErrors
     public static ServiceError NotFound(int budgetId)
         => new($"Budget with ID '{budgetId}' was not found.", ErrorCode.NotFound);
 
-    public static ServiceError NotFoundByProjectCode(string projectCode)
-        => new($"Budget with project code '{projectCode}' was not found.", ErrorCode.NotFound);
+    public static ServiceError NotFoundByProductNo(string productNo)
+        => new($"Budget with product no '{productNo}' was not found.", ErrorCode.NotFound);
 
     public static ServiceError NotFoundByProjectCodeAndProductNo(string projectCode, string productNo)
         => new($"Budget for project '{projectCode}' and product '{productNo}' was not found.", ErrorCode.NotFound);

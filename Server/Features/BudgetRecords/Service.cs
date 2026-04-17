@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Oracle.ManagedDataAccess.Client;
 using Server.Domain.Common;
 using Server.Domain.Entities;
 using Server.Domain.Errors;
@@ -64,18 +65,18 @@ public sealed class BudgetRecordsService(
         return new BudgetRecordDto(budgetHeader, categories);
     }
 
-    public async Task<Result<BudgetRecordDto>> GetByProjectCodeAsync(string projectCode, CancellationToken cancellationToken)
+    public async Task<Result<BudgetRecordDto>> GetByProductNoAsync(string productNo, CancellationToken cancellationToken)
     {
-        var code = projectCode.Trim();
+        var code = productNo.Trim();
 
         var budgetId = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.ProjectCode == code && b.IsActive == 1)
+            .Where(b => b.ProductNo == code && b.IsActive == 1)
             .Select(b => (int?)b.BudgetId)
             .SingleOrDefaultAsync(cancellationToken);
 
         return budgetId is null
-            ? BudgetErrors.NotFoundByProjectCode(code)
+            ? BudgetErrors.NotFoundByProductNo(code)
             : await GetByIdAsync(budgetId.Value, cancellationToken);
     }
 
@@ -104,99 +105,132 @@ public sealed class BudgetRecordsService(
         var productNo = request.ProductNo.Trim();
         var projectTitle = (request.ProjectTitle ?? request.ProductName ?? string.Empty).Trim();
 
-        if (!await dbContext.Employees.AnyAsync(e => e.EmployeeId == request.EmployeeId, cancellationToken))
-        {
-            return new ServiceError($"Employee '{request.EmployeeId}' was not found.", ErrorCode.Validation);
-        }
-
-        if (await dbContext.Budgets.AnyAsync(b => b.ProjectCode == projectCode, cancellationToken))
-        {
-            return BudgetErrors.DuplicateProjectCode(projectCode);
-        }
-
-        var budget = new Budget
-        {
-            EmployeeId = request.EmployeeId,
-            ProjectCode = projectCode,
-            ProductNo = productNo,
-            ProjectTitle = projectTitle,
-            CreatedOn = DateTime.UtcNow,
-            ModifiedOn = DateTime.UtcNow
-        };
-
-        dbContext.Budgets.Add(budget);
+        // Start the Transaction at the very beginning
+        using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
+            // 1. Validation Checks (Using Count > 0 for Oracle 19c compatibility)
+            var employeeExists = await dbContext.Employees
+                .Where(e => e.EmployeeId == request.EmployeeId)
+                .CountAsync(cancellationToken) > 0;
+
+            if (!employeeExists)
+            {
+                return new ServiceError($"Employee '{request.EmployeeId}' was not found.", ErrorCode.Validation);
+            }
+
+            if (await dbContext.Budgets.CountAsync(b => b.ProjectCode == projectCode, cancellationToken) > 0)
+            {
+                return BudgetErrors.DuplicateProjectCode(projectCode);
+            }
+
+            // 2. Create the Parent Budget Record
+            var budget = new Budget
+            {
+                EmployeeId = request.EmployeeId,
+                ProjectCode = projectCode,
+                ProductNo = productNo,
+                ProjectTitle = projectTitle,
+                CreatedOn = DateTime.UtcNow,
+                ModifiedOn = DateTime.UtcNow
+            };
+
+            dbContext.Budgets.Add(budget);
+
+            // We must save here to generate the BudgetId for the child records
             await dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException exception)
-        {
-            logger.LogWarning(exception, "Failed to create budget with ProjectCode={ProjectCode}", projectCode);
-            return BudgetErrors.DuplicateProjectCode(projectCode);
-        }
 
-        var budgetData = request.BudgetData;
-        if (budgetData is { Count: > 0 })
-        {
-            foreach (var c in budgetData)
+            var provider = dbContext.Database.ProviderName;
+            var isOracle = provider?.Contains("Oracle") == true;
+            var nextCategoryId = isOracle
+                ? await dbContext.BudgetCategories.MaxAsync(c => (int?)c.CategoryId, cancellationToken) ?? 0
+                : 0;
+            var nextItemId = isOracle
+                ? await dbContext.BudgetItems.MaxAsync(i => (int?)i.ItemId, cancellationToken) ?? 0
+                : 0;
+
+            // 3. Handle Categories and Items
+            if (request.BudgetData is { Count: > 0 })
             {
-                var category = new BudgetCategory
+                foreach (var c in request.BudgetData)
                 {
-                    BudgetId = budget.BudgetId,
-                    CategoryName = c.Category.Trim()
-                };
-
-                foreach (var item in c.Items)
-                {
-                    category.Items.Add(new BudgetItem
+                    var category = new BudgetCategory
                     {
-                        Category = category,
-                        ItemName = item.Name.Trim(),
-                        Planned = item.Planned,
-                        Actual = item.Actual
-                    });
+                        BudgetId = budget.BudgetId,
+                        CategoryName = c.Category.Trim(),
+                        CategoryId = isOracle ? ++nextCategoryId : 0
+                    };
+
+                    foreach (var item in c.Items)
+                    {
+                        category.Items.Add(new BudgetItem
+                        {
+                            ItemId = isOracle ? ++nextItemId : 0,
+                            ItemName = item.Name.Trim(),
+                            Planned = item.Planned,
+                            Actual = item.Actual
+                        });
+                    }
+                    dbContext.BudgetCategories.Add(category);
                 }
-
-                dbContext.BudgetCategories.Add(category);
             }
-        }
-        else
-        {
-            // Initialize from the "master" categories/items (those without a BudgetId).
-            var masterCategories = await dbContext.BudgetCategories
-                .AsNoTracking()
-                .Where(c => c.BudgetId == null)
-                .Include(c => c.Items)
-                .OrderBy(c => c.CategoryId)
-                .ToListAsync(cancellationToken);
-
-            foreach (var masterCategory in masterCategories)
+            else
             {
-                var category = new BudgetCategory
-                {
-                    BudgetId = budget.BudgetId,
-                    CategoryName = masterCategory.CategoryName
-                };
+                // Copy from Master Template
+                var masterCategories = await dbContext.BudgetCategories
+                    .AsNoTracking()
+                    .Where(c => c.BudgetId == null)
+                    .Include(c => c.Items)
+                    .ToListAsync(cancellationToken);
 
-                foreach (var masterItem in masterCategory.Items.OrderBy(i => i.ItemId))
+                foreach (var master in masterCategories)
                 {
-                    category.Items.Add(new BudgetItem
+                    var newCategory = new BudgetCategory
                     {
-                        Category = category,
-                        ItemName = masterItem.ItemName,
-                        Planned = 0,
-                        Actual = 0
-                    });
+                        BudgetId = budget.BudgetId,
+                        CategoryName = master.CategoryName,
+                        CategoryId = isOracle ? ++nextCategoryId : 0
+                    };
+
+                    foreach (var mItem in master.Items)
+                    {
+                        newCategory.Items.Add(new BudgetItem
+                        {
+                            ItemId = isOracle ? ++nextItemId : 0,
+                            ItemName = mItem.ItemName,
+                            Planned = 0,
+                            Actual = 0
+                        });
+                    }
+                    dbContext.BudgetCategories.Add(newCategory);
                 }
-
-                dbContext.BudgetCategories.Add(category);
             }
+
+            // 4. Final Save (Categories and Items)
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 5. COMMIT: Everything is successful, save changes permanently
+            await transaction.CommitAsync(cancellationToken);
+
+            return await GetByIdAsync(budget.BudgetId, cancellationToken);
         }
+        catch (Exception ex)
+        {
+            // 6. ROLLBACK: If ANY error occurs (including ORA-00001), 
+            // the Budget created in Step 2 is removed from the database.
+            await transaction.RollbackAsync(cancellationToken);
 
-        await dbContext.SaveChangesAsync(cancellationToken);
+            logger.LogError(ex, "Transaction failed. All changes rolled back for Project: {ProjectCode}", projectCode);
 
-        return await GetByIdAsync(budget.BudgetId, cancellationToken);
+            // Return a clean error message instead of crashing
+            if (ex.InnerException is OracleException oex && oex.Number == 1)
+            {
+                return new ServiceError("Database Constraint Error: Category ID conflict. Contact Admin.", ErrorCode.Conflict);
+            }
+
+            throw; // Or return a generic service error
+        }
     }
 
     public async Task<Result<BudgetRecordDto>> UpdateAsync(

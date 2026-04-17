@@ -28,20 +28,20 @@ public static class BudgetRecordsEndpoint
         .WithName("GetBudgetById")
         .WithOpenApi();
 
-        group.MapGet("/by-project/{projectCode}", async (string projectCode, BudgetRecordsService service, CancellationToken cancellationToken) =>
+        group.MapGet("/by-project/{productNo}", async (string productNo, BudgetRecordsService service, CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(projectCode))
+            if (string.IsNullOrWhiteSpace(productNo))
             {
-                throw new AppValidationException("projectCode is required.");
+                throw new AppValidationException("productNo is required.");
             }
 
-            var decodedProjectCode = DecodeRouteValue(projectCode, "projectCode");
-            var result = await service.GetByProjectCodeAsync(decodedProjectCode, cancellationToken);
+            var decodedProductNo = DecodeRouteValue(productNo, nameof(productNo));
+            var result = await service.GetByProductNoAsync(decodedProductNo, cancellationToken);
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : ToProblem(result.Error!);
         })
-        .WithName("GetBudgetByProjectCode")
+        .WithName("GetBudgetByProductNo")
         .WithOpenApi();
 
         // productNo may contain slashes (e.g., "XYZ-5/2-PSV"), so this is a catch-all route.

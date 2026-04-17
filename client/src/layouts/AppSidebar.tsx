@@ -11,7 +11,8 @@ import {
   useSidebar
 } from "@/shared/components/ui/sidebar";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Layers, TrendingUp } from "lucide-react";
+import { Layers, TrendingUp, Users } from "lucide-react";
+import { useAuthContext } from "@/features/auth";
 import * as React from "react";
 
 const data = {
@@ -20,6 +21,11 @@ const data = {
       title: "Dashboard",
       to: "/budget/dashboard",
       icon: TrendingUp,
+    },
+    {
+      title: "Employees",
+      to: "/admin/employees",
+      icon: Users,
     },
     {
       title: "Budget",
@@ -32,10 +38,21 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const { setOpen } = useSidebar();
+  const { user } = useAuthContext();
   const pathname = location.pathname;
+  const isAdmin = user?.role === "Admin";
+
+  const menuItems = data.navMain.filter((item) => {
+    if (item.to === "/admin/employees") {
+      return isAdmin;
+    }
+
+    return true;
+  });
 
   const isDashboardActive = pathname === "/budget/dashboard";
   const isBudgetActive = pathname.startsWith("/budget") && !isDashboardActive;
+  const isEmployeesActive = pathname.startsWith("/admin");
 
   return (
     <Sidebar
@@ -51,7 +68,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroup>
             <SidebarGroupContent className="px-1.5 md:px-0">
               <SidebarMenu>
-                {data.navMain.map((item) => (
+                {menuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
@@ -61,7 +78,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                           ? isDashboardActive
                           : item.to === "/budget"
                             ? isBudgetActive
-                            : pathname === item.to
+                            : item.to === "/admin/employees"
+                              ? isEmployeesActive
+                              : pathname === item.to
                       }
                       className="px-2.5 md:px-2"
                     >

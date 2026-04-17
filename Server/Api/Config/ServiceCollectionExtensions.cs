@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Oracle.EntityFrameworkCore;
 using Server.Features.Auth.Login;
 using Server.Features.BudgetRecords;
+using Server.Features.Employees;
 using Server.Infrastructure.Db;
 using Server.Infrastructure.Oracle;
 using Server.Shared.Constants;
@@ -61,6 +62,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<LoginService>();
         services.AddScoped<BudgetRecordsService>();
+        services.AddScoped<EmployeesService>();
         if (string.Equals(databaseOptions.Provider, "Oracle", StringComparison.OrdinalIgnoreCase))
         {
             services.AddScoped<OracleService>();
@@ -81,8 +83,6 @@ public static class ServiceCollectionExtensions
                     return;
                 }
 
-                // Same-origin deployments don't need CORS. When no origins are configured,
-                // we intentionally do not allow cross-origin requests.
                 policy.AllowAnyHeader().AllowAnyMethod();
             });
         });

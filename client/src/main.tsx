@@ -7,14 +7,17 @@ import App from "./App";
 import { ThemeProvider } from "./shared/components/ThemeProvider";
 import { Toaster } from "./shared/components/ui/sonner";
 import { TooltipProvider } from "./shared/components/ui/tooltip";
+import { LoaderProvider } from "./shared/hooks/useLoader";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster position="top-right" richColors />
-          <App />
+          <LoaderProvider>
+            <Toaster position="top-right" richColors />
+            <App />
+          </LoaderProvider>
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>

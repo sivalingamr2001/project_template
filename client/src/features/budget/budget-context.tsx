@@ -89,6 +89,7 @@ import {
 } from "@/features/budget/budgetApi";
 import type { ApiError } from "@/shared/lib/axios";
 import { useAuthContext } from "../auth";
+import { useLoader } from "@/shared/hooks/useLoader";
 
 interface BudgetContextValue {
   state: BudgetStoreState;
@@ -209,6 +210,7 @@ function getTotalsForRecord(record: BudgetRecord | null): BudgetTotals {
 export function BudgetProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<BudgetStoreState>(initialState);
   const { user } = useAuthContext();
+  const { wrap } = useLoader();
   const employeeId: number | undefined = user?.employeeId;
   const draftStorageKey = useMemo(
     () => getBudgetDraftStorageKey(employeeId),
@@ -224,29 +226,31 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       const storedActiveRecordId = storedDrafts?.activeRecordId ?? null;
 
       try {
-        const summaries = await getBudgetSummaries();
+        await wrap(async () => {
+          const summaries = await getBudgetSummaries();
 
-        const fullRecords = await Promise.all(
-          summaries.map(async (summary: { budgetId: number }) => {
-            const detail = await getBudgetById(summary.budgetId);
-            return mapBudgetApiToUi(detail);
-          }),
-        );
+          const fullRecords = await Promise.all(
+            summaries.map(async (summary: { budgetId: number }) => {
+              const detail = await getBudgetById(summary.budgetId);
+              return mapBudgetApiToUi(detail);
+            }),
+          );
 
-        const mergedRecords = [
-          ...(draftRecords ?? []),
-          ...fullRecords.filter(
-            (record) => !(draftRecords ?? []).some((draft) => draft.id === record.id),
-          ),
-        ];
+          const mergedRecords = [
+            ...(draftRecords ?? []),
+            ...fullRecords.filter(
+              (record) => !(draftRecords ?? []).some((draft) => draft.id === record.id),
+            ),
+          ];
 
-        setState({
-          activeRecordId:
-            storedActiveRecordId &&
-            mergedRecords.some((record) => record.id === storedActiveRecordId)
-              ? storedActiveRecordId
-              : null,
-          records: mergedRecords,
+          setState({
+            activeRecordId:
+              storedActiveRecordId &&
+              mergedRecords.some((record) => record.id === storedActiveRecordId)
+                ? storedActiveRecordId
+                : null,
+            records: mergedRecords,
+          });
         });
       } catch (error) {
         console.error("Failed to load budgets", error);
@@ -261,8 +265,8 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    loadBudgets();
-  }, [draftStorageKey]);
+    void loadBudgets();
+  }, [draftStorageKey, wrap]);
 
   const draftRecords = useMemo(
     () => state.records.filter((record) => record.id.startsWith("draft-")),
@@ -365,7 +369,10 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      await deleteBudgetApi(budgetId);
+      await wrap(async () => {
+        await deleteBudgetApi(budgetId);
+      });
+
       setState((current) => ({
         activeRecordId:
           current.activeRecordId === recordId ? null : current.activeRecordId,
@@ -386,7 +393,7 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       console.error("Failed to archive budget record", error);
       throw error;
     }
-  }, []);
+  }, [wrap]);
 
   const loadRecord = useCallback((recordId: string | null) => {
     setState((current) => ({
@@ -446,14 +453,16 @@ export function BudgetProvider({ children }: { children: React.ReactNode }) {
       }));
 
     try {
-      const response = isDraft
-        ? await createBudget(createPayload)
-        : await updateBudget(budgetId, {
-            projectCode: activeRecord.projectHeader.projectCode,
-            productNo: activeRecord.projectHeader.productNo,
-            projectTitle: activeRecord.projectHeader.productName,
-            items: updateItems.length > 0 ? updateItems : [],
-          });
+      const response = await wrap(async () =>
+        isDraft
+          ? await createBudget(createPayload)
+          : await updateBudget(budgetId, {
+              projectCode: activeRecord.projectHeader.projectCode,
+              productNo: activeRecord.projectHeader.productNo,
+              projectTitle: activeRecord.projectHeader.productName,
+              items: updateItems.length > 0 ? updateItems : [],
+            }),
+      );
 
       const record = mapBudgetApiToUi(response);
       setState((current) => ({

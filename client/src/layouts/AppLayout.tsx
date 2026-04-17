@@ -7,6 +7,7 @@ import { Separator } from "@/shared/components/ui/separator";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/shared/components/ui/button";
 import { BudgetProvider } from "@/features/budget/budget-context";
+import { LoaderOverlay } from "@/shared/hooks/useLoader";
 
 export default function AppLayout() {
   const auth = useAuthContext();
@@ -46,6 +47,7 @@ export default function AppLayout() {
           <BudgetProvider>
             <Outlet />
           </BudgetProvider>
+          <LoaderOverlay />
         </main>
       </SidebarInset>
     </SidebarProvider>

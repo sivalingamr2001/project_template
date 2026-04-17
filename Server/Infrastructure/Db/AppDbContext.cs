@@ -36,6 +36,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("jan_budget_categories");
             entity.HasKey(e => e.CategoryId);
+            entity.Property(e => e.CategoryId).ValueGeneratedOnAdd();
 
             // Relationship: Budget -> Categories (1:N)
             entity.HasOne(d => d.Budget)
@@ -49,6 +50,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("jan_budget_items");
             entity.HasKey(e => e.ItemId);
+            entity.Property(e => e.ItemId).ValueGeneratedOnAdd();
 
             // Precision for financial data
             entity.Property(e => e.Planned).HasPrecision(18, 2);

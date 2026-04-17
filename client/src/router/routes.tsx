@@ -9,6 +9,7 @@ import {
   budgetPlanEntryRoute,
   budgetPerformanceReportRoute,
 } from "@/router/budget.routes";
+import { adminEmployeesRoute } from "@/router/admin.routes";
 
 export type { RouterAppContext } from "@/router/router.types";
 
@@ -17,6 +18,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   appRoute.addChildren([
     dashboardRoute,
+    adminEmployeesRoute,
     budgetRoute.addChildren([
       budgetSearchRoute,
       budgetPlanEntryRoute,

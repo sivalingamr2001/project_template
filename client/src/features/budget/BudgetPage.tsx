@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
 import { useBudget } from "@/features/budget/budget-context";
+import { useLoader } from "@/shared/hooks/useLoader";
 import type { ActiveView, PlanTab } from "@/features/budget/budget-page.types";
 import { PerformanceReportSection } from "@/features/budget/components/PerformanceReportSection";
 import { PlanEntrySection } from "@/features/budget/components/PlanEntrySection";
@@ -48,6 +49,7 @@ function BudgetWorkspace() {
   const [isDraftModalOpen, setIsDraftModalOpen] = useState(false);
   const [isDraftRefreshConfirmOpen, setIsDraftRefreshConfirmOpen] = useState(false);
   const { activeRecord, state, discardDraft, getRecordTotals, loadRecord } = useBudget();
+  const { isLoading } = useLoader();
 
   const draftRecords = useMemo(
     () => state.records.filter((record) => record.id.startsWith("draft-")),
@@ -57,10 +59,10 @@ function BudgetWorkspace() {
   const isActiveDraft = Boolean(activeRecord?.id.startsWith("draft-"));
 
   useEffect(() => {
-    if (!activeRecord && activeView !== "project-search") {
+    if (!isLoading && !activeRecord && activeView !== "project-search") {
       void navigate({ to: "/budget/search" });
     }
-  }, [activeRecord, activeView, navigate]);
+  }, [activeRecord, activeView, isLoading, navigate]);
 
   const handleViewChange = (value: string) => {
     const route =

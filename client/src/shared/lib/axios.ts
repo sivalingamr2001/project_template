@@ -52,7 +52,6 @@ const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 function createApiInstance(): AxiosInstance {
   const instance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL ?? "/api",
-    timeout: 15_000,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",

@@ -19,7 +19,7 @@ public sealed class EmployeeEntity
 
     [Required]
     [Column("phone_number")]
-    public int Phone { get; set; }
+    public long Phone { get; set; }
 
     [Column("dept_id")]
     public int DepartmentId { get; set; }
