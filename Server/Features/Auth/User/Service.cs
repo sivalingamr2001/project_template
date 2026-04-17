@@ -164,6 +164,7 @@ public sealed class UserService(AppDbContext dbContext)
     public async Task<UserProfileDto?> UpdateUserAsync(int userId, UpdateUserRequest request, CancellationToken cancellationToken)
     {
         var employee = await dbContext.Employees
+            .Include(e => e.Department)
             .FirstOrDefaultAsync(e => e.UserId == userId, cancellationToken);
 
         if (employee is null) return null;

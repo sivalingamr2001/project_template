@@ -41,7 +41,6 @@ public sealed class EmployeeEntity
     public int? DeptId { get; set; }
 
     // Navigation Property: Link to Department
-    [ForeignKey("DeptId")]                                                      
     public DepartmentEntity? Department { get; set; }
 
     [Column("location")]

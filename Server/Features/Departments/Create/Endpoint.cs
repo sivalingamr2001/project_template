@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Server.Features.Departments.Create;
