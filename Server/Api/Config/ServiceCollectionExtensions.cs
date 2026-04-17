@@ -1,14 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Features.AccessRequests.Common;
 using Server.Features.AccessRequests.Create;
-using Server.Features.AccessRequests.GetList;
 using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
+using Server.Features.Departments.Create;
+using Server.Features.Departments.GetList;
+using Server.Features.Departments.Update;
 using Server.Infrastructure.Db;
 using Server.Shared.Camunda;
 using Server.Shared.Constants;
+using Server.Features.AccessRequests.GetList;
 
 namespace Server.Api.Config;
 
@@ -57,6 +60,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UserService>();
         services.AddScoped<CreateAccessRequestService>();
         services.AddScoped<GetAccessRequestsService>();
+        services.AddScoped<GetDepartmentsService>();
+        services.AddScoped<CreateDepartmentService>();
+        services.AddScoped<UpdateDepartmentService>();
+        //services.AddScoped<GetDepartmentHodService>();
         services.AddScoped<GetDashboardService>();
         services.AddScoped<GetAuditLogsService>();
         services.Configure<CamundaOptions>(configuration.GetSection("Zeebe"));

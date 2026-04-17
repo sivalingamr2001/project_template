@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
+using Server.Features.Common;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
 using Server.Shared.Helpers;
@@ -68,7 +69,25 @@ public sealed class UserService(AppDbContext dbContext)
                     Email = e.Email ?? string.Empty,
                     Phone = e.Mobile ?? string.Empty,
                     DepartmentId = e.DeptId ?? 0,
-                    DepartmentName = e.Department != null && !string.IsNullOrWhiteSpace(e.Department.DeptName) ? e.Department.DeptName : "N/A",
+                    DepartmentName = e.Department != null && !string.IsNullOrWhiteSpace(e.Department.DeptName)
+                        ? e.Department.DeptName
+                        : "N/A",
+                    DepartmentHod = e.Department != null
+                        ? new DepartmentDto(
+                            e.Department.Id,
+                            e.Department.DeptId,
+                            e.Department.DeptName,
+                            e.Department.DeptHodId,
+                            e.Department.HeadOfDepartment != null
+                                ? BuildDisplayName(e.Department.HeadOfDepartment.FirstName, e.Department.HeadOfDepartment.LastName, e.Department.HeadOfDepartment.UserName)
+                                : string.Empty,
+                            e.Department.HeadOfDepartment != null
+                                ? e.Department.HeadOfDepartment.Email ?? string.Empty
+                                : string.Empty,
+                            e.Department.HeadOfDepartment != null
+                                ? e.Department.HeadOfDepartment.Mobile ?? string.Empty
+                                : string.Empty)
+                        : new DepartmentDto(0, 0, string.Empty, 0, string.Empty, string.Empty, string.Empty),
                     Role = string.IsNullOrWhiteSpace(e.UserRole) ? "User" : e.UserRole!,
                 })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -78,10 +97,6 @@ public sealed class UserService(AppDbContext dbContext)
                 Console.WriteLine($"[DEBUG] UserId {userId} NOT FOUND in database.");
                 return null;
             }
-
-            var departmentHod = await ResolveDepartmentHodAsync(
-                user.DepartmentId > 0 ? user.DepartmentId : null,
-                cancellationToken);
 
             var result = new UserProfileDto(
                 user.UserId,
@@ -93,7 +108,7 @@ public sealed class UserService(AppDbContext dbContext)
                 user.DepartmentId,
                 user.DepartmentName,
                 user.Role,
-                departmentHod);
+                user.DepartmentHod);
 
             var jsonData = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
             Console.WriteLine($"[DEBUG] Successfully fetched DTO for UserId: {userId}");
@@ -114,7 +129,7 @@ public sealed class UserService(AppDbContext dbContext)
     {
         var users = await dbContext.Employees
             .AsNoTracking()
-            .Where(e => e.UserRole == role.ToString())
+            .Where(e => e.UserRole == role)
             .Select(e => new UserProfileDto(
                 e.UserId,
                 e.EmployeeId,
@@ -125,113 +140,86 @@ public sealed class UserService(AppDbContext dbContext)
                 e.DeptId ?? 0,
                 e.Department != null && !string.IsNullOrWhiteSpace(e.Department.DeptName) ? e.Department.DeptName : "N/A",
                 string.IsNullOrWhiteSpace(e.UserRole) ? "User" : e.UserRole!,
-                new DepartmentHodDto(0, string.Empty, string.Empty)
+                e.Department != null
+                    ? new DepartmentDto(
+                        e.Department.Id,
+                        e.Department.DeptId,
+                        e.Department.DeptName,
+                        e.Department.DeptHodId,
+                        e.Department.HeadOfDepartment != null
+                            ? BuildDisplayName(e.Department.HeadOfDepartment.FirstName, e.Department.HeadOfDepartment.LastName, e.Department.HeadOfDepartment.UserName)
+                            : string.Empty,
+                        e.Department.HeadOfDepartment != null
+                            ? e.Department.HeadOfDepartment.Email ?? string.Empty
+                            : string.Empty,
+                        e.Department.HeadOfDepartment != null
+                            ? e.Department.HeadOfDepartment.Mobile ?? string.Empty
+                            : string.Empty)
+                    : new DepartmentDto(0, 0, string.Empty, 0, string.Empty, string.Empty, string.Empty)
             ))
             .ToListAsync(cancellationToken);
         return users;
     }
 
-    private async Task<DepartmentHodDto> ResolveDepartmentHodAsync(int? departmentId, CancellationToken cancellationToken)
-    {
-        if (!departmentId.HasValue || departmentId.Value <= 0)
-        {
-            return new DepartmentHodDto(0, string.Empty, string.Empty);
-        }
-
-        var department = await dbContext.Departments
-            .AsNoTracking()
-            .Where(d => d.DeptId == departmentId.Value)
-            .Select(d => d.DeptHodId)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (department <= 0)
-        {
-            return new DepartmentHodDto(0, string.Empty, string.Empty);
-        }
-
-        var hod = await dbContext.Employees
-            .AsNoTracking()
-            .Where(e => e.EmployeeId == department && e.UserRole == RoleNames.Hod)
-            .Select(e => new
-            {
-                e.EmployeeId,
-                Name = BuildDisplayName(e.FirstName, e.LastName, e.UserName),
-                Email = e.Email ?? string.Empty,
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return hod is not null
-            ? new DepartmentHodDto(hod.EmployeeId, hod.Name, hod.Email)
-            : new DepartmentHodDto(0, string.Empty, string.Empty);
-    }
-
     public async Task<UserProfileDto?> UpdateUserAsync(int userId, UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        // 1. Fetch the existing employee using FirstOrDefault to avoid "Multiple Elements" crash
         var employee = await dbContext.Employees
             .FirstOrDefaultAsync(e => e.UserId == userId, cancellationToken);
 
-        if (employee is null)
-        {
-            return null; // Or throw a NotFoundException
-        }
+        if (employee is null) return null;
 
-        // 2. Handle EmployeeId Update + Duplicate Check
         if (request.EmployeeId.HasValue && request.EmployeeId.Value > 0)
         {
-            var newEmployeeId = request.EmployeeId.Value;
-
-            // Only check if it's actually changing
-            if (employee.EmployeeId != newEmployeeId)
+            if (employee.EmployeeId != request.EmployeeId.Value)
             {
                 var idExists = await dbContext.Employees
-                    .AsNoTracking()
-                    .AnyAsync(e => e.EmployeeId == newEmployeeId && e.UserId != userId, cancellationToken);
+                    .AnyAsync(e => e.EmployeeId == request.EmployeeId.Value && e.UserId != userId, cancellationToken);
 
-                if (idExists)
-                {
-                    throw new InvalidOperationException($"The Employee ID '{newEmployeeId}' is already assigned to another user.");
-                }
-
-                employee.EmployeeId = newEmployeeId;
+                if (idExists) throw new InvalidOperationException("Employee ID already assigned.");
+                employee.EmployeeId = request.EmployeeId.Value;
             }
         }
 
-        // 3. Handle UserName Update + Duplicate Check
         if (!string.IsNullOrWhiteSpace(request.UserName))
         {
-            var normalizedUserName = request.UserName.Trim();
-
-            if (employee.UserName != normalizedUserName)
+            var name = request.UserName.Trim();
+            if (employee.UserName != name)
             {
-                var nameExists = await dbContext.Employees
-                    .AsNoTracking()
-                    .AnyAsync(e => e.UserName == normalizedUserName && e.UserId != userId, cancellationToken);
-
-                if (nameExists)
-                {
-                    throw new InvalidOperationException($"Username '{normalizedUserName}' is already in use.");
-                }
-
-                employee.UserName = normalizedUserName;
+                var exists = await dbContext.Employees.AnyAsync(e => e.UserName == name && e.UserId != userId, cancellationToken);
+                if (exists) throw new InvalidOperationException("Username in use.");
+                employee.UserName = name;
             }
         }
 
-        // 4. Update Profile Fields
-        if (!string.IsNullOrWhiteSpace(request.FirstName)) employee.FirstName = request.FirstName.Trim();
-        if (!string.IsNullOrWhiteSpace(request.LastName)) employee.LastName = request.LastName.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Email)) employee.Email = request.Email.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Phone)) employee.Mobile = request.Phone.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Location)) employee.Location = request.Location.Trim();
-        if (!string.IsNullOrWhiteSpace(request.Role)) employee.UserRole = request.Role.Trim();
+        employee.FirstName = request.FirstName?.Trim();
+        employee.LastName = request.LastName?.Trim();
+        employee.Email = request.Email?.Trim() ?? employee.Email;
+        employee.Mobile = request.Phone?.Trim();
+        employee.Location = request.Location?.Trim() ?? employee.Location;
+        employee.UserRole = request.Role?.Trim() ?? employee.UserRole;
 
-        // 5. Update Department Info
-        if (request.DepartmentId.HasValue) employee.DeptId = request.DepartmentId.Value;
-        if (!string.IsNullOrWhiteSpace(request.DepartmentName)) employee.Department.DeptName = request.DepartmentName.Trim();
+        if (request.DepartmentId.HasValue)
+        {
+            if (request.DepartmentId.Value <= 0)
+            {
+                employee.DeptId = null;
+            }
+            else
+            {
+                var dept = await dbContext.Departments
+                    .Where(d => d.DeptId == request.DepartmentId.Value)
+                    .Select(d => new { d.Id })
+                    .FirstOrDefaultAsync(cancellationToken);
 
-        // 6. HOD details are derived from the user's department and role at read time.
+                if (dept == null)
+                {
+                    throw new InvalidOperationException($"Department with Business ID {request.DepartmentId.Value} not found.");
+                }
 
-        // 7. Finalize and Save
+                employee.DeptId = dept.Id;
+            }
+        }
+
         employee.UpdatedOn = DateTime.UtcNow;
 
         try
@@ -240,10 +228,9 @@ public sealed class UserService(AppDbContext dbContext)
         }
         catch (DbUpdateException ex)
         {
-            throw new InvalidOperationException("A database error occurred while updating the user. Please check for duplicate unique fields.", ex);
+            throw new InvalidOperationException("Database update failed. Check constraints.", ex);
         }
 
-        // 8. Return fresh data using the (possibly new) EmployeeId
         return await GetUserByIdAsync(employee.UserId, cancellationToken);
     }
 
@@ -281,6 +268,35 @@ public sealed class UserService(AppDbContext dbContext)
             throw new InvalidOperationException($"UserName '{userName}' already exists.");
         }
 
+        int? departmentId = null;
+        if (request.DepartmentId.HasValue)
+        {
+            var department = await dbContext.Departments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.DeptId == request.DepartmentId.Value, cancellationToken);
+
+            if (department is null)
+            {
+                throw new InvalidOperationException($"Department with Id '{request.DepartmentId.Value}' does not exist.");
+            }
+
+            departmentId = request.DepartmentId.Value;
+        }
+
+        if (request.DepartmentId.HasValue)
+        {
+            var department = await dbContext.Departments
+                .AsNoTracking()
+                .FirstOrDefaultAsync(d => d.DeptId == request.DepartmentId.Value, cancellationToken);
+
+            if (department is null)
+            {
+                throw new InvalidOperationException($"Department with Id '{request.DepartmentId.Value}' does not exist.");
+            }
+
+            departmentId = request.DepartmentId.Value;
+        }
+
         var entity = new EmployeeEntity
         {
             EmployeeId = request.EmployeeId,
@@ -291,7 +307,7 @@ public sealed class UserService(AppDbContext dbContext)
             Password = request.Password,
             Email = request.Email?.Trim() ?? string.Empty,
             Mobile = request.Phone?.Trim() ?? string.Empty,
-            DeptId = request.DepartmentId,
+            DeptId = departmentId,
             Location = string.Empty,
             UserRole = string.IsNullOrWhiteSpace(request.Role) ? "User" : request.Role.Trim(),
             IsActive = true,

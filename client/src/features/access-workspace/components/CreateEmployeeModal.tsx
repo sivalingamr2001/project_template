@@ -204,8 +204,8 @@ export default function CreateEmployeeModal({
                 </SelectTrigger>
                 <SelectContent>
                   {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={String(dept.id)}>
-                      {dept.id} - {dept.name}
+                    <SelectItem key={dept.deptId} value={String(dept.deptId)}>
+                      {dept.deptId} - {dept.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

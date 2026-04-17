@@ -1,3 +1,5 @@
+using Server.Features.Common;
+
 namespace Server.Features.Auth.Login;
 
 public sealed record LoginRequest(string Identifier, string Password);
@@ -5,8 +7,6 @@ public sealed record LoginRequest(string Identifier, string Password);
 public sealed record LoginResponse(SessionDto Session);
 
 public sealed record SessionDto(LoggedInUserDto User);
-
-public sealed record DepartmentHodDto(int EmployeeId, string Name, string Email);
 
 public sealed record LoggedInUserDto(
     int UserId,
@@ -18,4 +18,4 @@ public sealed record LoggedInUserDto(
     int DepartmentId,
     string DepartmentName,
     string Role,
-    DepartmentHodDto DepartmentHod);
+    DepartmentDto DepartmentHod);

@@ -95,6 +95,12 @@ export default function EditEmployeeModal({
     })()
   }, [userId, open])
 
+  useEffect(() => {
+    if (departments.length > 0 && departmentId) {
+      setDepartmentId((prev) => prev)
+    }
+  }, [departments])
+
   const onSubmit = async () => {
     if (!employeeId || !userId) return
     setIsSaving(true)
@@ -213,8 +219,8 @@ export default function EditEmployeeModal({
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((dept) => (
-                      <SelectItem key={dept.id} value={String(dept.id)}>
-                        {dept.id} - {dept.name}
+                      <SelectItem key={dept.deptId} value={String(dept.deptId)}>
+                        {dept.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

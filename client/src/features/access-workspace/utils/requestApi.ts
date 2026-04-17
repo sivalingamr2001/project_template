@@ -232,7 +232,9 @@ export async function fetchAuditLogs(
   page = 1,
   pageSize = 50
 ): Promise<PaginatedResponse<AuditLogItem>> {
-  const response = await fetch(`${API_URL}/audit-logs?Page=${page}&PageSize=${pageSize}`)
+  const response = await fetch(
+    `${API_URL}/audit-logs?Page=${page}&PageSize=${pageSize}`
+  )
   if (!response.ok) throw new Error("Unable to load audit logs.")
 
   const payload = await response.json()
@@ -324,7 +326,9 @@ export type CreateUserPayload = {
   password: string
 }
 
-export async function createUser(payload: CreateUserPayload): Promise<AuthUser> {
+export async function createUser(
+  payload: CreateUserPayload
+): Promise<AuthUser> {
   const response = await fetch(`${API_URL}/User`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -342,14 +346,21 @@ export async function createUser(payload: CreateUserPayload): Promise<AuthUser> 
   return response.json()
 }
 
-export async function fetchDepartments(): Promise<Department[]> {
-  const response = await fetch(`${API_URL}/departments/`)
+export async function fetchDepartments(
+  page = 1,
+  pageSize = 10
+): Promise<Department[]> {
+  const response = await fetch(
+    `${API_URL}/departments?Page=${page}&PageSize=${pageSize}`
+  )
   if (!response.ok) throw new Error("Unable to load departments.")
   const payload = await response.json()
-  return (payload.departments ?? []) as Department[]
+  return (payload.data ?? []) as Department[]
 }
 
-export async function createDepartment(department: Department): Promise<Department> {
+export async function createDepartment(
+  department: Department
+): Promise<Department> {
   const response = await fetch(`${API_URL}/departments/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -367,8 +378,10 @@ export async function createDepartment(department: Department): Promise<Departme
   return response.json()
 }
 
-export async function updateDepartment(department: Department): Promise<Department> {
-  const response = await fetch(`${API_URL}/departments/${department.id}`, {
+export async function updateDepartment(
+  department: Department
+): Promise<Department> {
+  const response = await fetch(`${API_URL}/departments/${department.deptId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: department.name }),

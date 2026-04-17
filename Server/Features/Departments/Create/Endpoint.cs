@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Server.Shared.Constants;
 
 namespace Server.Features.Departments.Create;
 
@@ -7,32 +6,23 @@ public static class CreateDepartmentEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapPost("/", ([FromBody] CreateDepartmentRequest request) =>
+        group.MapPost("/", async (
+            [FromBody] CreateDepartmentRequest request,
+            CreateDepartmentService service,
+            CancellationToken cancellationToken) =>
         {
-            if (request.Id <= 0)
+            try
             {
-                return Results.BadRequest(new { Message = "Department ID must be a positive number." });
+                var created = await service.CreateAsync(request, cancellationToken);
+                return Results.Created($"/api/departments/{created.Id}", created);
             }
-
-            if (string.IsNullOrWhiteSpace(request.Name))
+            catch (InvalidOperationException ex)
             {
-                return Results.BadRequest(new { Message = "Department name is required." });
+                return Results.BadRequest(new { Message = ex.Message });
             }
-
-            var added = DepartmentCatalog.TryAdd(request.Id, request.Name);
-            if (!added)
-            {
-                return Results.Conflict(new { Message = $"Department '{request.Id}' already exists." });
-            }
-
-            return Results.Created($"/api/departments/{request.Id}", new DepartmentDto(request.Id, request.Name.Trim()));
         })
         .WithName("CreateDepartment")
         .WithOpenApi();
     }
 }
-
-public sealed record CreateDepartmentRequest(int Id, string Name);
-
-public sealed record DepartmentDto(int Id, string Name);
 

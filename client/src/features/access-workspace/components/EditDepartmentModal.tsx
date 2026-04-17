@@ -37,7 +37,7 @@ export default function EditDepartmentModal({
 
   useEffect(() => {
     if (!open) return
-    setId(department ? String(department.id) : "")
+    setId(department ? String(department.deptId) : "")
     setName(department?.name ?? "")
     setError(null)
   }, [department, open])
@@ -57,7 +57,7 @@ export default function EditDepartmentModal({
     const departmentData: any = {
       id: numericId,
       name: name,
-      hodEmployeeId: departmentHodEmployeeId ?? department?.hodEmployeeId,
+      hodEmployeeId: departmentHodEmployeeId ?? department?.hodId,
     }
 
     try {
@@ -107,10 +107,10 @@ export default function EditDepartmentModal({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deptHodEmployeeId">HOD Employee ID</Label>
+              <Label htmlFor="deptHodEmployeeId">HOD Name</Label>
               <Input
                 id="deptHodEmployeeId"
-                value={String(department?.hodEmployeeId ?? "")}
+                value={String(department?.hodName ?? "")}
                 onChange={(e) => {
                   const value = e.target.value
                   if (

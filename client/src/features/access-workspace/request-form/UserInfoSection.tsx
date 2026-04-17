@@ -41,15 +41,14 @@ export function UserInfoSection({
       </div>
 
       <div className="space-y-2">
-        <Label>Requested For</Label>
+        <Label>Employee Name</Label>
         <Input
           value={
             displayUser
-              ? `${displayUser.employeeId} - ${displayUser.name}`
+              ? `${displayUser.name}`
               : "User not found"
           }
-          readOnly
-          className="cursor-not-allowed bg-muted"
+          className="bg-muted"
         />
       </div>
 
@@ -57,8 +56,7 @@ export function UserInfoSection({
         <Label>Employee Email</Label>
         <Input
           value={displayUser?.email || ""}
-          readOnly
-          className="cursor-not-allowed bg-muted font-mono text-xs"
+          className="bg-muted font-mono text-xs"
         />
       </div>
 
@@ -70,8 +68,7 @@ export function UserInfoSection({
               ? `${displayUser.departmentHod.employeeId} - ${displayUser.departmentHod.name}`
               : "No HOD"
           }
-          readOnly
-          className="cursor-not-allowed bg-muted"
+          className="bg-muted"
         />
       </div>
 

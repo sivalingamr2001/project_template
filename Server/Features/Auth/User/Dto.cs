@@ -1,10 +1,9 @@
 ﻿namespace Server.Features.Auth.User;
 
+using Server.Features.Common;
 using Server.Shared.Helpers;
 
 public sealed class GetUsersQuery : PagedRequest;
-
-public record DepartmentHodDto(int EmployeeId, string Name, string Email);
 
 public record UserProfileDto(
     int UserId,
@@ -16,7 +15,7 @@ public record UserProfileDto(
     int DepartmentId,
     string DepartmentName,
     string Role,
-    DepartmentHodDto DepartmentHod);
+    DepartmentDto DepartmentHod);
 
 public record UserListItemDto(
     int UserId,
@@ -46,7 +45,7 @@ public sealed record CreateUserRequest(
     string? Email,
     string? Phone,
     int? DepartmentId,
-    string? DepartmentName,
+    DepartmentDto DepartmentHodDto,
     string? Role,
     string Password);
 

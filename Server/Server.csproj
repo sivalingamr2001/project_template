@@ -29,6 +29,10 @@
       </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Features\AccessRequests\GetList\" />
+    </ItemGroup>
+
     <Target Name="CopyReactBuild" AfterTargets="Publish">
         <ItemGroup>
             <ReactFiles Include="$(MSBuildThisFileDirectory)../Artifact/client/**" />

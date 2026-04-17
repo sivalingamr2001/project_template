@@ -20,9 +20,9 @@ export default function DepartmentsPage() {
 
   const columns = useMemo<TableColumn<DepartmentRow>[]>(() => {
     return [
-      { key: "id", header: "Department ID", render: (row) => row.id },
+      { key: "id", header: "Department ID", render: (row) => row.deptId },
       { key: "name", header: "Department", render: (row) => row.name },
-      { key: "hod", header: "HOD Employee ID", render: (row) => row.hodEmployeeId },
+      { key: "hod", header: "HOD Name", render: (row) => row.hodName },
       {
         key: "actions",
         header: "Actions",
@@ -54,7 +54,7 @@ export default function DepartmentsPage() {
       {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
       <CommonTable
         columns={columns}
-        getRowId={(row) => row.id}
+        getRowId={(row) => row.deptId}
         onRefresh={refetch}
         pageSize={8}
         rows={isLoading ? [] : rows}

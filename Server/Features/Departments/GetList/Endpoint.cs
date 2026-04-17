@@ -1,4 +1,4 @@
-using Server.Shared.Constants;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Server.Features.Departments.GetList;
 
@@ -6,20 +6,15 @@ public static class GetDepartmentsEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/", () =>
+        group.MapGet("/", async (
+            [AsParameters] GetDepartmentQuery query,
+            GetDepartmentsService service,
+            CancellationToken cancellationToken) =>
         {
-            var departments = DepartmentCatalog.All
-                .OrderBy(kvp => kvp.Key)
-                .Select(kvp => new DepartmentDto(kvp.Key, kvp.Value))
-                .ToList();
-
-            return Results.Ok(new DepartmentListResponse(departments));
+            var response = await service.GetAsync(query, cancellationToken);
+            return Results.Ok(response);
         })
         .WithName("GetDepartments")
         .WithOpenApi();
     }
 }
-
-public sealed record DepartmentDto(int Id, string Name);
-
-public sealed record DepartmentListResponse(IReadOnlyList<DepartmentDto> Departments);

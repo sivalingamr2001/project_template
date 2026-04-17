@@ -12,7 +12,6 @@ using Server.Features.Auth.Login;
 using Server.Features.Auth.User;
 using Server.Features.Dashboard.GetDashboard;
 using Server.Features.Departments.Create;
-using Server.Features.Departments.GetHodList;
 using Server.Features.Departments.GetList;
 using Server.Features.Departments.Update;
 using Server.Features.Notifications.GetList;
@@ -32,7 +31,7 @@ public static class EndpointMappingExtensions
 
         var departmentsGroup = app.MapGroup("/api/departments").WithTags("Departments");
         GetDepartmentsEndpoint.Map(departmentsGroup);
-        GetDepartmentHodEndpoint.Map(departmentsGroup);
+        //GetDepartmentHodEndpoint.Map(departmentsGroup);
         CreateDepartmentEndpoint.Map(departmentsGroup);
         UpdateDepartmentEndpoint.Map(departmentsGroup);
 

@@ -34,8 +34,7 @@ export function NewRequestForm({
     mode
   )
 
-  const displayUser =
-    fetchedUser || (formData.empId === me ? currentUser : null)
+  const displayUser = fetchedUser || (formData.empId === me ? currentUser : null)
 
   // API Sync Logic
   useEffect(() => {

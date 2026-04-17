@@ -64,9 +64,10 @@ export type PaginatedResponse<T> = {
 }
 
 export type Department = {
-  id: number
+  deptId: number
   name: string
-  hodEmployeeId: number
+  hodId: number
+  hodName: string
 }
 
 export type NotificationItem = {

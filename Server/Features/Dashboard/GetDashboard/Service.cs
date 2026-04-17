@@ -11,16 +11,21 @@ namespace Server.Features.Dashboard.GetDashboard;
 public sealed class GetDashboardService(AppDbContext dbContext)
 {
     public async Task<PaginatedResponse<DashboardAccessRequestDto>> GetAsync(
-        int employeeId,
-        GetDashboardQuery query,
-        CancellationToken cancellationToken)
+    int employeeId,
+    GetDashboardQuery query,
+    CancellationToken cancellationToken)
     {
+        // 1. Fetch profile with safe navigation
         var profile = await dbContext.Employees
             .AsNoTracking()
-            .Where(employee => employee.EmployeeId == employeeId)
-            .Select(employee => new EmployeeProfile(
-                employee.Department.DeptName ?? string.Empty,
-                employee.UserRole ?? string.Empty))
+            .Where(e => e.EmployeeId == employeeId)
+            .Select(e => new
+            {
+                // Use ?. to handle cases where Department might be null
+                DepartmentName = e.Department != null ? e.Department.DeptName : string.Empty,
+                DeptId = e.DeptId,
+                Role = e.UserRole ?? string.Empty
+            })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (profile is null)
@@ -30,132 +35,59 @@ public sealed class GetDashboardService(AppDbContext dbContext)
 
         IQueryable<AccessRequestEntity> requestQuery = dbContext.AccessRequests.AsNoTracking();
 
+        // 2. Role-based filtering logic
         if (profile.Role == RoleNames.Hod)
         {
-            requestQuery =
-                from request in requestQuery
-                join employee in dbContext.Employees.AsNoTracking() on request.EmpId equals employee.EmployeeId
-                where employee.Department.DeptName == profile.DepartmentName
-                select request;
+            // If HOD, show all requests from their department
+            requestQuery = requestQuery
+                .Join(dbContext.Employees,
+                    req => req.EmpId,
+                    emp => emp.EmployeeId,
+                    (req, emp) => new { req, emp })
+                .Where(x => x.emp.DeptId == profile.DeptId)
+                .Select(x => x.req);
         }
         else if (profile.Role != RoleNames.Admin)
         {
+            // Regular users only see their own requests
             requestQuery = requestQuery.Where(request => request.EmpId == employeeId);
         }
 
         var totalCount = await requestQuery.CountAsync(cancellationToken);
 
+        // 3. Projection into DTOs
         var data = await requestQuery
-        .OrderByDescending(r => r.AccessReqId)
-        .Skip(query.Skip)
-        .Take(query.NormalizedPageSize)
-        .Select(request => new DashboardAccessRequestDto(
-            request.AccessReqId,
-            request.EmpId,
-            request.ReqTo,
-            request.ItsrNo,
-            request.IsAgreed,
-            // Project AccessItems
-            dbContext.AccessItems
-                .Where(ai => ai.AccessReqId == request.AccessReqId)
-                .Select(ai => new AccessItemDto(
-                    ai.AccessItemId,
-                    ai.Status,
-                    ai.FolderPath,
-                    ai.Reason,
-                    ai.AccessType))
-                .ToList(),
-            // Project ApprovalItems (assuming a table exists)
-            dbContext.AccessApprovals
-                .Where(a => a.AccessReqId == request.AccessReqId)
-                .Select(a => new ApprovalItemDto(
-                    a.AccessReqId,
-                    a.ApproverId,
-                    a.ApprovalStatus,
-                    a.Comments))
-                .ToList()
-        ))
-        .ToListAsync(cancellationToken);
+            .OrderByDescending(r => r.AccessReqId)
+            .Skip(query.Skip)
+            .Take(query.NormalizedPageSize)
+            .Select(request => new DashboardAccessRequestDto(
+                request.AccessReqId,
+                request.EmpId,
+                request.ReqTo,
+                request.ItsrNo,
+                request.IsAgreed,
+                // Sub-collection projection (EF Core handles this efficiently)
+                dbContext.AccessItems
+                    .Where(ai => ai.AccessReqId == request.AccessReqId)
+                    .Select(ai => new AccessItemDto(
+                        ai.AccessItemId,
+                        ai.Status,
+                        ai.FolderPath,
+                        ai.Reason,
+                        ai.AccessType))
+                    .ToList(),
+                dbContext.AccessApprovals
+                    .Where(a => a.AccessReqId == request.AccessReqId)
+                    .Select(a => new ApprovalItemDto(
+                        a.AccessReqId,
+                        a.ApproverId,
+                        a.ApprovalStatus,
+                        a.Comments))
+                    .ToList()
+            ))
+            .ToListAsync(cancellationToken);
 
-        var enrichedData = data
-            .ToList();
-
-        return new PaginatedResponse<DashboardAccessRequestDto>(enrichedData, totalCount, query.NormalizedPage, query.NormalizedPageSize);
-    }
-
-    private static RequestStatus DeriveRequestStatus(IEnumerable<RequestStatus> statuses)
-    {
-        if (statuses.Any(status => status == RequestStatus.PendingHOD))
-        {
-            return RequestStatus.PendingHOD;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.PendingIT))
-        {
-            return RequestStatus.PendingIT;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.AccessGranted))
-        {
-            return RequestStatus.AccessGranted;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.RejectedHOD))
-        {
-            return RequestStatus.RejectedHOD;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.RejectedIT))
-        {
-            return RequestStatus.RejectedIT;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.Revoked))
-        {
-            return RequestStatus.Revoked;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.Expired))
-        {
-            return RequestStatus.Expired;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.ApprovedHOD))
-        {
-            return RequestStatus.ApprovedHOD;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.ApprovedIT))
-        {
-            return RequestStatus.ApprovedIT;
-        }
-
-        return RequestStatus.Submitted;
-    }
-
-    private static AggregateRequestStatus DeriveAggregateStatus(IEnumerable<RequestStatus> statuses)
-    {
-        if (statuses.Any(status => status == RequestStatus.Revoked))
-        {
-            return AggregateRequestStatus.Revoked;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.Expired))
-        {
-            return AggregateRequestStatus.Expired;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.RejectedHOD || status == RequestStatus.RejectedIT || status == RequestStatus.AccessRejected))
-        {
-            return AggregateRequestStatus.Rejected;
-        }
-
-        if (statuses.Any(status => status == RequestStatus.AccessGranted))
-        {
-            return AggregateRequestStatus.Approved;
-        }
-
-        return AggregateRequestStatus.Pending;
+        return new PaginatedResponse<DashboardAccessRequestDto>(data, totalCount, query.NormalizedPage, query.NormalizedPageSize);
     }
 
     private sealed record EmployeeProfile(string DepartmentName, string Role);
