@@ -16,11 +16,13 @@ import type {
   LoginInput,
   User,
 } from "@/features/auth/auth.types";
+import { useLoader } from "@/shared/hooks/useLoader";
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(() => getStoredSession());
+  const {wrap} = useLoader();
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -28,7 +30,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isLoggedIn: Boolean(user),
       roles: user ? [user.role] : [],
       login: async (input: LoginInput) => {
-        const nextUser = await loginRequest(input);
+        const nextUser = await wrap(() => loginRequest(input));
         setUser(nextUser);
       },
       logout: () => {

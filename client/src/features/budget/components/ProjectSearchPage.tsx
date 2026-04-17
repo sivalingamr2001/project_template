@@ -7,6 +7,7 @@ import {
   getBudgetByProjectCodeAndProductNo,
   mapBudgetApiToUi,
 } from "@/features/budget/budgetApi";
+import { useLoader } from "@/shared/hooks/useLoader";
 import { formatDate, formatINR } from "@/features/budget/budget-format";
 import type { BudgetRecord } from "@/features/budget/budget.types";
 import { Button } from "@/shared/components/ui/button";
@@ -56,6 +57,7 @@ export function ProjectSearchPage({
 }) {
   const { createRecord, deleteRecord, getRecordTotals, importRecord, loadRecord, state } =
     useBudget();
+  const { wrap } = useLoader();
   const [searchInputs, setSearchInputs] = useState({
     productNo: "",
     projectCode: "",
@@ -173,9 +175,8 @@ export function ProjectSearchPage({
     const productNo = searchInputs.productNo.trim();
 
     try {
-      const recordResponse = await getBudgetByProjectCodeAndProductNo(
-        projectCode,
-        productNo,
+      const recordResponse = await wrap(() =>
+        getBudgetByProjectCodeAndProductNo(projectCode, productNo),
       );
       importRecord(mapBudgetApiToUi(recordResponse));
     } catch (error) {

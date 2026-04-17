@@ -12,14 +12,14 @@ import { LoaderProvider } from "./shared/hooks/useLoader";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <TooltipProvider>
-        <AuthProvider>
-          <LoaderProvider>
+      <LoaderProvider>
+        <TooltipProvider>
+          <AuthProvider>
             <Toaster position="top-right" richColors />
             <App />
-          </LoaderProvider>
-        </AuthProvider>
-      </TooltipProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </LoaderProvider>
     </ThemeProvider>
   </StrictMode>,
 );
