@@ -18,4 +18,4 @@ public sealed record LoggedInUserDto(
     int DepartmentId,
     string DepartmentName,
     string Role,
-    DepartmentDto DepartmentHod);
+    DepartmentDto? DepartmentHod);

@@ -55,7 +55,7 @@ public sealed class LoginService(
                                 ? BuildDisplayName(e.Department.HeadOfDepartment.FirstName, e.Department.HeadOfDepartment.LastName, e.Department.HeadOfDepartment.UserName)
                                 : "N/A"),
                         e.Department.HeadOfDepartment != null ? e.Department.HeadOfDepartment.Email : string.Empty,
-                        e.Department.HeadOfDepartment != null ? e.Department.HeadOfDepartment.Mobile : string.Empty
+                        e.Department.HeadOfDepartment != null && e.Department.HeadOfDepartment.Mobile != null ? e.Department.HeadOfDepartment.Mobile : string.Empty
                     ) : null
                 })
                 .SingleOrDefaultAsync(cancellationToken);
