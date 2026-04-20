@@ -1,4 +1,5 @@
 using System.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -39,7 +40,7 @@ public sealed class DatabaseInitializer(
 
         // Check if our specific tables exist. If not, generate them from the Model.
         // We use "Employees" as our "canary" table.
-        if (!await TableExistsAsync("Employees", cancellationToken))
+        if (!await AnyTableExistsAsync(cancellationToken))
         {
             try
             {
@@ -51,6 +52,10 @@ public sealed class DatabaseInitializer(
             {
                 // ORA-00955 means an Oracle object already exists. When using Oracle,
                 // ignore duplicate object creation failures during startup schema creation.
+            }
+            catch (SqliteException ex) when (ex.SqliteErrorCode == 1)
+            {
+                // SQLite Error 1: table already exists. Ignore duplicate table creation.
             }
         }
     }
@@ -98,7 +103,7 @@ public sealed class DatabaseInitializer(
         }
     }
 
-    private async Task<bool> TableExistsAsync(string tableName, CancellationToken cancellationToken)
+    private async Task<bool> AnyTableExistsAsync(CancellationToken cancellationToken)
     {
         var connection = dbContext.Database.GetDbConnection();
 
@@ -111,26 +116,22 @@ public sealed class DatabaseInitializer(
 
         if (dbContext.Database.IsSqlite())
         {
-            command.CommandText = "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name = @t";
-            AddParam(command, "@t", tableName);
+            command.CommandText = "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
         }
         else if (provider?.Contains("Oracle") == true)
         {
             // Oracle metadata is case-sensitive and stored in UPPERCASE
-            command.CommandText = "SELECT COUNT(1) FROM user_tables WHERE table_name = :t";
-            AddParam(command, "t", tableName.ToUpper());
+            command.CommandText = "SELECT COUNT(1) FROM user_tables";
         }
         else if (provider?.Contains("MySql") == true || provider?.Contains("Pomelo") == true)
         {
             // MySQL needs to check the current database schema
-            command.CommandText = "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = @t";
-            AddParam(command, "@t", tableName);
+            command.CommandText = "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = DATABASE()";
         }
         else
         {
             // Standard SQL (PostgreSQL/SQL Server)
-            command.CommandText = "SELECT COUNT(1) FROM information_schema.tables WHERE table_name = @t";
-            AddParam(command, "@t", tableName);
+            command.CommandText = "SELECT COUNT(1) FROM information_schema.tables";
         }
 
         var result = await command.ExecuteScalarAsync(cancellationToken);
