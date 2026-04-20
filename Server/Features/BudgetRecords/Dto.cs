@@ -57,6 +57,9 @@ public sealed record BudgetRecordSummaryDto(
     int EmployeeId,
     DateTime ModifiedOn);
 
+public sealed record BudgetRecordProductNoDto(
+    string ProductNo);
+
 public sealed record BudgetRecordDto(BudgetRecordHeaderDto Header, IReadOnlyList<BudgetCategoryDto> Categories);
 
 public sealed record BudgetRecordHeaderDto(

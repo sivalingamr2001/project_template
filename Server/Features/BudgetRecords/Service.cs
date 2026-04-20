@@ -1,3 +1,4 @@
+using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Oracle.ManagedDataAccess.Client;
 using Server.Domain.Common;
@@ -11,6 +12,42 @@ public sealed class BudgetRecordsService(
     AppDbContext dbContext,
     ILogger<BudgetRecordsService> logger)
 {
+    public async Task<Result<IReadOnlyList<BudgetRecordProductNoDto>>> SearchByProductNoAsync(
+    string searchTerm,
+    IConfiguration configuration,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var connectionString = configuration["Database:PLMConnectionString"];
+
+            const string sql = @"
+            SELECT DISTINCT PROJECTNUMBER AS ProductNo 
+            FROM JAN_PLM_PROJECT_HEADER_V 
+            WHERE PRODUCT_NO LIKE :Query || '%'";
+
+            using var connection = new OracleConnection(connectionString);
+
+            // This line throws the exception if the user types quickly
+            var results = await connection.QueryAsync<BudgetRecordProductNoDto>(
+                new CommandDefinition(sql, new { Query = searchTerm }, cancellationToken: cancellationToken)
+            );
+
+            return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(results.ToList().AsReadOnly());
+        }
+        catch (OperationCanceledException)
+        {
+            // Return an empty list or a specific "Cancelled" result
+            return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(new List<BudgetRecordProductNoDto>().AsReadOnly());
+        }
+        catch (Exception ex)
+        {
+            // Handle actual database errors here
+            throw;
+        }
+    }
+
+
     public async Task<Result<IReadOnlyList<BudgetRecordSummaryDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var budgets = await dbContext.Budgets

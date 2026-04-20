@@ -18,6 +18,22 @@ public static class BudgetRecordsEndpoint
         .WithName("GetBudgets")
         .WithOpenApi();
 
+        //Create new endpoint for SearchByProductNoAsync
+        group.MapGet("/search", async (string? productNo, BudgetRecordsService service, IConfiguration configuration, CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(productNo))
+            {
+                throw new AppValidationException("productNo query parameter is required.");
+            }
+            var decodedProductNo = DecodeRouteValue(productNo, nameof(productNo));
+            var result = await service.SearchByProductNoAsync(decodedProductNo, configuration, cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ToProblem(result.Error!);
+        })
+        .WithName("SearchBudgetsByProductNo")
+        .WithOpenApi();
+
         group.MapGet("/{budgetId:int}", async (int budgetId, BudgetRecordsService service, CancellationToken cancellationToken) =>
         {
             var result = await service.GetByIdAsync(budgetId, cancellationToken);

@@ -1,6 +1,5 @@
 using ConnectionDll;
 using Microsoft.EntityFrameworkCore;
-using Oracle.EntityFrameworkCore;
 using Server.Features.Auth.Login;
 using Server.Features.BudgetRecords;
 using Server.Features.Employees;
@@ -76,8 +75,11 @@ public static class ServiceCollectionExtensions
 
                 if (allowedOrigins.Length > 0)
                 {
-                    policy.WithOrigins(allowedOrigins)
-                        .AllowAnyHeader()
+                    policy.WithOrigins(
+                        "http://localhost:5173",
+                        "http://localhost:5174"
+                    )
+                       .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials();
                     return;

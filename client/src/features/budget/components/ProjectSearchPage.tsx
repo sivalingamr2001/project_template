@@ -1,20 +1,26 @@
 import axios from "axios";
+import { Check, ChevronsUpDown, Command, Eye, Loader2, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Archive, Eye, Search } from "lucide-react";
 
 import { useBudget } from "@/features/budget/budget-context";
+import { formatDate, formatINR } from "@/features/budget/budget-format";
+import type { BudgetRecord } from "@/features/budget/budget.types";
 import {
   getBudgetByProjectCodeAndProductNo,
   mapBudgetApiToUi,
 } from "@/features/budget/budgetApi";
-import { useLoader } from "@/shared/hooks/useLoader";
-import { formatDate, formatINR } from "@/features/budget/budget-format";
-import type { BudgetRecord } from "@/features/budget/budget.types";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
+import { useLoader } from "@/shared/hooks/useLoader";
 import type { ApiError } from "@/shared/lib/axios";
 import { toast } from "sonner";
 import CreateBudgetModal from "./CreateBudgetModal";
+import { Card, CardHeader, CardTitle, CardContent } from "@/shared/components/ui/card";
+import { CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/shared/components/ui/command";
+import { PopoverTrigger, PopoverContent } from "@/shared/components/ui/popover";
+import { cn } from "@/shared/lib/utils";
+import { Label, Popover } from "radix-ui";
+import React from "react";
 
 function getErrorStatusCode(error: unknown): number | null {
   if (axios.isAxiosError(error)) {
@@ -55,8 +61,14 @@ export function ProjectSearchPage({
 }: {
   onOpenPlanEntry: () => void;
 }) {
-  const { createRecord, deleteRecord, getRecordTotals, importRecord, loadRecord, state } =
-    useBudget();
+  const {
+    createRecord,
+    deleteRecord,
+    getRecordTotals,
+    importRecord,
+    loadRecord,
+    state,
+  } = useBudget();
   const { wrap } = useLoader();
   const [searchInputs, setSearchInputs] = useState({
     productNo: "",
@@ -68,6 +80,54 @@ export function ProjectSearchPage({
   });
   const [hasSearched, setHasSearched] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+    const [open, setOpen] = React.useState(false)
+  const [productNumber, setProductNumber] = React.useState("")
+  const [projectNumber, setProjectNumber] = React.useState("")
+  const [projects, setProjects] = React.useState<ProjectSearchResult[]>([])
+  const [isSearching, setIsSearching] = React.useState(false)
+  const [isFetchingDetails, setIsFetchingDetails] = React.useState(false)
+
+  const debouncedProduct = useDebounce(productNumber, 500)
+
+  React.useEffect(() => {
+    const fetchProjects = async () => {
+      if (debouncedProduct.length <= 3) return
+      setIsSearching(true)
+
+      try {
+        const res = await fetch(
+          `https://localhost:5000/api/budgets/search?projectnumber=${debouncedProduct}`
+        )
+        const data = await res.json()
+        setProjects(Array.isArray(data) ? data : [])
+      } catch {
+        setProjects([])
+      } finally {
+        setIsSearching(false)
+      }
+    }
+
+    fetchProjects()
+  }, [debouncedProduct])
+
+  const handleFetchDetails = async () => {
+    if (!productNumber || !projectNumber) return
+    setIsFetchingDetails(true)
+
+    const searchParams = { productNumber, projectNumber }
+
+    try {
+      const data = await getBudgetByProjectCodeAndProductNo(
+        projectNumber,
+        productNumber
+      )
+      onDataReceived(data, searchParams)
+    } catch {
+      onDataReceived({ status: 404 }, searchParams)
+    } finally {
+      setIsFetchingDetails(false)
+    }
+  }
 
   const normalizedProductQuery = useMemo(
     () => searchCriteria.productNo.trim().toLowerCase(),
@@ -183,7 +243,9 @@ export function ProjectSearchPage({
       const statusCode = getErrorStatusCode(error);
 
       if (statusCode === 404) {
-        toast.info(getErrorDetailMessage(error) ?? "No matching project record found.");
+        toast.info(
+          getErrorDetailMessage(error) ?? "No matching project record found.",
+        );
       } else {
         console.error(error);
         toast.error("Unable to search the budget record.");
@@ -207,13 +269,11 @@ export function ProjectSearchPage({
     }
   }
 
-  async function handleCreateBudget(
-    input: {
-      productName: string;
-      projectCode: string;
-      productNo: string;
-    },
-  ) {
+  async function handleCreateBudget(input: {
+    productName: string;
+    projectCode: string;
+    productNo: string;
+  }) {
     const created = await createRecord(input, true);
     if (created) {
       toast.success(
@@ -289,35 +349,118 @@ export function ProjectSearchPage({
     <div className="flex flex-col bg-background text-foreground overflow-auto">
       <main className="flex flex-1 flex-col gap-6 overflow-hidden py-2">
         <section className="space-y-4">
-          <form
-            className="flex flex-wrap items-end gap-4 rounded-xl border bg-card p-4 shadow-sm"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSearch();
-            }}
-          >
-            <div className="flex-1 min-w-60">
-              <SearchField
-                label="Product Number *"
-                onChange={(value) =>
-                  handleSearchFieldChange("productNo", value)
-                }
-                placeholder="Enter Product Number"
-                value={searchInputs.productNo}
-              />
-            </div>
-            <div className="flex-1 min-w-60">
-              <SearchField
-                label="Project Number *"
-                onChange={(value) =>
-                  handleSearchFieldChange("projectCode", value)
-                }
-                placeholder="Enter Project Number"
-                value={searchInputs.projectCode}
-              />
-            </div>
-            <Button type="submit">Search</Button>
-          </form>
+          {/* Replaced form with the Card-based Project Search structure */}
+          <Card className="overflow-hidden rounded-sm border-border/50 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-bold tracking-wider uppercase">
+                Project Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid items-end gap-3 md:grid-cols-[44%_44%_10%]">
+                {/* 1. Product Number Input (Triggers Debounce) */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase">
+                    Product Number *
+                  </Label>
+                  <Input
+                    value={searchInputs.product_no}
+                    onChange={(e) => {
+                      handleSearchFieldChange("product_no", e.target.value);
+                      handleSearchFieldChange("projectnumber", ""); // Reset dependent field
+                    }}
+                    placeholder="e.g. 2022"
+                    className="font-mono"
+                  />
+                </div>
+
+                {/* 2. Project Number Dropdown (Results from Search) */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold uppercase">
+                    Project Number *
+                  </Label>
+                  <Popover open={open} onOpenChange={setOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={searchInputs.product_no.length <= 3}
+                        className="w-full justify-between font-normal"
+                      >
+                        <span className="truncate">
+                          {searchInputs.projectnumber || "Select Project..."}
+                        </span>
+                        {isSearching ? (
+                          <Loader2 className="h-4 w-4 shrink-0 animate-spin opacity-50" />
+                        ) : (
+                          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-(--radix-popover-trigger-width) p-0"
+                      align="start"
+                    >
+                      <Command>
+                        <CommandInput placeholder="Filter projects..." />
+                        <CommandList className="max-h-50">
+                          {isSearching && (
+                            <div className="p-4 text-center text-xs">
+                              Searching...
+                            </div>
+                          )}
+                          <CommandEmpty>No projects found.</CommandEmpty>
+                          <CommandGroup>
+                            {projects.map((p, index) => {
+                              const projectKey =
+                                p.projectCode ?? p.productNo ?? String(index);
+                              return (
+                                <CommandItem
+                                  key={projectKey}
+                                  value={projectKey}
+                                  onSelect={(val) => {
+                                    handleSearchFieldChange(
+                                      "projectnumber",
+                                      val,
+                                    );
+                                    setOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      searchInputs.projectnumber === projectKey
+                                        ? "opacity-100"
+                                        : "opacity-0",
+                                    )}
+                                  />
+                                  {p.projectCode}{" "}
+                                  {p.productNo ? `— ${p.productNo}` : ""}
+                                </CommandItem>
+                              );
+                            })}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* 3. Action Button */}
+                <Button
+                  onClick={handleSearch}
+                  disabled={!searchInputs.projectnumber || isFetchingDetails}
+                  className="w-full gap-2"
+                >
+                  {isFetchingDetails ? (
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4 shrink-0" />
+                  )}
+                  <span className="hidden xl:inline">Search</span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </section>
 
         <section className="flex-1 min-h-0 rounded-xl border bg-card shadow-sm">
@@ -404,7 +547,7 @@ function ProjectRecordRow({
             title="Archive"
             type="button"
           >
-            <Archive className="h-5 w-5" />
+            <Trash2 className="h-5 w-5" />
           </button>
         </div>
       </td>
