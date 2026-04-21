@@ -1,26 +1,31 @@
 "use client"
 
+import { Plus } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plus } from "lucide-react"
 import { toast } from "sonner"
 
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
+import { useBudget } from "@/providers/Budget/BudgetProvider"
 import { Button } from "@/shared/components/ui/button"
 import {
   getStorageItem,
   isStorageAvailable,
   removeStorageItem,
 } from "@/shared/lib/storage"
-import { ProjectInformation } from "../components/ProjectInformation"
 import CreateBudgetModal from "../components/CreateBudgetModal"
-import { useBudget } from "@/providers/Budget/BudgetProvider"
-import type { BudgetRecord } from "../types"
 import type { StoredDraftRecord } from "../components/draft/DraftModal"
 import DraftModal from "../components/draft/DraftModal"
+import { ProjectInformation } from "../components/ProjectInformation"
+import { mapBudgetApiToUi, type BudgetRecord } from "../types"
 
 export default function Dashboard() {
-  const { budgetRecords, fetchBudgetRecords, loading, error } = useBudget()
+  const {
+    budgetRecords,
+    fetchBudgetRecords,
+    loading,
+    error,
+  } = useBudget()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [draftRecords, setDraftRecords] = useState<StoredDraftRecord[]>([])
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
@@ -41,7 +46,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchBudgetRecords()
     loadDraftRecords()
-  }, [fetchBudgetRecords])
+  }, [])
 
   const loadDraftRecords = () => {
     if (!isStorageAvailable(STORAGE_AREA)) {
@@ -121,23 +126,54 @@ export default function Dashboard() {
     []
   )
 
+  const handleViewDetails = async (params: any) => {
+    if (!params?.data) return
+
+    const projectNumber =
+      params.data.projectHeader?.projectCode ?? params.data.projectCode
+    const productNumber =
+      params.data.projectHeader?.productNo ?? params.data.productNo
+
+    if (projectNumber && productNumber) {
+      const data = await fetch(
+        `https://localhost:5000/api/budgets/${params.data.budgetId}`
+      ).then((res) => res.json())
+      navigate("/budget/plan-entry", {
+        state: { record: mapBudgetApiToUi(data) },
+      })
+    } else {
+      toast.error("Project or Product number is missing.")
+    }
+  }
+
   const columnDefs = useMemo(
     () => [
       {
-        field: "projectHeader.productName",
         headerName: "Project Title",
         flex: 1,
         minWidth: 200,
+        // This replaces 'field' for dynamic lookup
+        valueGetter: (params: any) => {
+          return (
+            params.data.projectHeader?.productName ?? params.data.projectTitle
+          )
+        },
       },
       {
-        field: "projectHeader.projectCode",
         headerName: "Project Number",
         flex: 1,
+        valueGetter: (params: any) => {
+          return (
+            params.data.projectHeader?.projectCode ?? params.data.projectCode
+          )
+        },
       },
       {
-        field: "projectHeader.productNo",
         headerName: "Product Number",
         flex: 1,
+        valueGetter: (params: any) => {
+          return params.data.projectHeader?.productNo ?? params.data.productNo
+        },
       },
       {
         headerName: "Actions",
@@ -151,30 +187,12 @@ export default function Dashboard() {
               variant="link"
               size="sm"
               className="h-7 px-3 text-xs"
-              onClick={() =>
-                navigate("/budget/plan-entry", {
-                  state: { record: params.data },
-                })
-              }
+              onClick={() => {
+                handleViewDetails(params)
+              }}
             >
               View
             </Button>
-          )
-        },
-      },
-      {
-        field: "projectHeader.status",
-        headerName: "Status",
-        flex: 1,
-        cellRenderer: (params: any) => {
-          const status = params.value
-          const isOnTrack = status === "ON TRACK"
-          return (
-            <span
-              className={`font-semibold ${isOnTrack ? "text-green-600" : "text-red-500"}`}
-            >
-              {status}
-            </span>
           )
         },
       },
@@ -242,6 +260,7 @@ export default function Dashboard() {
           <DataGrid
             rowData={budgetRecords as unknown as Record<string, unknown>[]}
             columnDefs={columnDefs}
+            pageSize={3}
             loading={loading}
             title="Budget Records"
             gridId="budget-grid"
@@ -266,8 +285,8 @@ export default function Dashboard() {
                   size="sm"
                   className="gap-2"
                   onClick={() => setIsBudgetModalOpen(true)}
+                  variant={draftRecords.length > 0 ? "outline" : "default"}
                 >
-                  <Plus className="h-4 w-4" />
                   Draft Budget
                 </Button>
               </div>

@@ -1,21 +1,26 @@
 import { formatINR } from "@/shared/utils/utils"
-import { sampleBudgetData } from "../constants/analyticsCharts"
 
-export function DeepDiveInsights() {
-  const categories = sampleBudgetData.map((category) => ({
-    name: category.category,
-    planned: category.planned,
-    actual: category.actual,
-    variance: category.planned - category.actual,
-    utilization: category.planned
-      ? (category.actual / category.planned) * 100
-      : 0,
-  }))
+interface DeepDiveInsightsProps {
+  categories: {
+    category: string
+    planned: number
+    actual: number
+    variance: number
+    utilization: number
+  }[]
+}
 
+export function DeepDiveInsights({ categories }: DeepDiveInsightsProps) {
   const highestVariance = categories.reduce(
     (prev, next) =>
       Math.abs(next.variance) > Math.abs(prev.variance) ? next : prev,
-    categories[0]
+    categories[0] ?? {
+      category: "N/A",
+      planned: 0,
+      actual: 0,
+      variance: 0,
+      utilization: 0,
+    }
   )
 
   return (
@@ -26,7 +31,7 @@ export function DeepDiveInsights() {
       <div className="mt-4 space-y-3 text-sm text-muted-foreground">
         <p>
           The root cause of the current variance is concentrated in{" "}
-          <strong>{highestVariance.name}</strong>, where actual spend is{" "}
+          <strong>{highestVariance.category}</strong>, where actual spend is{" "}
           <strong>{formatINR(highestVariance.actual)}</strong> versus a plan of{" "}
           <strong>{formatINR(highestVariance.planned)}</strong>.
         </p>

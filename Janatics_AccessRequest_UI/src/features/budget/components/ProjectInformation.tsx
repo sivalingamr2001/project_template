@@ -1,5 +1,6 @@
 "use client"
 
+import { useBudget } from "@/providers/Budget/BudgetProvider"
 import { Button } from "@/shared/components/ui/button"
 import {
   Card,
@@ -25,9 +26,7 @@ import {
 import { cn, useDebounce } from "@/shared/lib/utils"
 import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react"
 import * as React from "react"
-import { getBudgetByProjectCodeAndProductNo } from "../types"
 import { toast } from "sonner"
-import { useBudget } from "@/providers/Budget/BudgetProvider"
 
 interface ProjectInformationProps {
   onDataReceived: (
@@ -116,7 +115,7 @@ export function ProjectInformation({
                 setProductNumber(e.target.value)
                 setProjectNumber("") // Reset dropdown when search changes
               }}
-              placeholder="e.g. 2022"
+              placeholder="Enter product number..."
               className="font-mono"
             />
           </div>
@@ -128,11 +127,10 @@ export function ProjectInformation({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  disabled={productNumber.length <= 3}
                   className="w-full justify-between font-normal"
                 >
                   <span className="truncate">
-                    {projectNumber || "Select Project..."}
+                    {projectNumber || "Select Project... or enter product number to search"}
                   </span>
                   {isSearching ? (
                     <Loader2 className="h-4 w-4 shrink-0 animate-spin opacity-50" />
@@ -146,7 +144,12 @@ export function ProjectInformation({
                 align="start"
               >
                 <Command>
-                  <CommandInput placeholder="Filter projects..." />
+                  <CommandInput
+                    placeholder="Filter projects..."
+                    onValueChange={(val) => {
+                      setProjectNumber(val)
+                    }}
+                  />
                   <CommandList className="max-h-50">
                     {isSearching && (
                       <div className="p-4 text-center text-xs">

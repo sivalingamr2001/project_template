@@ -77,7 +77,8 @@ public static class ServiceCollectionExtensions
                 {
                     policy.WithOrigins(
                         "http://localhost:5173",
-                        "http://localhost:5174"
+                        "http://localhost:5174",
+                        "http://172.25.3.73:5174/"
                     )
                        .AllowAnyHeader()
                         .AllowAnyMethod()

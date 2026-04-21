@@ -1,25 +1,28 @@
 import { formatINR } from "@/shared/utils/utils"
-import { sampleBudgetData, sampleTotals } from "../constants/analyticsCharts"
+import type { BudgetTotals } from "@/features/budget/types"
 
-export function ExecutiveSummary() {
-  const totals = sampleTotals
-  const categories = sampleBudgetData.map((category) => {
-    const variance = category.planned - category.actual
-    const utilization = category.planned
-      ? (category.actual / category.planned) * 100
-      : 0
+interface ExecutiveSummaryProps {
+  totals: BudgetTotals
+  categories: {
+    category: string
+    planned: number
+    actual: number
+    variance: number
+    utilization: number
+  }[]
+}
 
-    return {
-      name: category.category,
-      variance,
-      utilization,
-    }
-  })
-
+export function ExecutiveSummary({ totals, categories }: ExecutiveSummaryProps) {
   const topVariance = categories.reduce(
     (prev, next) =>
       Math.abs(next.variance) > Math.abs(prev.variance) ? next : prev,
-    categories[0]
+    categories[0] ?? {
+      category: "N/A",
+      planned: 0,
+      actual: 0,
+      variance: 0,
+      utilization: 0,
+    }
   )
   const overBudgetCount = categories.filter(
     (item) => item.utilization > 100
@@ -38,7 +41,7 @@ export function ExecutiveSummary() {
           <p>
             Total actual spend is <strong>{performancePhrase}</strong>, with a
             variance of <strong>{formatINR(totals.variance)}</strong> driven by{" "}
-            <strong>{topVariance.name}</strong>.
+            <strong>{topVariance.category}</strong>.
           </p>
         </div>
         <div className="flex items-start gap-3">

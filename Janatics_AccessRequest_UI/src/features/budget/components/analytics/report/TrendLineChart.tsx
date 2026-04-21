@@ -10,11 +10,16 @@ import {
 
 import { ChartContainer } from "@/shared/components/ui/chart"
 import { formatINR } from "@/shared/utils/utils"
-import { MONTHS, sampleTotals, trendConfig } from "../constants/analyticsCharts"
+import { MONTHS, trendConfig } from "../constants/analyticsCharts"
+import type { BudgetTotals } from "@/features/budget/types"
 
-export function TrendLineChart() {
-  const totals = sampleTotals
-  const baseline = Math.max(1, totals.totalPlanned || totals.totalActual)
+export function TrendLineChart({ totals }: { totals: BudgetTotals }) {
+  const baseline = Math.max(
+    1,
+    totals.totalPlanned,
+    totals.totalActual,
+    totals.variance
+  )
   const trendData = MONTHS.map((month, index) => ({
     month,
     planned: Math.round(baseline * (0.68 + 0.025 * index)),

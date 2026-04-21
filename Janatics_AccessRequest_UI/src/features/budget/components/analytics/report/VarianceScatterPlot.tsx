@@ -9,15 +9,23 @@ import {
 
 import { ChartContainer } from "@/shared/components/ui/chart"
 import { formatINR } from "@/shared/utils/utils"
-import { scatterConfig, sampleBudgetData } from "../constants/analyticsCharts"
+import { scatterConfig } from "../constants/analyticsCharts"
 
-export function VarianceScatterPlot() {
-  const data = sampleBudgetData.map((category) => ({
+interface VarianceScatterPlotProps {
+  categories: {
+    category: string
+    planned: number
+    actual: number
+    variance: number
+    utilization: number
+  }[]
+}
+
+export function VarianceScatterPlot({ categories }: VarianceScatterPlotProps) {
+  const data = categories.map((category) => ({
     category: category.category,
     actual: category.actual,
-    utilization: category.planned
-      ? (category.actual / category.planned) * 100
-      : 0,
+    utilization: category.utilization,
   }))
 
   return (

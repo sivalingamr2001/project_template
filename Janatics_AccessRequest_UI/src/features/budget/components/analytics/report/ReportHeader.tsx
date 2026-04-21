@@ -1,16 +1,15 @@
 import { formatINR, formatPercent } from "@/shared/utils/utils"
-import { sampleTotals } from "../constants/analyticsCharts"
+import type { BudgetTotals } from "@/features/budget/types"
 import { SummaryCard } from "./SummaryCard"
 
-export function ReportHeader() {
-  const totals = sampleTotals
+export function ReportHeader({ totals, lastUpdated }: { totals: BudgetTotals; lastUpdated: string }) {
   const varianceRate = totals.totalPlanned
     ? ((totals.totalActual - totals.totalPlanned) / totals.totalPlanned) * 100
     : 0
   const utilization = totals.totalPlanned
     ? (totals.totalActual / totals.totalPlanned) * 100
     : 0
-  const lastUpdated = new Date().toLocaleString("en-IN", {
+  const formattedLastUpdated = new Date(lastUpdated).toLocaleString("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",
   })
@@ -38,7 +37,7 @@ export function ReportHeader() {
             <div className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
               Last Updated
             </div>
-            <div className="mt-1 font-medium">{lastUpdated}</div>
+            <div className="mt-1 font-medium">{formattedLastUpdated}</div>
           </div>
         </div>
       </div>

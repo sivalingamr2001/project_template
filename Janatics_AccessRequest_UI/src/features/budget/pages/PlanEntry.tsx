@@ -12,6 +12,7 @@ import {
   setStorageItem,
 } from "@/shared/lib/storage"
 import { ProjectHeader } from "../components/plan-entry/ProjectHeader"
+import type { StoredDraftRecord } from "../components/draft/DraftModal"
 import { BudgetValidationAlert } from "../components/BudgetValidationAlert"
 import { BudgetTable } from "../components/plan-entry/BudgetTable"
 import { DraftConfirmationDialog } from "../components/DraftConfirmationDialog"
@@ -21,25 +22,63 @@ const DRAFT_TTL_MINUTES = 60 * 24 * 7
 
 const DEFAULT_CATEGORIES = [
   {
-    category: "Personnel",
+    category: "Product Design",
     items: [
-      { name: "Labor cost", planned: 0, actual: 0 },
-      { name: "Consulting fees", planned: 0, actual: 0 },
+      { name: "Benchmarking sample", planned: 0, actual: 0 },
+      { name: "FEA Analysis", planned: 0, actual: 0 },
+      { name: "CFD Analysis", planned: 0, actual: 0 },
+      { name: "Design consultancy", planned: 0, actual: 0 },
+      { name: "Others", planned: 0, actual: 0 },
     ],
   },
   {
-    category: "Materials",
+    category: "Concept development",
     items: [
-      { name: "Consumables", planned: 0, actual: 0 },
-      { name: "Prototype parts", planned: 0, actual: 0 },
+      { name: "Comp.devpt-Concept", planned: 0, actual: 0 },
+      { name: "Machining components", planned: 0, actual: 0 },
+      { name: "Plastic - Hand moulds", planned: 0, actual: 0 },
+      { name: "Rubber moulds", planned: 0, actual: 0 },
+      { name: "3D printing", planned: 0, actual: 0 },
+      { name: "RPT", planned: 0, actual: 0 },
+      { name: "MIM", planned: 0, actual: 0 },
+      { name: "Jigs & fixtures", planned: 0, actual: 0 },
+      { name: "Concept testing", planned: 0, actual: 0 },
     ],
   },
   {
-    category: "Equipment",
+    category: "Prototype development",
     items: [
-      { name: "Machinery", planned: 0, actual: 0 },
-      { name: "Test instruments", planned: 0, actual: 0 },
+      { name: "Machining components", planned: 0, actual: 0 },
+      { name: "Plastic - Inj. moulds", planned: 0, actual: 0 },
+      { name: "Aluminium - Die casting", planned: 0, actual: 0 },
+      { name: "Investment casting", planned: 0, actual: 0 },
+      { name: "Stamping tools", planned: 0, actual: 0 },
+      { name: "Rubber moulds", planned: 0, actual: 0 },
+      { name: "Jigs & fixtures", planned: 0, actual: 0 },
+      { name: "Comp. mfg.", planned: 0, actual: 0 },
+      { name: "Testing", planned: 0, actual: 0 },
     ],
+  },
+  {
+    category: "Product testing",
+    items: [
+      { name: "Testing instruments", planned: 0, actual: 0 },
+      { name: "Testing fixtures", planned: 0, actual: 0 },
+      { name: "Certification", planned: 0, actual: 0 },
+      { name: "Others", planned: 0, actual: 0 },
+    ],
+  },
+  {
+    category: "Capital equipments",
+    items: [
+      { name: "Testing equipments", planned: 0, actual: 0 },
+      { name: "Special machines", planned: 0, actual: 0 },
+      { name: "Others", planned: 0, actual: 0 },
+    ],
+  },
+  {
+    category: "Field validation",
+    items: [{ name: "Product development", planned: 0, actual: 0 }],
   },
 ]
 
@@ -78,6 +117,7 @@ export default function PlanEntry() {
   } = useBudget()
   const { onBlock, onUnblock } = useNavigationBlock()
   const [localRecord, setLocalRecord] = useState<BudgetRecord | null>(null)
+  const [activeDraftStorageKey, setActiveDraftStorageKey] = useState<string | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
@@ -115,6 +155,9 @@ export default function PlanEntry() {
     if (state?.draftRecord) {
       setLocalRecord(state.draftRecord)
       setActiveRecord(state.draftRecord)
+      setActiveDraftStorageKey(
+        (state.draftRecord as StoredDraftRecord).storageKey ?? null
+      )
       return
     }
 
@@ -228,6 +271,30 @@ export default function PlanEntry() {
   const delay = (ms: number | undefined) =>
     new Promise((res) => setTimeout(res, ms))
 
+  const resetDraftState = () => {
+    if (activeDraftStorageKey) {
+      removeStorageItem(activeDraftStorageKey, {
+        rawKey: true,
+        area: "local",
+      })
+      setActiveDraftStorageKey(null)
+    }
+
+    if (draftStorageKey) {
+      removeStorageItem(draftStorageKey, {
+        namespace: "budget",
+        area: "local",
+      })
+    }
+
+    setLocalRecord(null)
+    setActiveRecord(null)
+    setHasUnsavedChanges(false)
+    setShowConfirmationDialog(false)
+    setPendingNavigation(null)
+    onUnblock()
+  }
+
   const saveRecord = async () => {
     if (!localRecord) return
 
@@ -250,18 +317,11 @@ export default function PlanEntry() {
         toast.success("Changes saved! Redirecting...")
       }
 
-      // 1. Clear storage
-      if (draftStorageKey) {
-        removeStorageItem(draftStorageKey, {
-          namespace: "budget",
-          area: "local",
-        })
-      }
+      resetDraftState()
 
-      // 2. Wait for 2 seconds (show the toast)
+      // Wait for the toast to be visible before navigating away.
       await delay(2000)
 
-      // 3. Navigate
       navigate("/budget/dashboard")
     } catch (err) {
       const errorMessage =
@@ -276,14 +336,7 @@ export default function PlanEntry() {
   }
 
   const discardDraft = () => {
-    if (draftStorageKey) {
-      removeStorageItem(draftStorageKey, {
-        namespace: "budget",
-        area: "local",
-      })
-    }
-    setLocalRecord(null)
-    setActiveRecord(null)
+    resetDraftState()
     navigate("/budget/dashboard")
   }
 

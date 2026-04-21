@@ -27,11 +27,13 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { useNavigationBlock } from "@/providers/NavigationBlockProvider"
 import { DraftConfirmationDialog } from "@/features/budget/components/DraftConfirmationDialog"
 import { useState } from "react"
+import { useBudget } from "@/providers/Budget/BudgetProvider"
 
 export function Header() {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
   const navigate = useNavigate()
+  const { activeRecord } = useBudget()
   const { isBlocked, blockRecord, onConfirm } = useNavigationBlock()
   const [showBlockDialog, setShowBlockDialog] = useState(false)
 
@@ -41,7 +43,13 @@ export function Header() {
     { name: "Analytics", to: "/budget/analytics", icon: BarChart3 },
   ]
 
-  const handleNavigation = (to: string) => {
+  const canAccessPlanAndAnalytics = Boolean(activeRecord)
+
+  const handleNavigation = (to: string, isDisabled = false) => {
+    if (isDisabled) {
+      return
+    }
+
     if (isBlocked) {
       setShowBlockDialog(true)
     } else {
@@ -90,17 +98,21 @@ export function Header() {
           <nav className="flex items-center gap-1 rounded-xl bg-muted/50 p-1">
             {navigation.map((item) => {
               const isActive = pathname === item.to
+              const isDisabled =
+                (item.name === "Plan Entry" || item.name === "Analytics") &&
+                !canAccessPlanAndAnalytics
               return (
                 <Button
                   key={item.name}
                   variant={isActive ? "secondary" : "ghost"}
                   size="sm"
+                  disabled={isDisabled}
                   className={`h-8 gap-2 px-4 transition-all duration-200 ${
                     isActive
                       ? "bg-background text-primary shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  onClick={() => handleNavigation(item.to)}
+                  } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`}
+                  onClick={() => handleNavigation(item.to, isDisabled)}
                 >
                   <item.icon className="h-4 w-4" />
                   <span className="hidden font-medium md:inline">

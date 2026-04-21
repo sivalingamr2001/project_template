@@ -34,13 +34,22 @@ function BudgetProvider({ children }: BudgetProviderProps) {
     }
   }, [])
 
+  const mapTableBudgetApiToUi = (data: any) => ({
+    ...data,
+    projectHeader: {
+      projectCode: data.projectHeader?.projectCode ?? data.projectCode,
+      productNo: data.projectHeader?.productNo ?? data.productNo,
+      productName: data.projectHeader?.productName ?? data.projectTitle,
+      status: data.projectHeader?.status ?? data.status ?? "N/A",
+    },
+  })
+
   const fetchBudgetRecords = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const response =
-        await apiService.get<BudgetRecordResponse[]>("/api/budgets")
-      setBudgetRecords(response.data.map(mapBudgetApiToUi))
+      const response = await apiService.get<BudgetRecordResponse[]>("/budgets")
+      setBudgetRecords(response.data.map(mapTableBudgetApiToUi))
     } catch (err: unknown) {
       if (isApiError(err) && err.statusCode === 404) {
         setBudgetRecords([])
@@ -61,7 +70,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
       setError(null)
       try {
         const response = await apiService.get<BudgetRecordResponse>(
-          `/api/budgets/${id}`
+          `/budgets/${id}`
         )
         setActiveRecord(mapBudgetApiToUi(response.data))
       } catch (err: unknown) {
@@ -84,29 +93,20 @@ function BudgetProvider({ children }: BudgetProviderProps) {
     async (projectNumber: string, productNumber: string) => {
       setLoading(true)
       setError(null)
+
+      setActiveRecord(null)
+      setBudgetRecords([])
+
       try {
         const response = await apiService.get<BudgetRecordResponse>(
           `/budgets/by-project/${projectNumber}/product/${productNumber}`
         )
-        setBudgetRecords((prev) => {
-          const existingIndex = prev.findIndex(
-            (record) =>
-              record.projectHeader.projectCode === projectNumber &&
-              record.projectHeader.productNo === productNumber
-          )
-          const newRecord = mapBudgetApiToUi(response.data)
-          if (existingIndex >= 0) {
-            const updatedRecords = [...prev]
-            updatedRecords[existingIndex] = newRecord
-            return updatedRecords
-          }
-          return [...prev, newRecord]
-        })
+        const mappedData = mapBudgetApiToUi(response.data)
 
-        setActiveRecord(mapBudgetApiToUi(response.data))
+        setBudgetRecords([mappedData])
+        setActiveRecord(mappedData)
       } catch (err: unknown) {
         if (isApiError(err) && err.statusCode === 404) {
-          setActiveRecord(null)
           handleNotFound("Budget record not found.")
         } else {
           setError(
@@ -141,7 +141,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
         }
 
         const response = await apiService.post<BudgetRecordResponse>(
-          "/api/budgets",
+          "/budgets",
           request
         )
 
@@ -197,7 +197,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
         }
 
         const response = await apiService.put<BudgetRecordResponse>(
-          `/api/budgets/${numericId}`,
+          `/budgets/${numericId}`,
           request
         )
 
@@ -236,7 +236,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
       setLoading(true)
       setError(null)
       try {
-        await apiService.delete(`/api/budgets/${id}`)
+        await apiService.delete(`/budgets/${id}`)
         setBudgetRecords((prev) => prev.filter((record) => record.id !== id))
         if (activeRecord?.id === id) {
           setActiveRecord(null)

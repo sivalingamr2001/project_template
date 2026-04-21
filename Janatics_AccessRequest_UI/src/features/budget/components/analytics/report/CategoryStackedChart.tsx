@@ -10,10 +10,20 @@ import {
 
 import { ChartContainer } from "@/shared/components/ui/chart"
 import { formatINR } from "@/shared/utils/utils"
-import { categoryConfig, sampleBudgetData } from "../constants/analyticsCharts"
+import { categoryConfig } from "../constants/analyticsCharts"
 
-export function CategoryStackedChart() {
-  const categoryData = sampleBudgetData
+interface CategoryStackedChartProps {
+  categories: {
+    category: string
+    planned: number
+    actual: number
+    variance: number
+    utilization: number
+  }[]
+}
+
+export function CategoryStackedChart({ categories }: CategoryStackedChartProps) {
+  const categoryData = categories
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">

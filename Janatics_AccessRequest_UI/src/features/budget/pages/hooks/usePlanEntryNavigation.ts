@@ -36,7 +36,7 @@ export function usePlanEntryNavigation(
     if (hasUnsavedChanges) {
       window.addEventListener("beforeunload", handleBeforeUnload)
       window.addEventListener("popstate", handlePopState)
-      onBlock()
+      onBlock("You have unsaved changes. Please confirm before leaving.")
     }
 
     return () => {

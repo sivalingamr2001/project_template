@@ -1,5 +1,4 @@
-﻿import { useState } from "react"
-import { Button } from "@/shared/components/ui/button"
+﻿import type { BudgetRecord } from "@/features/budget/types"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,9 +9,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/shared/components/ui/alert-dialog"
-import { FileDown, RefreshCcw, Save } from "lucide-react"
+import   { Button } from "@/shared/components/ui/button"
+import { FileDown, Save } from "lucide-react"
+import { useState } from "react"
 import { toast } from "sonner"
-import type { BudgetRecord } from "@/features/budget/types"
 
 interface ProjectHeaderProps {
   record: BudgetRecord
@@ -32,17 +32,6 @@ export function ProjectHeader({
   const isFormValid = Boolean(
     record.projectHeader.projectCode && record.projectHeader.productNo
   )
-
-  function handleRefreshClick() {
-    if (record.id.startsWith("draft-")) {
-      setIsRefreshConfirmOpen(true)
-      return
-    }
-
-    toast.success(
-      "This action only clears draft sessions. No actual budget data was refreshed."
-    )
-  }
 
   function confirmRefresh() {
     onDiscardDraft()
@@ -76,10 +65,6 @@ export function ProjectHeader({
             </div>
           </div>
           <div className="flex shrink-0 flex-col gap-3 px-2 md:flex-row md:items-center md:justify-end">
-            <Button size="sm" variant="outline" onClick={handleRefreshClick}>
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Refresh
-            </Button>
             <Button onClick={onExportCsv} size="sm" variant="outline">
               <FileDown className="mr-2 h-4 w-4" />
               Export CSV
