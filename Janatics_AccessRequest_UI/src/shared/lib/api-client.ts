@@ -240,38 +240,40 @@ export class RequestCanceller {
 export const api: AxiosInstance = createApiInstance()
 
 export const apiService = {
-  get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return api.get<T>(url, config)
+  async get<T>(url: string, config?: AxiosRequestConfig) {
+    const { data, status } = await api.get<T>(url, config)
+    return { data, status }
   },
 
-  post<T, D = unknown>(
+  async post<T, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> {
-    return api.post<T>(url, data, config)
+  ) {
+    const { data: resData, status } = await api.post<T>(url, data, config)
+    return { data: resData, status }
   },
 
-  put<T, D = unknown>(
+  async put<T, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> {
-    return api.put<T>(url, data, config)
+  ) {
+    const { data: resData, status } = await api.put<T>(url, data, config)
+    return { data: resData, status }
   },
 
-  patch<T, D = unknown>(
+  async patch<T, D = unknown>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> {
-    return api.patch<T>(url, data, config)
+  ) {
+    const { data: resData, status } = await api.patch<T>(url, data, config)
+    return { data: resData, status }
   },
 
-  delete<T>(
-    url: string,
-    config?: AxiosRequestConfig
-  ): Promise<AxiosResponse<T>> {
-    return api.delete<T>(url, config)
+  async delete<T>(url: string, config?: AxiosRequestConfig) {
+    const { data, status } = await api.delete<T>(url, config)
+    return { data, status }
   },
 } as const

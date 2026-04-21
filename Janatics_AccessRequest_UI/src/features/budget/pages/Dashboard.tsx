@@ -18,14 +18,10 @@ import type { StoredDraftRecord } from "../components/draft/DraftModal"
 import DraftModal from "../components/draft/DraftModal"
 import { ProjectInformation } from "../components/ProjectInformation"
 import { mapBudgetApiToUi, type BudgetRecord } from "../types"
+import { apiService } from "@/shared/lib/api-client"
 
 export default function Dashboard() {
-  const {
-    budgetRecords,
-    fetchBudgetRecords,
-    loading,
-    error,
-  } = useBudget()
+  const { budgetRecords, fetchBudgetRecords, loading, error } = useBudget()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [draftRecords, setDraftRecords] = useState<StoredDraftRecord[]>([])
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
@@ -135,11 +131,9 @@ export default function Dashboard() {
       params.data.projectHeader?.productNo ?? params.data.productNo
 
     if (projectNumber && productNumber) {
-      const data = await fetch(
-        `https://localhost:5000/api/budgets/${params.data.budgetId}`
-      ).then((res) => res.json())
+      const response = await apiService.get(`/budgets/${params.data.budgetId}`)
       navigate("/budget/plan-entry", {
-        state: { record: mapBudgetApiToUi(data) },
+        state: { record: mapBudgetApiToUi(response.data) },
       })
     } else {
       toast.error("Project or Product number is missing.")

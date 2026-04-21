@@ -23,6 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/shared/components/ui/popover"
+import { apiService } from "@/shared/lib/api-client"
 import { cn, useDebounce } from "@/shared/lib/utils"
 import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react"
 import * as React from "react"
@@ -60,10 +61,8 @@ export function ProjectInformation({
       setIsSearching(true)
 
       try {
-        const res = await fetch(
-          `https://localhost:5000/api/budgets/search?productNo=${debouncedProduct}`
-        )
-        const data = await res.json()
+        const res = await apiService.get(`/budgets/search?productNo=${debouncedProduct}`)
+        const data = res.data as ProjectSearchResult[]
         setProjects(Array.isArray(data) ? data : [])
         toast.success(`${data.length} projects found.`)
       } catch {
