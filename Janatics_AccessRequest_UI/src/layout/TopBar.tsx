@@ -125,7 +125,7 @@ export function Header() {
                       alt="User Avatar"
                     />
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {user?.fullName?.charAt(0) || "U"}
+                      {user?.name?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -134,7 +134,7 @@ export function Header() {
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm leading-none font-semibold">
-                      {user?.fullName}
+                      {user?.name}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user?.email}

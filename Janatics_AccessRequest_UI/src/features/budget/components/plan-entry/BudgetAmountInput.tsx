@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { sanitizeAmountInput } from "./utils/budgetTableUtils";
+import { useEffect, useState } from "react"
+import { sanitizeAmountInput } from "./utils/budgetTableUtils"
 
 interface BudgetAmountInputProps {
-  onValueChange?: (value: number) => void;
-  value: number;
-  readOnly?: boolean;
+  onValueChange?: (value: number) => void
+  value: number
+  readOnly?: boolean
 }
 
 export function BudgetAmountInput({
@@ -12,11 +12,11 @@ export function BudgetAmountInput({
   value,
   readOnly = false,
 }: BudgetAmountInputProps) {
-  const [draftValue, setDraftValue] = useState(value === 0 ? "" : String(value));
+  const [draftValue, setDraftValue] = useState(value === 0 ? "" : String(value))
 
   useEffect(() => {
-    setDraftValue(value === 0 ? "" : String(value));
-  }, [value]);
+    setDraftValue(value === 0 ? "" : String(value))
+  }, [value])
 
   return (
     <div
@@ -30,14 +30,14 @@ export function BudgetAmountInput({
         inputMode="numeric"
         disabled={readOnly}
         onChange={(event) => {
-          if (readOnly || !onValueChange) return;
-          const sanitized = sanitizeAmountInput(event.target.value);
-          setDraftValue(sanitized);
-          onValueChange(sanitized ? Number(sanitized) : 0);
+          if (readOnly || !onValueChange) return
+          const sanitized = sanitizeAmountInput(event.target.value)
+          setDraftValue(sanitized)
+          onValueChange(sanitized ? Number(sanitized) : 0)
         }}
         placeholder="0"
         value={draftValue}
       />
     </div>
-  );
+  )
 }

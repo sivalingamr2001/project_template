@@ -1,11 +1,11 @@
-import { Input } from "@/shared/components/ui/input";
-import { Label } from "@/shared/components/ui/label";
+import { Input } from "@/shared/components/ui/input"
+import { Label } from "@/shared/components/ui/label"
 
 interface BudgetFormFieldsProps {
-  productName: string;
-  projectCode: string;
-  productNo: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  productName: string
+  projectCode: string
+  productNo: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
 }
 
 export function BudgetFormFields({
@@ -56,5 +56,5 @@ export function BudgetFormFields({
         </div>
       </div>
     </>
-  );
+  )
 }

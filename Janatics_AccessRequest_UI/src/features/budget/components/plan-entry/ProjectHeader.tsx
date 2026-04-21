@@ -16,7 +16,6 @@ import type { BudgetRecord } from "@/features/budget/types"
 
 interface ProjectHeaderProps {
   record: BudgetRecord
-  onSaveDraft: () => Promise<void>
   onSaveRecord?: () => Promise<void>
   onDiscardDraft: () => void
   onExportCsv: () => void
@@ -24,7 +23,6 @@ interface ProjectHeaderProps {
 
 export function ProjectHeader({
   record,
-  onSaveDraft,
   onSaveRecord,
   onDiscardDraft,
   onExportCsv,
@@ -35,30 +33,23 @@ export function ProjectHeader({
     record.projectHeader.projectCode && record.projectHeader.productNo
   )
 
-  async function handleSaveDraft() {
-    try {
-      await onSaveDraft()
-      onDiscardDraft()
-      toast.success("Budget saved. Returning to search.")
-    } catch (error) {
-      console.error(error)
-      toast.error("Unable to save the budget draft.")
-    }
-  }
-
   function handleRefreshClick() {
     if (record.id.startsWith("draft-")) {
       setIsRefreshConfirmOpen(true)
       return
     }
 
-    toast.success("Budget refreshed.")
+    toast.success(
+      "This action only clears draft sessions. No actual budget data was refreshed."
+    )
   }
 
   function confirmRefresh() {
     onDiscardDraft()
     setIsRefreshConfirmOpen(false)
-    toast.success("Draft session cleared. Returning to the project search view.")
+    toast.success(
+      "Draft session cleared. Returning to the project search view."
+    )
   }
 
   const { projectHeader } = record
@@ -71,20 +62,20 @@ export function ProjectHeader({
             {projectHeader.productName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            <span className="text-foreground font-medium">Project:</span>{" "}
+            <span className="font-medium text-foreground">Project:</span>{" "}
             {projectHeader.projectCode} |{" "}
-            <span className="text-foreground font-medium">Product No:</span>{" "}
+            <span className="font-medium text-foreground">Product No:</span>{" "}
             {projectHeader.productNo}
           </p>
         </div>
         <div className="flex flex-col items-start gap-4 md:items-end">
-          <div className="flex gap-3 mr-3 text-sm text-muted-foreground">
+          <div className="mr-3 flex gap-3 text-sm text-muted-foreground">
             Modified On
             <div className="font-semibold text-foreground">
               {formatDate(projectHeader.lastUpdated)}
             </div>
           </div>
-          <div className="shrink-0 flex flex-col gap-3 px-2 md:flex-row md:items-center md:justify-end">
+          <div className="flex shrink-0 flex-col gap-3 px-2 md:flex-row md:items-center md:justify-end">
             <Button size="sm" variant="outline" onClick={handleRefreshClick}>
               <RefreshCcw className="mr-2 h-4 w-4" />
               Refresh
@@ -104,25 +95,19 @@ export function ProjectHeader({
                 Save Record
               </Button>
             )}
-            <Button
-              disabled={!isFormValid}
-              onClick={handleSaveDraft}
-              size="sm"
-              variant="outline"
-            >
-              <Save className="mr-2 h-4 w-4" />
-              Save Draft
-            </Button>
           </div>
         </div>
       </div>
-      <AlertDialog open={isRefreshConfirmOpen} onOpenChange={setIsRefreshConfirmOpen}>
+      <AlertDialog
+        open={isRefreshConfirmOpen}
+        onOpenChange={setIsRefreshConfirmOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Discard draft changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              Refreshing now will clear your current draft session and return you
-              to the project search view. Continue or keep editing?
+              Refreshing now will clear your current draft session and return
+              you to the project search view. Continue or keep editing?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

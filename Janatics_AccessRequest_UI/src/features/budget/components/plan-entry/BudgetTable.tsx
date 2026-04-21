@@ -13,7 +13,7 @@ type BudgetTableProps = {
 
 export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
   const totals = useMemo(() => getTotals(record), [record])
-  
+
   // Fetch actual amounts from API
   const { actualAmounts, loading, error } = useActualAmounts(
     record.projectHeader.projectCode,
@@ -35,7 +35,8 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
       ...category,
       items: category.items.map((item) => ({
         ...item,
-        actual: amountMap.get(`${category.category}|${item.name}`) || item.actual,
+        actual:
+          amountMap.get(`${category.category}|${item.name}`) || item.actual,
       })),
     }))
 
@@ -54,7 +55,7 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
     categoryIndex: number,
     itemIndex: number,
     field: "planned" | "actual",
-    value: number,
+    value: number
   ) {
     const updated = { ...record }
     updated.budgetData = updated.budgetData.map((category, categoryIdx) => {
@@ -86,7 +87,7 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
           ⚠️ Warning: {error}
         </div>
       )}
-      
+
       {loading && (
         <div className="rounded-lg bg-blue-50/50 p-3 text-sm text-muted-foreground">
           ⏳ Loading actual amounts from database...
@@ -103,7 +104,7 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
               <col className="w-[15%]" />
               <col className="w-[15%]" />
             </colgroup>
-            <thead className="text-sm uppercase tracking-wide text-muted-foreground">
+            <thead className="text-sm tracking-wide text-muted-foreground uppercase">
               <tr className="sticky top-0 z-10 bg-muted/75 backdrop-blur-xs">
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                   Cost Item

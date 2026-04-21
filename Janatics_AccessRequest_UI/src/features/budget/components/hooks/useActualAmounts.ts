@@ -1,11 +1,15 @@
-import { useEffect, useState } from "react";
-import { getActualAmounts, type ActualAmountItem, type ActualAmountsResponse } from "../../types";
+import { useEffect, useState } from "react"
+import {
+  getActualAmounts,
+  type ActualAmountItem,
+  type ActualAmountsResponse,
+} from "../../types"
 
 interface UseActualAmountsResult {
-  actualAmounts: ActualAmountItem[] | null;
-  loading: boolean;
-  error: string | null;
-  refetch: () => Promise<void>;
+  actualAmounts: ActualAmountItem[] | null
+  loading: boolean
+  error: string | null
+  refetch: () => Promise<void>
 }
 
 export function useActualAmounts(
@@ -14,45 +18,45 @@ export function useActualAmounts(
 ): UseActualAmountsResult {
   const [actualAmounts, setActualAmounts] = useState<ActualAmountItem[] | null>(
     null
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  )
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchActualAmounts = async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
       const response: ActualAmountsResponse = await getActualAmounts(
         projectCode,
         productNo
-      );
+      )
 
       if (response && response.items) {
-        setActualAmounts(response.items);
+        setActualAmounts(response.items)
       } else {
-        setActualAmounts([]);
+        setActualAmounts([])
       }
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch actual amounts";
-      setError(errorMessage);
-      console.error("Error fetching actual amounts:", err);
+        err instanceof Error ? err.message : "Failed to fetch actual amounts"
+      setError(errorMessage)
+      console.error("Error fetching actual amounts:", err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
     if (projectCode && productNo) {
-      fetchActualAmounts();
+      fetchActualAmounts()
     }
-  }, [projectCode, productNo]);
+  }, [projectCode, productNo])
 
   return {
     actualAmounts,
     loading,
     error,
     refetch: fetchActualAmounts,
-  };
+  }
 }

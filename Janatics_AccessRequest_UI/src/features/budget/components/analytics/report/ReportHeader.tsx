@@ -1,26 +1,26 @@
-import { formatINR, formatPercent } from "@/shared/utils/utils";
-import { sampleTotals } from "../constants/analyticsCharts";
-import { SummaryCard } from "./SummaryCard";
+import { formatINR, formatPercent } from "@/shared/utils/utils"
+import { sampleTotals } from "../constants/analyticsCharts"
+import { SummaryCard } from "./SummaryCard"
 
 export function ReportHeader() {
-  const totals = sampleTotals;
+  const totals = sampleTotals
   const varianceRate = totals.totalPlanned
     ? ((totals.totalActual - totals.totalPlanned) / totals.totalPlanned) * 100
-    : 0;
+    : 0
   const utilization = totals.totalPlanned
     ? (totals.totalActual / totals.totalPlanned) * 100
-    : 0;
+    : 0
   const lastUpdated = new Date().toLocaleString("en-IN", {
     dateStyle: "medium",
     timeStyle: "short",
-  });
+  })
 
   return (
     <div className="space-y-5">
       <div className="rounded-3xl border border-rose-200/90 bg-rose-50 p-5 text-rose-900 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-rose-700/80">
+            <div className="text-xs font-semibold tracking-[0.24em] text-rose-700/80 uppercase">
               Overall Status
             </div>
             <div className="mt-3 flex items-center gap-3 text-xl font-semibold tracking-tight sm:text-2xl">
@@ -35,7 +35,7 @@ export function ReportHeader() {
             </div>
           </div>
           <div className="rounded-3xl border border-rose-300/80 bg-white/80 px-4 py-3 text-right text-sm text-slate-700 shadow-sm">
-            <div className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
+            <div className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
               Last Updated
             </div>
             <div className="mt-1 font-medium">{lastUpdated}</div>
@@ -83,5 +83,5 @@ export function ReportHeader() {
         />
       </div>
     </div>
-  );
+  )
 }

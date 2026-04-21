@@ -1,22 +1,22 @@
-import { type BudgetCategoryResponse } from "../../types";
+import { type BudgetCategoryResponse } from "../../types"
 
 interface BudgetRecordResponse {
   header: {
-    budgetId: number;
-    employeeId: number;
-    projectCode: string;
-    productNo: string;
-    projectTitle: string;
-    createdOn: string;
-    modifiedOn: string;
-  };
-  categories: BudgetCategoryResponse[];
+    budgetId: number
+    employeeId: number
+    projectCode: string
+    productNo: string
+    projectTitle: string
+    createdOn: string
+    modifiedOn: string
+  }
+  categories: BudgetCategoryResponse[]
 }
 
 interface SearchResultDisplayProps {
-  searchResult: BudgetRecordResponse | null;
-  searchError: string | null;
-  isSearching: boolean;
+  searchResult: BudgetRecordResponse | null
+  searchError: string | null
+  isSearching: boolean
 }
 
 export function SearchResultDisplay({
@@ -29,7 +29,7 @@ export function SearchResultDisplay({
       <div className="rounded-2xl border border-destructive/70 bg-destructive/10 px-4 py-3 text-sm text-destructive">
         {searchError}
       </div>
-    );
+    )
   }
 
   if (isSearching) {
@@ -37,11 +37,11 @@ export function SearchResultDisplay({
       <div className="rounded-2xl border border-border/80 bg-muted px-4 py-3 text-sm text-muted-foreground">
         Looking up product number...
       </div>
-    );
+    )
   }
 
   if (!searchResult) {
-    return null;
+    return null
   }
 
   return (
@@ -90,5 +90,5 @@ export function SearchResultDisplay({
         ))}
       </div>
     </div>
-  );
+  )
 }

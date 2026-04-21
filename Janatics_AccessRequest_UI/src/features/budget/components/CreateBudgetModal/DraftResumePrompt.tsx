@@ -1,8 +1,8 @@
-import { Button } from "@/shared/components/ui/button";
+import { Button } from "@/shared/components/ui/button"
 
 interface DraftResumePromptProps {
-  onResume: () => void;
-  onDiscard: () => void;
+  onResume: () => void
+  onDiscard: () => void
 }
 
 export function DraftResumePrompt({
@@ -19,15 +19,10 @@ export function DraftResumePrompt({
         <Button type="button" size="sm" onClick={onResume}>
           Resume
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={onDiscard}
-        >
+        <Button type="button" size="sm" variant="outline" onClick={onDiscard}>
           Discard
         </Button>
       </div>
     </div>
-  );
+  )
 }

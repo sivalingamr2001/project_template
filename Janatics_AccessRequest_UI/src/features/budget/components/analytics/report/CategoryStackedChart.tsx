@@ -6,14 +6,14 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
+} from "recharts"
 
-import { ChartContainer } from "@/shared/components/ui/chart";
-import { formatINR } from "@/shared/utils/utils";
-import { categoryConfig, sampleBudgetData } from "../constants/analyticsCharts";
+import { ChartContainer } from "@/shared/components/ui/chart"
+import { formatINR } from "@/shared/utils/utils"
+import { categoryConfig, sampleBudgetData } from "../constants/analyticsCharts"
 
 export function CategoryStackedChart() {
-  const categoryData = sampleBudgetData;
+  const categoryData = sampleBudgetData
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">
@@ -47,5 +47,5 @@ export function CategoryStackedChart() {
         </BarChart>
       </ChartContainer>
     </div>
-  );
+  )
 }

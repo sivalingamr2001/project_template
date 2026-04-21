@@ -1,10 +1,10 @@
-import { AlertCircle, CheckCircle2 } from "lucide-react";
-import type { ActualAmountItem, BudgetCategory } from "../types";
-import { validateBudgetAgainstActuals } from "../utils/actualAmountsUtils";
+import { AlertCircle, CheckCircle2 } from "lucide-react"
+import type { ActualAmountItem, BudgetCategory } from "../types"
+import { validateBudgetAgainstActuals } from "../utils/actualAmountsUtils"
 
 interface BudgetValidationAlertProps {
-  actualAmounts: ActualAmountItem[] | null;
-  budgetCategories: BudgetCategory[];
+  actualAmounts: ActualAmountItem[] | null
+  budgetCategories: BudgetCategory[]
 }
 
 export function BudgetValidationAlert({
@@ -12,13 +12,11 @@ export function BudgetValidationAlert({
   budgetCategories,
 }: BudgetValidationAlertProps) {
   if (!actualAmounts || actualAmounts.length === 0) {
-    return null;
+    return null
   }
 
-  const { isValid, missingItems, unmappedActuals } = validateBudgetAgainstActuals(
-    actualAmounts,
-    budgetCategories
-  );
+  const { isValid, missingItems, unmappedActuals } =
+    validateBudgetAgainstActuals(actualAmounts, budgetCategories)
 
   if (isValid) {
     return (
@@ -26,17 +24,17 @@ export function BudgetValidationAlert({
         <CheckCircle2 size={16} />
         <span>All budget items successfully mapped to actual amounts</span>
       </div>
-    );
+    )
   }
 
   return (
     <div className="space-y-2">
       {missingItems.length > 0 && (
         <div className="flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <div>
             <p className="font-medium">Missing actual amounts for:</p>
-            <ul className="mt-1 space-y-1 ml-4 list-disc text-xs">
+            <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
               {missingItems.slice(0, 3).map((item, idx) => (
                 <li key={idx}>
                   {item.category} → {item.item}
@@ -52,10 +50,10 @@ export function BudgetValidationAlert({
 
       {unmappedActuals.length > 0 && (
         <div className="flex gap-2 rounded-lg bg-blue-50 p-3 text-sm text-blue-700">
-          <AlertCircle size={16} className="shrink-0 mt-0.5" />
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
           <div>
             <p className="font-medium">Unmapped actual amounts:</p>
-            <ul className="mt-1 space-y-1 ml-4 list-disc text-xs">
+            <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
               {unmappedActuals.slice(0, 3).map((item, idx) => (
                 <li key={idx}>
                   {item.category} → {item.subCategory} (Rs. {item.amount})
@@ -69,5 +67,5 @@ export function BudgetValidationAlert({
         </div>
       )}
     </div>
-  );
+  )
 }

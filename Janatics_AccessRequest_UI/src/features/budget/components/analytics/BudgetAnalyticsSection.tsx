@@ -1,31 +1,103 @@
-import type { BudgetRecord } from "../../types";
-import { CategoryComparisonChart } from "./CategoryComparisonChart";
-import { BudgetUtilisationChart } from "./BudgetUtilisationChart";
-import { VarianceHighlights } from "./VarianceHighlights";
-import { PhaseProgress } from "./PhaseProgress";
-import { PerformanceReportSection } from "./report/PerformanceReportSection";
+import type { BudgetRecord, BudgetTotals } from "@/features/budget/types"
+import { PerformanceReportSection } from "./report/PerformanceReportSection"
+
+interface AnalyticsCategoryData {
+  category: string
+  planned: number
+  actual: number
+  variance: number
+  utilization: number
+}
+
+interface VarianceItem {
+  name: string
+  category: string
+  amount: number
+  percent: number
+  type: "under" | "over"
+}
+
+function getAnalyticsData(record: BudgetRecord) {
+  const categories: AnalyticsCategoryData[] = record.budgetData.map(
+    (category) => {
+      const planned = category.items.reduce(
+        (sum, item) => sum + item.planned,
+        0
+      )
+      const actual = category.items.reduce((sum, item) => sum + item.actual, 0)
+      const variance = planned - actual
+      const utilization = planned ? (actual / planned) * 100 : 0
+
+      return {
+        category: category.category,
+        planned,
+        actual,
+        variance,
+        utilization,
+      }
+    }
+  )
+
+  const totals: BudgetTotals = categories.reduce(
+    (acc, next) => ({
+      totalPlanned: acc.totalPlanned + next.planned,
+      totalActual: acc.totalActual + next.actual,
+      variance: acc.variance + next.variance,
+      variancePercent: 0,
+    }),
+    {
+      totalPlanned: 0,
+      totalActual: 0,
+      variance: 0,
+      variancePercent: 0,
+    }
+  )
+
+  totals.variancePercent = totals.totalPlanned
+    ? ((totals.totalPlanned - totals.totalActual) / totals.totalPlanned) * 100
+    : 0
+
+  const varianceItems: VarianceItem[] = record.budgetData
+    .flatMap((category) =>
+      category.items.map((item) => {
+        const amount = item.planned - item.actual
+        const percent = item.planned
+          ? (Math.abs(amount) / item.planned) * 100
+          : 0
+
+        const status: VarianceItem["type"] = amount >= 0 ? "under" : "over"
+
+        return {
+          name: item.name,
+          category: category.category,
+          amount,
+          percent,
+          type: status,
+        }
+      })
+    )
+    .sort((left, right) => Math.abs(right.amount) - Math.abs(left.amount))
+    .slice(0, 4)
+
+  return {
+    categories,
+    totals,
+    varianceItems,
+  }
+}
 
 export function BudgetAnalyticsSection({ record }: { record: BudgetRecord }) {
-  // TODO: Use record data to populate charts instead of hardcoded data
-  console.log('Analytics for record:', record.id);
+  const { categories, totals } = getAnalyticsData(record)
+
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      {/* Category Comparison Bar Chart */}
-      <CategoryComparisonChart />
-
-      {/* Budget Utilisation Donut Chart */}
-      <BudgetUtilisationChart />
-
-      {/* Variance Highlights */}
-      <VarianceHighlights />
-
-      {/* Phase Progress */}
-      <PhaseProgress />
-
-      {/* Performance Report Section (existing) */}
+    <div className="grid gap-6 mb-2 xl:grid-cols-2">
       <div className="xl:col-span-2">
-        <PerformanceReportSection />
+        <PerformanceReportSection totals={totals} categories={categories} />
       </div>
+      {/* <CategoryComparisonChart categories={categories} />
+      <BudgetUtilisationChart totals={totals} categories={categories} />
+      <VarianceHighlights items={varianceItems} />
+      <PhaseProgress phaseName={record.projectHeader.phase} /> */}
     </div>
-  );
+  )
 }

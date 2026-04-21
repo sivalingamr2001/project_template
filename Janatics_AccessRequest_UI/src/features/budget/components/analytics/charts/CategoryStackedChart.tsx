@@ -1,11 +1,32 @@
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts"
 
-import { ChartContainer, ChartTooltipContent } from "@/shared/components/ui/chart";
-import { formatINR } from "@/shared/utils/utils";
-import { categoryConfig, sampleBudgetData } from "../utils/constants";
+import {
+  ChartContainer,
+  ChartTooltipContent,
+} from "@/shared/components/ui/chart"
+import { formatINR } from "@/shared/utils/utils"
+import { categoryConfig, sampleBudgetData } from "../utils/constants"
 
-export function CategoryStackedChart() {
-  const categoryData = sampleBudgetData;
+interface CategoryChartData {
+  category: string
+  planned: number
+  actual: number
+}
+
+export function CategoryStackedChart({
+  categories,
+}: {
+  categories?: CategoryChartData[]
+}) {
+  const categoryData = categories ?? sampleBudgetData
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">
@@ -39,5 +60,5 @@ export function CategoryStackedChart() {
         </BarChart>
       </ChartContainer>
     </div>
-  );
+  )
 }

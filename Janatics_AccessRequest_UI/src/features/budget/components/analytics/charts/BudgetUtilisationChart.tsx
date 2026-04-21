@@ -1,29 +1,58 @@
-import { Pie, PieChart, Cell, Tooltip } from "recharts";
+import { Pie, PieChart, Cell, Tooltip } from "recharts"
 
-import { Card } from "@/shared/components/ui/card";
-import { ChartContainer, ChartTooltipContent } from "@/shared/components/ui/chart";
-import { donutConfig, sampleTotals } from "../utils/constants";
+import type { BudgetTotals } from "@/features/budget/types"
+import { Card } from "@/shared/components/ui/card"
+import {
+  ChartContainer,
+  ChartTooltipContent,
+} from "@/shared/components/ui/chart"
+import { donutConfig, sampleBudgetData } from "../utils/constants"
 
-export function BudgetUtilisationChart() {
-  const totals = sampleTotals;
+interface BudgetUtilisationCategory {
+  category: string
+  planned: number
+  actual: number
+  utilization: number
+}
+
+const CHART_COLORS = [
+  "#1a56db",
+  "#10b981",
+  "#f59e0b",
+  "#6366f1",
+  "#ef4444",
+  "#8b5cf6",
+  "#14b8a6",
+]
+
+export function BudgetUtilisationChart({
+  totals,
+  categories,
+}: {
+  totals: BudgetTotals
+  categories?: BudgetUtilisationCategory[]
+}) {
+  const chartCategories = categories ?? sampleBudgetData
   const utilization = totals.totalPlanned
     ? (totals.totalActual / totals.totalPlanned) * 100
-    : 0;
+    : 0
 
-  // Sample data - in real app, this would come from actual category breakdowns
-  const donutData = [
-    { name: "Engineering Labour", value: 37.8, fill: "#1a56db" },
-    { name: "Material & Components", value: 25.1, fill: "#10b981" },
-    { name: "Machining & Fabrication", value: 18.6, fill: "#f59e0b" },
-    { name: "Testing & Validation", value: 11.1, fill: "#6366f1" },
-    { name: "Miscellaneous", value: 7.4, fill: "#ef4444" },
-  ];
+  const totalActual =
+    totals.totalActual ||
+    chartCategories.reduce((sum, item) => sum + item.actual, 0)
+  const donutData = chartCategories.map((item, index) => ({
+    name: item.category,
+    value: totalActual ? (item.actual / totalActual) * 100 : 0,
+    fill: CHART_COLORS[index % CHART_COLORS.length],
+  }))
 
   return (
     <Card className="p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold">Budget Utilisation Breakdown</h3>
-        <p className="text-sm text-muted-foreground">As % of total planned spend</p>
+        <p className="text-sm text-muted-foreground">
+          As % of total planned spend
+        </p>
       </div>
       <div className="flex items-center gap-8">
         <ChartContainer config={donutConfig} className="h-48 w-48">
@@ -44,16 +73,19 @@ export function BudgetUtilisationChart() {
           </PieChart>
         </ChartContainer>
         <div className="flex-1">
-          <div className="text-center mb-4">
+          <div className="mb-4 text-center">
             <div className="text-3xl font-bold">{utilization.toFixed(0)}%</div>
             <div className="text-sm text-muted-foreground">Used</div>
           </div>
           <div className="space-y-2">
             {donutData.map((item) => (
-              <div key={item.name} className="flex items-center justify-between text-sm">
+              <div
+                key={item.name}
+                className="flex items-center justify-between text-sm"
+              >
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: item.fill }}
                   ></div>
                   <span>{item.name}</span>
@@ -65,5 +97,5 @@ export function BudgetUtilisationChart() {
         </div>
       </div>
     </Card>
-  );
+  )
 }

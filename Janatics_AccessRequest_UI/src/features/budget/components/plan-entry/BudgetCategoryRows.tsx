@@ -1,20 +1,20 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import type { BudgetCategoryTotals } from "@/features/budget/types";
-import { BudgetItemRow } from "./BudgetItemRow";
-import { SummaryRow } from "./SummaryRow";
+import { useState } from "react"
+import { ChevronDown, ChevronRight } from "lucide-react"
+import type { BudgetCategoryTotals } from "@/features/budget/types"
+import { BudgetItemRow } from "./BudgetItemRow"
+import { SummaryRow } from "./SummaryRow"
 
 interface BudgetCategoryRowsProps {
-  categoryIndex: number;
-  categoryName: string;
-  items: Array<{ name: string; planned: number; actual: number }>;
-  totals: BudgetCategoryTotals;
+  categoryIndex: number
+  categoryName: string
+  items: Array<{ name: string; planned: number; actual: number }>
+  totals: BudgetCategoryTotals
   updateBudgetItem: (
     categoryIndex: number,
     itemIndex: number,
     field: "planned" | "actual",
     value: number
-  ) => void;
+  ) => void
 }
 
 export function BudgetCategoryRows({
@@ -24,16 +24,16 @@ export function BudgetCategoryRows({
   totals,
   updateBudgetItem,
 }: BudgetCategoryRowsProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(true)
 
   return (
     <>
       <tr
-        className="bg-background/60 cursor-pointer hover:bg-background/80 transition-colors"
+        className="cursor-pointer bg-background/60 transition-colors hover:bg-background/80"
         onClick={() => setIsOpen(!isOpen)}
       >
         <td
-          className="px-4 py-3 font-semibold text-foreground flex items-center gap-2"
+          className="flex items-center gap-2 px-4 py-3 font-semibold text-foreground"
           colSpan={5}
         >
           {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -63,5 +63,5 @@ export function BudgetCategoryRows({
         </>
       )}
     </>
-  );
+  )
 }

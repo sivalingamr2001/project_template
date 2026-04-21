@@ -1,5 +1,5 @@
-import { formatINR } from "@/shared/utils/utils";
-import { sampleBudgetData } from "../constants/analyticsCharts";
+import { formatINR } from "@/shared/utils/utils"
+import { sampleBudgetData } from "../constants/analyticsCharts"
 
 export function DeepDiveInsights() {
   const categories = sampleBudgetData.map((category) => ({
@@ -10,13 +10,13 @@ export function DeepDiveInsights() {
     utilization: category.planned
       ? (category.actual / category.planned) * 100
       : 0,
-  }));
+  }))
 
   const highestVariance = categories.reduce(
     (prev, next) =>
       Math.abs(next.variance) > Math.abs(prev.variance) ? next : prev,
-    categories[0],
-  );
+    categories[0]
+  )
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">
@@ -46,5 +46,5 @@ export function DeepDiveInsights() {
         </ul>
       </div>
     </div>
-  );
+  )
 }

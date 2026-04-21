@@ -1,8 +1,8 @@
 interface SummaryCardProps {
-  title: string;
-  value: string;
-  note: string;
-  accent?: "slate" | "violet" | "rose" | "emerald";
+  title: string
+  value: string
+  note: string
+  accent?: "slate" | "violet" | "rose" | "emerald"
 }
 
 export function SummaryCard({
@@ -16,13 +16,13 @@ export function SummaryCard({
       ? "text-violet-600"
       : accent === "rose"
         ? "text-rose-600"
-      : accent === "emerald"
+        : accent === "emerald"
           ? "text-emerald-600"
-          : "";
+          : ""
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5 shadow-sm">
-      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+      <div className="text-xs tracking-[0.18em] text-muted-foreground uppercase">
         {title}
       </div>
       <div className={`mt-4 text-3xl font-semibold ${accentClass}`}>
@@ -32,5 +32,5 @@ export function SummaryCard({
         <div className="mt-2 text-sm text-muted-foreground">{note}</div>
       ) : null}
     </div>
-  );
+  )
 }

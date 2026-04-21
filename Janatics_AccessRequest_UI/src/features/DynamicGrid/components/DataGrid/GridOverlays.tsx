@@ -1,9 +1,9 @@
-import React from "react";
+import React from "react"
 
 // ─── Loading overlay ──────────────────────────────────────────────────────────
 
 interface LoadingOverlayProps {
-  message?: string;
+  message?: string
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
@@ -38,12 +38,12 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
     </svg>
     <span style={{ fontSize: 13, fontWeight: 500 }}>{message}</span>
   </div>
-);
+)
 
 // ─── No rows overlay ──────────────────────────────────────────────────────────
 
 interface NoRowsOverlayProps {
-  message?: string;
+  message?: string
 }
 
 export const NoRowsOverlay: React.FC<NoRowsOverlayProps> = ({
@@ -77,10 +77,17 @@ export const NoRowsOverlay: React.FC<NoRowsOverlayProps> = ({
       <path d="m14 14 4 4m0-4-4 4" />
     </svg>
     <div style={{ textAlign: "center" }}>
-      <p style={{ fontSize: 14, fontWeight: 600, color: "var(--color-text-primary)", margin: "0 0 4px" }}>
+      <p
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--color-text-primary)",
+          margin: "0 0 4px",
+        }}
+      >
         No results
       </p>
       <p style={{ fontSize: 12, margin: 0 }}>{message}</p>
     </div>
   </div>
-);
+)

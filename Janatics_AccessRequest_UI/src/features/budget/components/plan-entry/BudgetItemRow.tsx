@@ -1,20 +1,20 @@
-import { BudgetAmountInput } from "./BudgetAmountInput";
+import { BudgetAmountInput } from "./BudgetAmountInput"
 import {
   formatINR,
   formatPercent,
   varianceClassName,
-} from "./utils/budgetTableUtils";
+} from "./utils/budgetTableUtils"
 
 interface BudgetItemRowProps {
-  categoryIndex: number;
-  item: { name: string; planned: number; actual: number };
-  itemIndex: number;
+  categoryIndex: number
+  item: { name: string; planned: number; actual: number }
+  itemIndex: number
   updateBudgetItem: (
     categoryIndex: number,
     itemIndex: number,
     field: "planned" | "actual",
     value: number
-  ) => void;
+  ) => void
 }
 
 export function BudgetItemRow({
@@ -23,8 +23,8 @@ export function BudgetItemRow({
   itemIndex,
   updateBudgetItem,
 }: BudgetItemRowProps) {
-  const variance = item.planned - item.actual;
-  const variancePercent = item.planned > 0 ? (variance / item.planned) * 100 : 0;
+  const variance = item.planned - item.actual
+  const variancePercent = item.planned > 0 ? (variance / item.planned) * 100 : 0
 
   return (
     <tr className="border-t border-border/60 hover:bg-accent/40">
@@ -47,5 +47,5 @@ export function BudgetItemRow({
         {formatPercent(variancePercent)}
       </td>
     </tr>
-  );
+  )
 }

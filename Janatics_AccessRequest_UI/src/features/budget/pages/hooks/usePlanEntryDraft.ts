@@ -1,95 +1,123 @@
-import { useEffect, useMemo, useState } from "react";
-import type { BudgetRecord } from "@/features/budget/types";
-import { useAuth } from "@/providers/auth-provider";
+import { useEffect, useMemo, useState } from "react"
+import type { BudgetRecord } from "@/features/budget/types"
+import { useAuth } from "@/providers/auth-provider"
+import {
+  getStorageItem,
+  isStorageAvailable,
+  removeStorageItem,
+  setStorageItem,
+} from "@/shared/lib/storage"
 
-const DRAFT_KEY_PREFIX = "budget-plan-entry-draft";
+const DRAFT_KEY_PREFIX = "budget-plan-entry-draft"
+const DRAFT_TTL_MINUTES = 60 * 2
 
 interface UsePlanEntryDraftReturn {
-  localRecord: BudgetRecord | null;
-  setLocalRecord: (record: BudgetRecord | null) => void;
-  hasUnsavedChanges: boolean;
-  setHasUnsavedChanges: (changed: boolean) => void;
-  saveDraft: () => Promise<void>;
-  discardDraft: () => void;
-  loadDraft: () => BudgetRecord | null;
+  localRecord: BudgetRecord | null
+  setLocalRecord: (record: BudgetRecord | null) => void
+  hasUnsavedChanges: boolean
+  setHasUnsavedChanges: (changed: boolean) => void
+  saveDraft: () => Promise<void>
+  discardDraft: () => void
+  loadDraft: () => BudgetRecord | null
 }
 
 export function usePlanEntryDraft(): UsePlanEntryDraftReturn {
-  const { user } = useAuth();
-  const [localRecord, setLocalRecord] = useState<BudgetRecord | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const { user } = useAuth()
+  const [localRecord, setLocalRecord] = useState<BudgetRecord | null>(null)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   const draftKey = useMemo(
     () => `${DRAFT_KEY_PREFIX}:${user?.employeeId ?? "guest"}`,
     [user?.employeeId]
-  );
+  )
 
-  // Load draft on mount
   useEffect(() => {
-    const stored = loadDraft();
+    const stored = loadDraft()
     if (stored) {
-      setLocalRecord(stored);
+      setLocalRecord(stored)
     }
-  }, []);
+  }, [draftKey])
 
-  // Auto-save draft when changes occur
   useEffect(() => {
-    if (!hasUnsavedChanges || !localRecord) return;
+    if (!hasUnsavedChanges || !localRecord || !isStorageAvailable("local"))
+      return
 
     const timeout = setTimeout(async () => {
       try {
-        localStorage.setItem(
+        setStorageItem(
           draftKey,
-          JSON.stringify({
+          {
             timestamp: Date.now(),
             record: localRecord,
-          })
-        );
+          },
+          {
+            namespace: "budget",
+            area: "local",
+            expiresInMinutes: DRAFT_TTL_MINUTES,
+          }
+        )
       } catch (err) {
-        console.error("Failed to save draft:", err);
+        console.error("Failed to save draft:", err)
       }
-    }, 1000);
+    }, 1000)
 
-    return () => clearTimeout(timeout);
-  }, [hasUnsavedChanges, localRecord, draftKey]);
+    return () => clearTimeout(timeout)
+  }, [hasUnsavedChanges, localRecord, draftKey])
 
   const saveDraft = async () => {
-    if (!localRecord) return;
+    if (!localRecord || !isStorageAvailable("local")) return
+
     try {
-      localStorage.setItem(
+      setStorageItem(
         draftKey,
-        JSON.stringify({
+        {
           timestamp: Date.now(),
           record: localRecord,
-        })
-      );
-      setHasUnsavedChanges(false);
+        },
+        {
+          namespace: "budget",
+          area: "local",
+          expiresInMinutes: DRAFT_TTL_MINUTES,
+        }
+      )
+      setHasUnsavedChanges(false)
     } catch (err) {
-      console.error("Failed to save draft:", err);
+      console.error("Failed to save draft:", err)
     }
-  };
+  }
 
   const loadDraft = (): BudgetRecord | null => {
-    try {
-      const stored = localStorage.getItem(draftKey);
-      if (!stored) return null;
-      const parsed = JSON.parse(stored);
-      return parsed.record as BudgetRecord;
-    } catch (err) {
-      console.error("Failed to load draft:", err);
-      return null;
+    if (!isStorageAvailable("local")) {
+      return null
     }
-  };
+
+    try {
+      const parsed = getStorageItem<{
+        timestamp: number
+        record: BudgetRecord
+      }>(draftKey, {
+        namespace: "budget",
+        area: "local",
+      })
+      return parsed?.record ?? null
+    } catch (err) {
+      console.error("Failed to load draft:", err)
+      return null
+    }
+  }
 
   const discardDraft = () => {
     try {
-      localStorage.removeItem(draftKey);
-      setLocalRecord(null);
-      setHasUnsavedChanges(false);
+      removeStorageItem(draftKey, {
+        namespace: "budget",
+        area: "local",
+      })
+      setLocalRecord(null)
+      setHasUnsavedChanges(false)
     } catch (err) {
-      console.error("Failed to discard draft:", err);
+      console.error("Failed to discard draft:", err)
     }
-  };
+  }
 
   return {
     localRecord,
@@ -99,5 +127,5 @@ export function usePlanEntryDraft(): UsePlanEntryDraftReturn {
     saveDraft,
     discardDraft,
     loadDraft,
-  };
+  }
 }

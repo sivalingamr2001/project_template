@@ -1,21 +1,34 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Plus, FileText } from "lucide-react"
+import { Plus } from "lucide-react"
 import { toast } from "sonner"
 
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
 import { Button } from "@/shared/components/ui/button"
+import {
+  getStorageItem,
+  isStorageAvailable,
+  removeStorageItem,
+} from "@/shared/lib/storage"
 import { ProjectInformation } from "../components/ProjectInformation"
 import CreateBudgetModal from "../components/CreateBudgetModal"
 import { useBudget } from "@/providers/Budget/BudgetProvider"
 import type { BudgetRecord } from "../types"
+import type { StoredDraftRecord } from "../components/draft/DraftModal"
+import DraftModal from "../components/draft/DraftModal"
 
 export default function Dashboard() {
   const { budgetRecords, fetchBudgetRecords, loading, error } = useBudget()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [draftRecords, setDraftRecords] = useState<BudgetRecord[]>([])
+  const [draftRecords, setDraftRecords] = useState<StoredDraftRecord[]>([])
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
+
+  const STORAGE_NAMESPACE = "budget"
+  const DRAFT_STORAGE_PREFIX = "budget-plan-entry-draft"
+  const STORAGE_AREA = "local" as const
+  const DRAFT_STORAGE_KEY_PREFIX = `${STORAGE_NAMESPACE}_${DRAFT_STORAGE_PREFIX}`
 
   // Track search params to auto-fill the modal
   const [searchParams, setSearchParams] = useState({
@@ -31,19 +44,75 @@ export default function Dashboard() {
   }, [fetchBudgetRecords])
 
   const loadDraftRecords = () => {
-    const drafts: BudgetRecord[] = []
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i)
-      if (key && key.startsWith("budget-plan-entry-draft")) {
-        try {
-          const draft = JSON.parse(localStorage.getItem(key)!) as BudgetRecord
-          drafts.push(draft)
-        } catch (e) {
-          // Skip invalid drafts
-        }
+    if (!isStorageAvailable(STORAGE_AREA)) {
+      setDraftRecords([])
+      return
+    }
+
+    const drafts: StoredDraftRecord[] = []
+    const storage = window.localStorage
+    const keys: string[] = []
+
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i)
+      if (key && key.startsWith(DRAFT_STORAGE_KEY_PREFIX)) {
+        keys.push(key)
       }
     }
+
+    keys.forEach((key) => {
+      try {
+        const draft = getStorageItem<BudgetRecord>(key, {
+          rawKey: true,
+          area: STORAGE_AREA,
+        })
+
+        if (draft) {
+          drafts.push({ ...draft, storageKey: key })
+        } else {
+          removeStorageItem(key, { rawKey: true, area: STORAGE_AREA })
+        }
+      } catch {
+        removeStorageItem(key, { rawKey: true, area: STORAGE_AREA })
+      }
+    })
+
     setDraftRecords(drafts)
+  }
+
+  const handleOpenDraft = (record: StoredDraftRecord) => {
+    navigate("/budget/plan-entry", {
+      state: { draftRecord: record },
+    })
+  }
+
+  const handleDiscardDraft = (storageKey: string) => {
+    if (removeStorageItem(storageKey, { rawKey: true, area: STORAGE_AREA })) {
+      toast.success("Draft discarded successfully.")
+    }
+    loadDraftRecords()
+  }
+
+  const handleRefreshDraftSession = () => {
+    if (!isStorageAvailable(STORAGE_AREA)) {
+      return
+    }
+
+    const storage = window.localStorage
+    const keysToRemove: string[] = []
+
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i)
+      if (key && key.startsWith(DRAFT_STORAGE_KEY_PREFIX)) {
+        keysToRemove.push(key)
+      }
+    }
+
+    keysToRemove.forEach((key) => {
+      removeStorageItem(key, { rawKey: true, area: STORAGE_AREA })
+    })
+
+    loadDraftRecords()
   }
 
   const summaryText = useMemo(
@@ -60,8 +129,39 @@ export default function Dashboard() {
         flex: 1,
         minWidth: 200,
       },
-      { field: "projectHeader.projectCode", headerName: "Project Number", flex: 1 },
-      { field: "projectHeader.productNo", headerName: "Product Number", flex: 1 },
+      {
+        field: "projectHeader.projectCode",
+        headerName: "Project Number",
+        flex: 1,
+      },
+      {
+        field: "projectHeader.productNo",
+        headerName: "Product Number",
+        flex: 1,
+      },
+      {
+        headerName: "Actions",
+        field: "actions" as any, // field is optional for action columns
+        minWidth: 100,
+        maxWidth: 120,
+        pinned: "right" as const,
+        cellRenderer: (params: any) => {
+          return (
+            <Button
+              variant="link"
+              size="sm"
+              className="h-7 px-3 text-xs"
+              onClick={() =>
+                navigate("/budget/plan-entry", {
+                  state: { record: params.data },
+                })
+              }
+            >
+              View
+            </Button>
+          )
+        },
+      },
       {
         field: "projectHeader.status",
         headerName: "Status",
@@ -76,34 +176,6 @@ export default function Dashboard() {
               {status}
             </span>
           )
-        },
-      },
-    ],
-    []
-  )
-
-  const handleLoadDraft = (record: BudgetRecord) => {
-    navigate("/budget/plan-entry", {
-      state: { draftRecord: record },
-    })
-  }
-
-  const draftColumnDefs = useMemo(
-    () => [
-      {
-        field: "projectHeader.productName",
-        headerName: "Project Title",
-        flex: 1,
-        minWidth: 200,
-      },
-      { field: "projectHeader.projectCode", headerName: "Project Number", flex: 1 },
-      { field: "projectHeader.productNo", headerName: "Product Number", flex: 1 },
-      {
-        field: "projectHeader.lastUpdated",
-        headerName: "Last Updated",
-        flex: 1,
-        cellRenderer: (params: any) => {
-          return new Date(params.value).toLocaleDateString()
         },
       },
     ],
@@ -142,12 +214,10 @@ export default function Dashboard() {
     }
   }
 
-  if (loading) {
-    return <div className="flex justify-center p-8">Loading budget records...</div>
-  }
-
   if (error) {
-    return <div className="flex justify-center p-8 text-red-500">Error: {error}</div>
+    return (
+      <div className="flex justify-center p-8 text-red-500">Error: {error}</div>
+    )
   }
 
   return (
@@ -172,57 +242,38 @@ export default function Dashboard() {
           <DataGrid
             rowData={budgetRecords as unknown as Record<string, unknown>[]}
             columnDefs={columnDefs}
+            loading={loading}
             title="Budget Records"
             gridId="budget-grid"
             noRowsMessage="No budget records found"
             showSearch={true}
-            showRefreshButton={true}
-            showClearFiltersButton={true}
-            showExportCsvButton={true}
+            showRefreshButton={false}
+            showClearFiltersButton={false}
+            showExportCsvButton={false}
             showSelectedCount={true}
             gridHeight="auto"
             toolbarRight={
-              <Button
-                size="sm"
-                className="gap-2"
-                onClick={() => setIsModalOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Create New Budget
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Create New Budget
+                </Button>
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => setIsBudgetModalOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Draft Budget
+                </Button>
+              </div>
             }
           />
         </div>
-
-        {draftRecords.length > 0 && (
-          <div className="animate-in duration-500 fade-in slide-in-from-bottom-4">
-            <DataGrid
-              rowData={draftRecords as unknown as Record<string, unknown>[]}
-              columnDefs={draftColumnDefs}
-              title="Draft Budgets"
-              gridId="draft-budget-grid"
-              noRowsMessage="No draft budgets found"
-              showSearch={false}
-              showRefreshButton={true}
-              showClearFiltersButton={false}
-              showExportCsvButton={false}
-              showSelectedCount={false}
-              gridHeight="auto"
-              onRowClicked={(row) => row.data && handleLoadDraft(row.data as unknown as BudgetRecord)}
-              toolbarRight={
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-2"
-                  onClick={loadDraftRecords}
-                >
-                  <FileText className="h-4 w-4" />
-                  Refresh Drafts
-                </Button>
-              }
-            />
-          </div>
-        )}
 
         <CreateBudgetModal
           isOpen={isModalOpen}
@@ -234,6 +285,15 @@ export default function Dashboard() {
             productNo: searchParams.productNumber,
             projectCode: searchParams.projectNumber,
           }}
+        />
+        <DraftModal
+          open={isBudgetModalOpen}
+          onOpenChange={setIsBudgetModalOpen}
+          draftRecords={draftRecords}
+          onOpenDraft={handleOpenDraft}
+          onDiscardDraft={handleDiscardDraft}
+          onRefreshDraftSession={handleRefreshDraftSession}
+          isActiveDraft={draftRecords.length > 0}
         />
       </main>
     </div>

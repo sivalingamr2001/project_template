@@ -1,4 +1,4 @@
-import type { ActualAmountItem, BudgetCategory } from "../types";
+import type { ActualAmountItem, BudgetCategory } from "../types"
 
 /**
  * Maps actual amounts to budget items by matching category and subcategory
@@ -8,7 +8,7 @@ export function mapActualAmountsToBudget(
   actualAmounts: ActualAmountItem[],
   budgetCategories: BudgetCategory[]
 ): Map<string, number> {
-  const map = new Map<string, number>();
+  const map = new Map<string, number>()
 
   actualAmounts.forEach((actual) => {
     // Find matching budget category (case-insensitive)
@@ -16,7 +16,7 @@ export function mapActualAmountsToBudget(
       (cat) =>
         cat.category.toLowerCase().trim() ===
         actual.category.toLowerCase().trim()
-    );
+    )
 
     if (matchedCategory) {
       // Find matching budget item (by subcategory name)
@@ -24,17 +24,17 @@ export function mapActualAmountsToBudget(
         (item) =>
           item.name.toLowerCase().trim() ===
           actual.subCategory.toLowerCase().trim()
-      );
+      )
 
       if (matchedItem) {
         // Create composite key for lookup
-        const key = `${matchedCategory.category}|${matchedItem.name}`;
-        map.set(key, actual.amount);
+        const key = `${matchedCategory.category}|${matchedItem.name}`
+        map.set(key, actual.amount)
       }
     }
-  });
+  })
 
-  return map;
+  return map
 }
 
 /**
@@ -49,8 +49,8 @@ export function getActualAmountForItem(
   itemName: string,
   amountMap: Map<string, number>
 ): number | null {
-  const key = `${category}|${itemName}`;
-  return amountMap.get(key) ?? null;
+  const key = `${category}|${itemName}`
+  return amountMap.get(key) ?? null
 }
 
 /**
@@ -63,12 +63,12 @@ export function validateBudgetAgainstActuals(
   actualAmounts: ActualAmountItem[],
   budgetCategories: BudgetCategory[]
 ): {
-  isValid: boolean;
-  missingItems: Array<{ category: string; item: string }>;
-  unmappedActuals: ActualAmountItem[];
+  isValid: boolean
+  missingItems: Array<{ category: string; item: string }>
+  unmappedActuals: ActualAmountItem[]
 } {
-  const missingItems: Array<{ category: string; item: string }> = [];
-  const mappedActuals = new Set<string>();
+  const missingItems: Array<{ category: string; item: string }> = []
+  const mappedActuals = new Set<string>()
 
   // Check for missing actual amounts
   budgetCategories.forEach((category) => {
@@ -79,16 +79,16 @@ export function validateBudgetAgainstActuals(
             category.category.toLowerCase().trim() &&
           actual.subCategory.toLowerCase().trim() ===
             item.name.toLowerCase().trim()
-      );
+      )
 
       if (!hasActual) {
         missingItems.push({
           category: category.category,
           item: item.name,
-        });
+        })
       }
-    });
-  });
+    })
+  })
 
   // Track which actual amounts were mapped
   actualAmounts.forEach((actual) => {
@@ -96,7 +96,7 @@ export function validateBudgetAgainstActuals(
       (cat) =>
         cat.category.toLowerCase().trim() ===
         actual.category.toLowerCase().trim()
-    );
+    )
 
     if (
       budgetItem?.items.some(
@@ -105,18 +105,18 @@ export function validateBudgetAgainstActuals(
           actual.subCategory.toLowerCase().trim()
       )
     ) {
-      mappedActuals.add(`${actual.category}|${actual.subCategory}`);
+      mappedActuals.add(`${actual.category}|${actual.subCategory}`)
     }
-  });
+  })
 
   // Find unmapped actual amounts
   const unmappedActuals = actualAmounts.filter(
     (actual) => !mappedActuals.has(`${actual.category}|${actual.subCategory}`)
-  );
+  )
 
   return {
     isValid: missingItems.length === 0 && unmappedActuals.length === 0,
     missingItems,
     unmappedActuals,
-  };
+  }
 }

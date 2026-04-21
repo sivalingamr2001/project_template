@@ -8,5 +8,4 @@ export const portalConfig = {
     defaultTitle: "Janatics Portal",
     defaultDescription: "Fresh UI template ready for any project.",
   },
-} as const;
-
+} as const

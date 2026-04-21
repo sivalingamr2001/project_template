@@ -26,6 +26,8 @@ import { cn, useDebounce } from "@/shared/lib/utils"
 import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react"
 import * as React from "react"
 import { getBudgetByProjectCodeAndProductNo } from "../types"
+import { toast } from "sonner"
+import { useBudget } from "@/providers/Budget/BudgetProvider"
 
 interface ProjectInformationProps {
   onDataReceived: (
@@ -49,6 +51,7 @@ export function ProjectInformation({
   const [projects, setProjects] = React.useState<ProjectSearchResult[]>([])
   const [isSearching, setIsSearching] = React.useState(false)
   const [isFetchingDetails, setIsFetchingDetails] = React.useState(false)
+  const { fetchBudgetRecordById } = useBudget()
 
   const debouncedProduct = useDebounce(productNumber, 500)
 
@@ -59,12 +62,14 @@ export function ProjectInformation({
 
       try {
         const res = await fetch(
-          `https://localhost:5000/api/budgets/search?projectnumber=${debouncedProduct}`
+          `https://localhost:5000/api/budgets/search?productNo=${debouncedProduct}`
         )
         const data = await res.json()
         setProjects(Array.isArray(data) ? data : [])
+        toast.success(`${data.length} projects found.`)
       } catch {
         setProjects([])
+        toast.error("Failed to fetch projects.")
       } finally {
         setIsSearching(false)
       }
@@ -80,12 +85,13 @@ export function ProjectInformation({
     const searchParams = { productNumber, projectNumber }
 
     try {
-      const data = await getBudgetByProjectCodeAndProductNo(
-        projectNumber,
-        productNumber
-      )
+      const data = await fetchBudgetRecordById(projectNumber, productNumber)
       onDataReceived(data, searchParams)
+      toast.success("Project details fetched successfully!")
     } catch {
+      toast.error(
+        "Project details not found. Please check the project and product numbers."
+      )
       onDataReceived({ status: 404 }, searchParams)
     } finally {
       setIsFetchingDetails(false)
@@ -195,7 +201,7 @@ export function ProjectInformation({
             ) : (
               <Search className="h-4 w-4 shrink-0" />
             )}
-            <span className="hidden xl:inline">Fetch</span>
+            <span className="hidden xl:inline">Search</span>
           </Button>
         </div>
       </CardContent>

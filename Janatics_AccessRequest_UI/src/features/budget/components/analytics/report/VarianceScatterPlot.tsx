@@ -5,11 +5,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
+} from "recharts"
 
-import { ChartContainer } from "@/shared/components/ui/chart";
-import { formatINR } from "@/shared/utils/utils";
-import { scatterConfig, sampleBudgetData } from "../constants/analyticsCharts";
+import { ChartContainer } from "@/shared/components/ui/chart"
+import { formatINR } from "@/shared/utils/utils"
+import { scatterConfig, sampleBudgetData } from "../constants/analyticsCharts"
 
 export function VarianceScatterPlot() {
   const data = sampleBudgetData.map((category) => ({
@@ -18,7 +18,7 @@ export function VarianceScatterPlot() {
     utilization: category.planned
       ? (category.actual / category.planned) * 100
       : 0,
-  }));
+  }))
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">
@@ -58,5 +58,5 @@ export function VarianceScatterPlot() {
         should be reviewed first.
       </div>
     </div>
-  );
+  )
 }

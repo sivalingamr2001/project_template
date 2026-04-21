@@ -1,21 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react"
+import {
+  getStorageItem,
+  isStorageAvailable,
+  removeStorageItem,
+  setStorageItem,
+} from "@/shared/lib/storage"
 
-const DRAFT_VERSION = 1;
-const DRAFT_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+const DRAFT_VERSION = 1
+const DRAFT_TTL_MINUTES = 60 * 24 * 7
 
 interface DraftData {
-  productName: string;
-  projectCode: string;
-  productNo: string;
+  productName: string
+  projectCode: string
+  productNo: string
 }
 
 interface UseDraftStorageReturn {
-  formData: DraftData;
-  setFormData: (data: DraftData) => void;
-  hasStoredDraft: boolean;
-  shouldPromptResume: boolean;
-  resumeStoredDraft: () => void;
-  discardStoredDraft: () => void;
+  formData: DraftData
+  setFormData: (data: DraftData) => void
+  hasStoredDraft: boolean
+  shouldPromptResume: boolean
+  resumeStoredDraft: () => void
+  discardStoredDraft: () => void
+}
+
+const STORAGE_OPTIONS = {
+  namespace: "budget",
+  area: "local" as const,
 }
 
 export function useDraftStorage(
@@ -27,165 +38,127 @@ export function useDraftStorage(
     productName: "",
     projectCode: "",
     productNo: "",
-  });
-  const [hasStoredDraft, setHasStoredDraft] = useState(false);
-  const [shouldPromptResume, setShouldPromptResume] = useState(false);
+  })
+  const [hasStoredDraft, setHasStoredDraft] = useState(false)
+  const [shouldPromptResume, setShouldPromptResume] = useState(false)
 
-  // Load initial data when modal opens
   useEffect(() => {
     if (isOpen && initialData) {
       setFormData({
-        productNo: initialData.productNo || "",
-        projectCode: initialData.projectCode || "",
         productName: initialData.productName || "",
-      });
-      setShouldPromptResume(false);
+        projectCode: initialData.projectCode || "",
+        productNo: initialData.productNo || "",
+      })
+      setShouldPromptResume(false)
     }
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData])
 
-  // Check for stored drafts on mount/open
   useEffect(() => {
-    if (!isOpen || initialData) return;
+    if (!isOpen || initialData) return
+    if (!isStorageAvailable(STORAGE_OPTIONS.area)) return
 
     try {
-      const raw = window.localStorage.getItem(draftKey);
-      if (!raw) return;
+      const parsed = getStorageItem<{
+        version: number
+        updatedAt: number
+        data: DraftData
+      }>(draftKey, STORAGE_OPTIONS)
 
-      const parsed = JSON.parse(raw);
+      if (!parsed) {
+        setHasStoredDraft(false)
+        return
+      }
+
       const hasAnyDraftValue = Boolean(
         parsed.data.productName.trim() ||
-          parsed.data.projectCode.trim() ||
-          parsed.data.productNo.trim()
-      );
+        parsed.data.projectCode.trim() ||
+        parsed.data.productNo.trim()
+      )
 
       if (hasAnyDraftValue && !formData.productName && !formData.productNo) {
-        setShouldPromptResume(true);
-        setHasStoredDraft(true);
+        setShouldPromptResume(true)
+        setHasStoredDraft(true)
       }
     } catch {
-      setHasStoredDraft(false);
+      setHasStoredDraft(false)
     }
-  }, [isOpen, draftKey, initialData]);
+  }, [isOpen, draftKey, initialData, formData.productName, formData.productNo])
 
-  // Validate and restore draft on modal open
   useEffect(() => {
     if (!isOpen) {
-      setShouldPromptResume(false);
-      return;
+      setShouldPromptResume(false)
+      return
     }
-
-    try {
-      const raw = window.localStorage.getItem(draftKey);
-      if (!raw) {
-        setHasStoredDraft(false);
-        return;
-      }
-
-      const parsed = JSON.parse(raw) as {
-        version: number;
-        updatedAt: number;
-        data: DraftData;
-      };
-
-      const isValid =
-        parsed?.version === DRAFT_VERSION &&
-        typeof parsed.updatedAt === "number" &&
-        Date.now() - parsed.updatedAt <= DRAFT_TTL_MS &&
-        parsed.data &&
-        typeof parsed.data.productName === "string" &&
-        typeof parsed.data.projectCode === "string" &&
-        typeof parsed.data.productNo === "string";
-
-      if (!isValid) {
-        setHasStoredDraft(false);
-        return;
-      }
-
-      const hasAnyDraftValue = Boolean(
-        parsed.data.productName.trim() ||
-          parsed.data.projectCode.trim() ||
-          parsed.data.productNo.trim()
-      );
-
-      setHasStoredDraft(hasAnyDraftValue);
-      setShouldPromptResume(
-        hasAnyDraftValue &&
-          !formData.productName &&
-          !formData.projectCode &&
-          !formData.productNo
-      );
-    } catch {
-      setHasStoredDraft(false);
-    }
-  }, [draftKey, formData.productName, formData.projectCode, formData.productNo, isOpen]);
-
-  // Auto-save draft to localStorage with debounce
-  useEffect(() => {
-    if (!isOpen) {
-      return;
+    if (!isStorageAvailable(STORAGE_OPTIONS.area)) {
+      setHasStoredDraft(false)
+      return
     }
 
     const timeout = window.setTimeout(() => {
       const hasAnyValue = Boolean(
         formData.productName.trim() ||
-          formData.projectCode.trim() ||
-          formData.productNo.trim()
-      );
+        formData.projectCode.trim() ||
+        formData.productNo.trim()
+      )
 
       if (!hasAnyValue) {
-        window.localStorage.removeItem(draftKey);
-        setHasStoredDraft(false);
-        return;
+        removeStorageItem(draftKey, STORAGE_OPTIONS)
+        setHasStoredDraft(false)
+        return
       }
 
-      window.localStorage.setItem(
+      setStorageItem(
         draftKey,
-        JSON.stringify({
+        {
           version: DRAFT_VERSION,
           updatedAt: Date.now(),
           data: formData,
-        })
-      );
+        },
+        {
+          ...STORAGE_OPTIONS,
+          expiresInMinutes: DRAFT_TTL_MINUTES,
+        }
+      )
 
-      setHasStoredDraft(true);
-    }, 500);
+      setHasStoredDraft(true)
+    }, 500)
 
-    return () => window.clearTimeout(timeout);
-  }, [draftKey, formData, isOpen]);
+    return () => window.clearTimeout(timeout)
+  }, [draftKey, formData, isOpen])
 
   const resumeStoredDraft = () => {
-    try {
-      const raw = window.localStorage.getItem(draftKey);
-      if (!raw) {
-        return;
-      }
+    if (!isStorageAvailable(STORAGE_OPTIONS.area)) {
+      return
+    }
 
-      const parsed = JSON.parse(raw) as {
-        version: number;
-        updatedAt: number;
-        data: DraftData;
-      };
+    try {
+      const parsed = getStorageItem<{
+        version: number
+        updatedAt: number
+        data: DraftData
+      }>(draftKey, STORAGE_OPTIONS)
 
       if (
-        parsed?.version !== DRAFT_VERSION ||
+        !parsed ||
+        parsed.version !== DRAFT_VERSION ||
         typeof parsed.updatedAt !== "number" ||
-        Date.now() - parsed.updatedAt > DRAFT_TTL_MS
+        Date.now() - parsed.updatedAt > DRAFT_TTL_MINUTES * 60_000
       ) {
-        return;
+        return
       }
 
-      setFormData(parsed.data);
-      setShouldPromptResume(false);
+      setFormData(parsed.data)
+      setShouldPromptResume(false)
     } catch {
       // ignore
     }
-  };
+  }
 
   const discardStoredDraft = () => {
-    window.localStorage.removeItem(draftKey);
-    setHasStoredDraft(false);
-    setShouldPromptResume(false);
-  };
+    removeStorageItem(draftKey, STORAGE_OPTIONS)
+    setHasStoredDraft(false)
+    setShouldPromptResume(false)
+  }
 
   return {
     formData,
@@ -194,5 +167,5 @@ export function useDraftStorage(
     shouldPromptResume,
     resumeStoredDraft,
     discardStoredDraft,
-  };
+  }
 }

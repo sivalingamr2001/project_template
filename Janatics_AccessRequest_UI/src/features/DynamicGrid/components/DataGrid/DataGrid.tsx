@@ -1,23 +1,23 @@
-import type { ColDef, GridOptions } from "ag-grid-community";
+import type { ColDef, GridOptions } from "ag-grid-community"
 import {
   AllCommunityModule,
   ModuleRegistry,
   themeQuartz,
-} from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
-import React, { useCallback, useMemo, useState } from "react";
+} from "ag-grid-community"
+import { AgGridReact } from "ag-grid-react"
+import React, { useCallback, useMemo, useState } from "react"
 
-import { useTheme } from "@/providers/theme-provider";
-import { Separator } from "@/shared/components/ui/separator";
-import { useDataGrid } from "../../hooks/useDataGrid";
-import type { DataGridProps } from "../../types/DataGrid.types";
-import { mergeColDef, PageSizeStorage } from "../../utils/gridUtils";
-import { GridFooter } from "./GridFooter";
-import { LoadingOverlay, NoRowsOverlay } from "./GridOverlays";
-import { GridToolbar } from "./GridToolbar";
+import { useTheme } from "@/providers/theme-provider"
+import { Separator } from "@/shared/components/ui/separator"
+import { useDataGrid } from "../../hooks/useDataGrid"
+import type { DataGridProps } from "../../types/DataGrid.types"
+import { mergeColDef, PageSizeStorage } from "../../utils/gridUtils"
+import { GridFooter } from "./GridFooter"
+import { LoadingOverlay, NoRowsOverlay } from "./GridOverlays"
+import { GridToolbar } from "./GridToolbar"
 
 // Register all community modules ONCE at module level
-ModuleRegistry.registerModules([AllCommunityModule]);
+ModuleRegistry.registerModules([AllCommunityModule])
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ const lightTheme = themeQuartz.withParams({
   fontSize: 13,
   rowHeight: 59,
   headerHeight: 48,
-});
+})
 
 const darkTheme = themeQuartz.withParams({
   accentColor: "#748ffc",
@@ -49,7 +49,7 @@ const darkTheme = themeQuartz.withParams({
   fontSize: 13,
   rowHeight: 59,
   headerHeight: 48,
-});
+})
 
 // ─── BASE defaultColDef ───────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ const BASE_COL_DEF: ColDef = {
   floatingFilter: false,
   minWidth: 80,
   suppressHeaderMenuButton: false,
-};
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -92,45 +92,48 @@ function DataGridInner<TData extends Record<string, unknown>>(
     compact = false,
     theme = "system",
     defaultColDef: defaultColDefProp,
-  } = props;
-  const { theme: appTheme } = useTheme();
+  } = props
+  const { theme: appTheme } = useTheme()
 
   // Resolve initial page size (localStorage → prop → first option → 25)
   const [pageSize] = useState(() => {
-    const stored = PageSizeStorage.get(gridId, 0);
-    if (stored && pageSizeOptions.includes(stored)) return stored;
-    return pageSizeProp ?? pageSizeOptions[0] ?? 25;
-  });
+    const stored = PageSizeStorage.get(gridId, 0)
+    if (stored && pageSizeOptions.includes(stored)) return stored
+    return pageSizeProp ?? pageSizeOptions[0] ?? 25
+  })
 
-  const { gridApiRef, state, handlers } = useDataGrid(props);
+  const { gridApiRef, state, handlers } = useDataGrid(props)
 
   // Merge col defaults
   const resolvedDefaultColDef = useMemo(
     () => mergeColDef(BASE_COL_DEF, defaultColDefProp),
     [defaultColDefProp]
-  );
+  )
 
   // Row selection config
   const rowSelectionConfig = useMemo(() => {
-    if (rowSelection === "none") return undefined;
+    if (rowSelection === "none") return undefined
     return {
-      mode: rowSelection === "single" ? ("singleRow" as const) : ("multiRow" as const),
+      mode:
+        rowSelection === "single"
+          ? ("singleRow" as const)
+          : ("multiRow" as const),
       checkboxes: rowSelection === "multiple",
       headerCheckbox: rowSelection === "multiple",
-    };
-  }, [rowSelection]);
+    }
+  }, [rowSelection])
 
   // Loading overlay - show/hide via grid API when loading prop changes
   const onBodyScroll = useCallback(() => {
     /* intentional no-op: keep for future virtualisation hooks */
-  }, []);
+  }, [])
 
   // Grid options
   const gridOptions = useMemo<GridOptions<TData>>(
     () => ({
       pagination: true,
       paginationPageSize: pageSize,
-      domLayout: 'autoHeight',
+      domLayout: "autoHeight",
       paginationPageSizeSelector: false,
       suppressPaginationPanel: true,
       animateRows,
@@ -138,32 +141,41 @@ function DataGridInner<TData extends Record<string, unknown>>(
       suppressMovableColumns: false,
       rowSelection: rowSelectionConfig,
       defaultColDef: resolvedDefaultColDef,
-      loadingOverlayComponent: () => <LoadingOverlay message={loadingMessage} />,
+      loadingOverlayComponent: () => (
+        <LoadingOverlay message={loadingMessage} />
+      ),
       noRowsOverlayComponent: () => <NoRowsOverlay message={noRowsMessage} />,
       ...(compact ? { rowHeight: 40, headerHeight: 40 } : {}),
     }),
-    [pageSize, pageSizeOptions, animateRows, rowSelectionConfig, resolvedDefaultColDef, compact]
-  );
+    [
+      pageSize,
+      pageSizeOptions,
+      animateRows,
+      rowSelectionConfig,
+      resolvedDefaultColDef,
+      compact,
+    ]
+  )
 
   const resolvedTheme = useMemo(() => {
     if (theme === "light" || theme === "dark") {
-      return theme;
+      return theme
     }
 
     if (appTheme === "light" || appTheme === "dark") {
-      return appTheme;
+      return appTheme
     }
 
     if (typeof document !== "undefined") {
       return document.documentElement.classList.contains("dark")
         ? "dark"
-        : "light";
+        : "light"
     }
 
-    return "light";
-  }, [theme, appTheme]);
+    return "light"
+  }, [theme, appTheme])
 
-  const selectedTheme = resolvedTheme === "dark" ? darkTheme : lightTheme;
+  const selectedTheme = resolvedTheme === "dark" ? darkTheme : lightTheme
 
   return (
     <>
@@ -237,12 +249,19 @@ function DataGridInner<TData extends Record<string, unknown>>(
           onExportCsv={handlers.onExportCsv}
         />
 
-        <Separator className=""/>
+        <Separator className="" />
 
         {/* Grid */}
         <div className="datagrid-scroll-shell">
           <div className="datagrid-scroll-inner">
-             <div style={{ height: gridHeight, width: "100%", position: "relative", margin: "15px 0" }}>
+            <div
+              style={{
+                height: gridHeight,
+                width: "100%",
+                position: "relative",
+                margin: "15px 0",
+              }}
+            >
               <AgGridReact<TData>
                 rowData={rowData}
                 columnDefs={columnDefs}
@@ -273,14 +292,14 @@ function DataGridInner<TData extends Record<string, unknown>>(
         />
       </div>
     </>
-  );
+  )
 }
 
 // Forward ref + generic wrapper to preserve TData generic
 export const DataGrid = React.forwardRef(DataGridInner) as <
-  TData extends Record<string, unknown> = Record<string, unknown>
+  TData extends Record<string, unknown> = Record<string, unknown>,
 >(
   props: DataGridProps<TData> & { ref?: React.ForwardedRef<unknown> }
-) => React.ReactElement;
+) => React.ReactElement
 
-export default DataGrid;
+export default DataGrid

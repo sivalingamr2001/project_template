@@ -1,31 +1,31 @@
-import { formatINR } from "@/shared/utils/utils";
-import { sampleBudgetData, sampleTotals } from "../constants/analyticsCharts";
+import { formatINR } from "@/shared/utils/utils"
+import { sampleBudgetData, sampleTotals } from "../constants/analyticsCharts"
 
 export function ExecutiveSummary() {
-  const totals = sampleTotals;
+  const totals = sampleTotals
   const categories = sampleBudgetData.map((category) => {
-    const variance = category.planned - category.actual;
+    const variance = category.planned - category.actual
     const utilization = category.planned
       ? (category.actual / category.planned) * 100
-      : 0;
+      : 0
 
     return {
       name: category.category,
       variance,
       utilization,
-    };
-  });
+    }
+  })
 
   const topVariance = categories.reduce(
     (prev, next) =>
       Math.abs(next.variance) > Math.abs(prev.variance) ? next : prev,
-    categories[0],
-  );
+    categories[0]
+  )
   const overBudgetCount = categories.filter(
-    (item) => item.utilization > 100,
-  ).length;
+    (item) => item.utilization > 100
+  ).length
   const performancePhrase =
-    totals.totalActual > totals.totalPlanned ? "above plan" : "below plan";
+    totals.totalActual > totals.totalPlanned ? "above plan" : "below plan"
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">
@@ -58,5 +58,5 @@ export function ExecutiveSummary() {
         </div>
       </div>
     </div>
-  );
+  )
 }

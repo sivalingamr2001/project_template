@@ -1,17 +1,28 @@
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import {
+  Line,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts"
 
-import { ChartContainer, ChartTooltipContent } from "@/shared/components/ui/chart";
-import { formatINR } from "@/shared/utils/utils";
-import { trendConfig, MONTHS, sampleTotals } from "../utils/constants";
+import {
+  ChartContainer,
+  ChartTooltipContent,
+} from "@/shared/components/ui/chart"
+import { formatINR } from "@/shared/utils/utils"
+import { trendConfig, MONTHS } from "../utils/constants"
+import type { BudgetTotals } from "@/features/budget/types"
 
-export function TrendLineChart() {
-  const totals = sampleTotals;
-  const baseline = Math.max(1, totals.totalPlanned || totals.totalActual);
+export function TrendLineChart({ totals }: { totals: BudgetTotals }) {
+  const baseline = Math.max(1, totals.totalPlanned || totals.totalActual)
   const trendData = MONTHS.map((month, index) => ({
     month,
     planned: Math.round(baseline * (0.68 + 0.025 * index)),
     actual: Math.round(baseline * (0.62 + 0.028 * index)),
-  }));
+  }))
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">
@@ -47,5 +58,5 @@ export function TrendLineChart() {
         </LineChart>
       </ChartContainer>
     </div>
-  );
+  )
 }

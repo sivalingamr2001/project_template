@@ -1,4 +1,4 @@
-import type { ChartConfig } from "@/shared/components/ui/chart";
+import type { ChartConfig } from "@/shared/components/ui/chart"
 
 export const trendConfig = {
   planned: {
@@ -9,7 +9,7 @@ export const trendConfig = {
     label: "Actual",
     color: "var(--chart-2)",
   },
-} satisfies ChartConfig;
+} satisfies ChartConfig
 
 export const categoryConfig = {
   planned: {
@@ -20,7 +20,7 @@ export const categoryConfig = {
     label: "Actual",
     color: "var(--chart-2)",
   },
-} satisfies ChartConfig;
+} satisfies ChartConfig
 
 export const donutConfig = {
   "Engineering Labour": {
@@ -39,11 +39,11 @@ export const donutConfig = {
     label: "Testing & Validation",
     color: "#6366f1",
   },
-  "Miscellaneous": {
+  Miscellaneous: {
     label: "Miscellaneous",
     color: "#ef4444",
   },
-} satisfies ChartConfig;
+} satisfies ChartConfig
 
 export const scatterConfig = {
   actual: {
@@ -54,7 +54,7 @@ export const scatterConfig = {
     label: "Utilization",
     color: "var(--chart-3)",
   },
-} satisfies ChartConfig;
+} satisfies ChartConfig
 
 export const MONTHS = [
   "Jan",
@@ -69,7 +69,7 @@ export const MONTHS = [
   "Oct",
   "Nov",
   "Dec",
-];
+]
 
 export const sampleBudgetData = [
   { category: "Material & Components", planned: 465000, actual: 452000 },
@@ -77,10 +77,13 @@ export const sampleBudgetData = [
   { category: "Testing & Validation", planned: 205000, actual: 139000 },
   { category: "Engineering Labour", planned: 700000, actual: 499000 },
   { category: "Miscellaneous & Overheads", planned: 100000, actual: 100000 },
-] as const;
+] as const
 
 export const sampleTotals = {
   totalPlanned: sampleBudgetData.reduce((sum, item) => sum + item.planned, 0),
   totalActual: sampleBudgetData.reduce((sum, item) => sum + item.actual, 0),
-  variance: sampleBudgetData.reduce((sum, item) => sum + item.planned - item.actual, 0),
-};
+  variance: sampleBudgetData.reduce(
+    (sum, item) => sum + item.planned - item.actual,
+    0
+  ),
+}

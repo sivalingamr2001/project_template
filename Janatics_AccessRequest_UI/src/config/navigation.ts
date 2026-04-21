@@ -7,8 +7,8 @@ import {
   IconShieldCheck,
   IconUsers,
   IconHistory,
-} from "@tabler/icons-react";
-import type { NavigationSection } from "../types";
+} from "@tabler/icons-react"
+import type { NavigationSection } from "../types"
 
 export const NAVIGATION_SECTIONS: NavigationSection[] = [
   {
@@ -86,4 +86,4 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
       },
     ],
   },
-];
+]

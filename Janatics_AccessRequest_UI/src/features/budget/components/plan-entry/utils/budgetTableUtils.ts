@@ -2,12 +2,14 @@ import type { BudgetRecord } from "@/features/budget/types"
 
 export function getTotals(record: BudgetRecord) {
   const totalPlanned = record.budgetData.reduce(
-    (sum, category) => sum + category.items.reduce((itemSum, item) => itemSum + item.planned, 0),
-    0,
+    (sum, category) =>
+      sum + category.items.reduce((itemSum, item) => itemSum + item.planned, 0),
+    0
   )
   const totalActual = record.budgetData.reduce(
-    (sum, category) => sum + category.items.reduce((itemSum, item) => itemSum + item.actual, 0),
-    0,
+    (sum, category) =>
+      sum + category.items.reduce((itemSum, item) => itemSum + item.actual, 0),
+    0
   )
   const variance = totalPlanned - totalActual
   const variancePercent = totalPlanned > 0 ? (variance / totalPlanned) * 100 : 0
@@ -15,10 +17,7 @@ export function getTotals(record: BudgetRecord) {
   return { totalPlanned, totalActual, variance, variancePercent }
 }
 
-export function getCategoryTotals(
-  record: BudgetRecord,
-  categoryIndex: number,
-) {
+export function getCategoryTotals(record: BudgetRecord, categoryIndex: number) {
   const category = record.budgetData[categoryIndex]
 
   const planned = category.items.reduce((sum, item) => sum + item.planned, 0)

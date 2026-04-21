@@ -1,37 +1,39 @@
-import type { AxiosResponse } from "axios";
-import { apiService, type ApiResponse } from "@/shared/lib/api-client";
+import type { AxiosResponse } from "axios"
+import { apiService, type ApiResponse } from "@/shared/lib/api-client"
 
 export type AuthResponse = {
-  employeeId: number;
-  username: string;
-  fullName: string;
-  role: string;
-  email: string;
-  accessToken: string;
-  refreshToken: string;
-};
+  departmentHod: number
+  departmentId: number
+  departmentName: string
+  email: string
+  employeeId: number
+  name: string
+  role: string
+}
 
 export type LoginRequest = {
-  username: string;
-  password: string;
-};
+  username: string
+  password: string
+}
 
 export type RegisterRequest = {
-  firstName: string;
-  lastName: string;
-  username: string;
-  password: string;
-  email: string;
-  mobile: string;
-  location: string;
-  role: string;
-  departmentId: number;
-};
+  firstName: string
+  lastName: string
+  username: string
+  password: string
+  email: string
+  mobile: string
+  location: string
+  role: string
+  departmentId: number
+}
 
-const handleResponse = async <T>(promise: Promise<AxiosResponse<ApiResponse<T>>>) => {
-  const response = await promise;
-  return response.data.data;
-};
+const handleResponse = async <T>(
+  promise: Promise<AxiosResponse<ApiResponse<T>>>
+) => {
+  const response = await promise
+  return response.data
+}
 
 export const authApi = {
   login: (request: LoginRequest) =>
@@ -43,4 +45,4 @@ export const authApi = {
     handleResponse<AuthResponse>(
       apiService.post<ApiResponse<AuthResponse>>("/auth/register", request)
     ),
-};
+}

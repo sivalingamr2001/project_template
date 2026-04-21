@@ -9,10 +9,12 @@ import { ThemeProvider } from "@/providers/theme-provider.tsx"
 import { TooltipProvider } from "./shared/components/ui/tooltip.tsx"
 import BudgetProvider from "@/providers/Budget/BudgetProvider.tsx"
 import { NavigationBlockProvider } from "@/providers/NavigationBlockProvider.tsx"
+import { Toaster } from "./shared/components/ui/sonner.tsx"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AppProvider>
+      <Toaster position="top-right" richColors />
       <AuthProvider>
         <ThemeProvider>
           <NavigationBlockProvider>

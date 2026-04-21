@@ -1,39 +1,41 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
-import type { BudgetRecord } from "@/features/budget/types";
+import { createContext, useContext, useState, type ReactNode } from "react"
+import type { BudgetRecord } from "@/features/budget/types"
 
 interface NavigationBlockContextType {
-  isBlocked: boolean;
-  blockMessage: string;
-  blockRecord: BudgetRecord | null;
-  onBlock: (message: string, record?: BudgetRecord) => void;
-  onUnblock: () => void;
-  onConfirm: () => void;
+  isBlocked: boolean
+  blockMessage: string
+  blockRecord: BudgetRecord | null
+  onBlock: (message: string, record?: BudgetRecord) => void
+  onUnblock: () => void
+  onConfirm: () => void
 }
 
-const NavigationBlockContext = createContext<NavigationBlockContextType | null>(null);
+const NavigationBlockContext = createContext<NavigationBlockContextType | null>(
+  null
+)
 
 export function NavigationBlockProvider({ children }: { children: ReactNode }) {
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [blockMessage, setBlockMessage] = useState("");
-  const [blockRecord, setBlockRecord] = useState<BudgetRecord | null>(null);
+  const [isBlocked, setIsBlocked] = useState(false)
+  const [blockMessage, setBlockMessage] = useState("")
+  const [blockRecord, setBlockRecord] = useState<BudgetRecord | null>(null)
 
   const onBlock = (message: string, record?: BudgetRecord) => {
-    setIsBlocked(true);
-    setBlockMessage(message);
-    setBlockRecord(record || null);
-  };
+    setIsBlocked(true)
+    setBlockMessage(message)
+    setBlockRecord(record || null)
+  }
 
   const onUnblock = () => {
-    setIsBlocked(false);
-    setBlockMessage("");
-    setBlockRecord(null);
-  };
+    setIsBlocked(false)
+    setBlockMessage("")
+    setBlockRecord(null)
+  }
 
   const onConfirm = () => {
-    setIsBlocked(false);
-    setBlockMessage("");
-    setBlockRecord(null);
-  };
+    setIsBlocked(false)
+    setBlockMessage("")
+    setBlockRecord(null)
+  }
 
   return (
     <NavigationBlockContext.Provider
@@ -48,13 +50,15 @@ export function NavigationBlockProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </NavigationBlockContext.Provider>
-  );
+  )
 }
 
 export function useNavigationBlock() {
-  const context = useContext(NavigationBlockContext);
+  const context = useContext(NavigationBlockContext)
   if (!context) {
-    throw new Error("useNavigationBlock must be used within NavigationBlockProvider");
+    throw new Error(
+      "useNavigationBlock must be used within NavigationBlockProvider"
+    )
   }
-  return context;
+  return context
 }

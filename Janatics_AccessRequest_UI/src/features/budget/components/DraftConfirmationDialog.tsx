@@ -7,15 +7,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/shared/components/ui/alert-dialog";
-import type { BudgetRecord } from "../types";
+} from "@/shared/components/ui/alert-dialog"
+import type { BudgetRecord } from "../types"
 
 interface DraftConfirmationDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSaveDraft: () => void;
-  onClear: () => void;
-  record: BudgetRecord;
+  isOpen: boolean
+  onClose: () => void
+  onSaveDraft: () => void
+  onClear: () => void
+  record: BudgetRecord
 }
 
 export function DraftConfirmationDialog({
@@ -44,14 +44,12 @@ export function DraftConfirmationDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onClear}>
-            Clear Changes
-          </AlertDialogCancel>
+          <AlertDialogCancel onClick={onClear}>Clear Changes</AlertDialogCancel>
           <AlertDialogAction onClick={onSaveDraft}>
             Save as Draft
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }
