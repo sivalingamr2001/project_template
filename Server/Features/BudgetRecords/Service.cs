@@ -22,9 +22,11 @@ public sealed class BudgetRecordsService(
             var connectionString = configuration["Database:PLMConnectionString"];
 
             const string sql = @"
-            SELECT DISTINCT PROJECTNUMBER AS ProductNo 
-            FROM JAN_PLM_PROJECT_HEADER_V 
-            WHERE PRODUCT_NO LIKE :Query || '%'";
+                SELECT DISTINCT 
+                    PROJECTNUMBER, 
+                    PRODUCT_NO
+                FROM JAN_PLM_PROJECT_HEADER_V 
+                WHERE PRODUCT_NO LIKE :Query || '%'";
 
             using var connection = new OracleConnection(connectionString);
 
@@ -134,6 +136,61 @@ public sealed class BudgetRecordsService(
         return budgetId is null
             ? BudgetErrors.NotFoundByProjectCodeAndProductNo(code, product)
             : await GetByIdAsync(budgetId.Value, cancellationToken);
+    }
+
+    public async Task<Result<BudgetSummaryDto>> GetSummaryAsync(
+        string? period,
+        DateTime? from,
+        DateTime? to,
+        CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        DateTime startDate;
+        DateTime endDate;
+
+        // 1. Resolve Timeframe Logic
+        if (from.HasValue)
+        {
+            startDate = from.Value.Date;
+            endDate = to.HasValue ? to.Value.Date.AddDays(1) : now.AddDays(1);
+        }
+        else
+        {
+            startDate = period?.ToLower() switch
+            {
+                "yearly" => new DateTime(now.Year, 1, 1),
+                "quarterly" => new DateTime(now.Year, ((now.Month - 1) / 3) * 3 + 1, 1),
+                _ => new DateTime(now.Year, now.Month, 1) // Default Monthly
+            };
+            endDate = now.AddDays(1);
+        }
+
+        // 2. Query and Aggregate
+        // We calculate sums by flattening the relationship: Budget -> Categories -> Items
+        var summary = await dbContext.Budgets
+            .Where(b => b.CreatedOn >= startDate && b.CreatedOn < endDate)
+            .Select(b => new
+            {
+                Planned = b.Categories.SelectMany(c => c.Items).Sum(i => i.Planned),
+                Actual = b.Categories.SelectMany(c => c.Items).Sum(i => i.Actual)
+            })
+            .GroupBy(x => 1) // Aggregate all matching records into one result
+            .Select(g => new BudgetSummaryDto
+            {
+                TotalPlanned = g.Sum(x => x.Planned),
+                TotalActual = g.Sum(x => x.Actual),
+                ActiveProjects = g.Count(),
+                AppliedFrom = startDate,
+                AppliedTo = endDate.AddSeconds(-1)
+            })
+            .FirstOrDefaultAsync(ct);
+
+        // 3. Return result or empty DTO if no records found
+        return summary ?? new BudgetSummaryDto
+        {
+            AppliedFrom = startDate,
+            AppliedTo = endDate.AddSeconds(-1)
+        };
     }
 
     public async Task<Result<BudgetRecordDto>> CreateAsync(CreateBudgetRecordRequest request, CancellationToken cancellationToken)

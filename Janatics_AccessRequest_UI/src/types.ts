@@ -11,3 +11,14 @@ export type NavigationSection = {
   title: string
   items: NavigationItem[]
 }
+
+export interface ProjectData {
+  projectnumber: string
+  projectname: string
+  description: string
+  project_category?: string
+  sub_category?: string
+  product_no?: string
+  last_update_date?: string
+  [key: string]: any
+}

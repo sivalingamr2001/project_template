@@ -30,6 +30,25 @@ export interface BudgetRecord {
   budgetData: BudgetCategory[]
 }
 
+export interface BudgetSummary {
+  // Monetary Values
+  totalPlanned: number
+  totalActual: number
+  variance: number
+
+  // Percentages
+  variancePct: number
+  utilisationPct: number
+
+  // Project Metadata
+  activeProjects: number
+
+  // Date Metadata
+  appliedFrom: string // ISO Date String
+  appliedTo: string // ISO Date String
+  generatedAt: string // ISO Date String
+}
+
 export type SearchFieldProps = {
   label: string
   value: string

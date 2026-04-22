@@ -1,44 +1,32 @@
-import { Navigate, createBrowserRouter } from "react-router-dom"
-import { PrivateLayout } from "@/layout/PrivateLayout"
-import { RequireAuth } from "@/features/auth/components/RequireAuth"
-import LoginPage from "@/features/auth/pages/LoginPage"
-import Analytics from "@/features/budget/pages/Analytics"
-import Dashboard from "@/features/budget/pages/Dashboard"
-import PlanEntry from "@/features/budget/pages/PlanEntry"
+import { Routes, Route } from "react-router-dom"
 
-export const appRouter = createBrowserRouter([
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/",
-    element: (
-      <RequireAuth>
-        <PrivateLayout />
-      </RequireAuth>
-    ),
-    children: [
-      {
-        index: true,
-        element: <Navigate to="/budget/dashboard" replace />,
-      },
-      {
-        path: "budget/dashboard",
-        element: <Dashboard />,
-      },
-      {
-        path: "budget/plan-entry",
-        element: <PlanEntry />,
-      },
-      {
-        path: "budget/analytics",
-        element: <Analytics />,
-      },
-    ],
-  },
-  {
-    path: "*",
-    element: <Navigate to="/budget/dashboard" replace />,
-  },
-])
+import Dashboard from "../pages/Dashboard"
+import LoginPage from "../pages/LoginPage"
+import ProtectedRoute from "./ProtectedRoute"
+import AuthLayout from "@/layout/layout/AuthLayout"
+import AppLayout from "@/layout/layout/AppLayout"
+import ProjectSearch from "@/pages/ProjectSearch"
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      {/* Public */}
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
+
+      {/* Protected */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/projects" element={<ProjectSearch />} />
+      </Route>
+    </Routes>
+  )
+}

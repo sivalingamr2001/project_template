@@ -10,22 +10,26 @@ import { TooltipProvider } from "./shared/components/ui/tooltip.tsx"
 import BudgetProvider from "@/providers/Budget/BudgetProvider.tsx"
 import { NavigationBlockProvider } from "@/providers/NavigationBlockProvider.tsx"
 import { Toaster } from "./shared/components/ui/sonner.tsx"
+import { BrowserRouter } from "react-router"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AppProvider>
-      <Toaster position="top-right" richColors />
-      <AuthProvider>
-        <ThemeProvider>
-          <NavigationBlockProvider>
-            <BudgetProvider>
-              <TooltipProvider>
-                <App />
-              </TooltipProvider>
-            </BudgetProvider>
-          </NavigationBlockProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </AppProvider>
+    <BrowserRouter>
+      <AppProvider>
+        <Toaster position="top-right" richColors />
+        <AuthProvider>
+          <ThemeProvider>
+            <NavigationBlockProvider>
+              <BudgetProvider>
+                <TooltipProvider>
+                  <App />
+                </TooltipProvider>
+              </BudgetProvider>
+            </NavigationBlockProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </AppProvider>
+    </BrowserRouter>
+    `
   </StrictMode>
 )

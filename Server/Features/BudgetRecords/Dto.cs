@@ -57,8 +57,11 @@ public sealed record BudgetRecordSummaryDto(
     int EmployeeId,
     DateTime ModifiedOn);
 
-public sealed record BudgetRecordProductNoDto(
-    string ProductNo);
+public class BudgetRecordProductNoDto
+{
+    public string ProjectNumber { get; set; }
+    public string Product_No { get; set; }
+}
 
 public sealed record BudgetRecordDto(BudgetRecordHeaderDto Header, IReadOnlyList<BudgetCategoryDto> Categories);
 
@@ -74,3 +77,22 @@ public sealed record BudgetRecordHeaderDto(
 public sealed record BudgetCategoryDto(int CategoryId, string CategoryName, IReadOnlyList<BudgetItemDto> Items);
 
 public sealed record BudgetItemDto(int ItemId, string ItemName, decimal Planned, decimal Actual);
+
+
+public record BudgetSummaryDto
+{
+    public decimal TotalPlanned { get; init; }
+    public decimal TotalActual { get; init; }
+    public int ActiveProjects { get; init; }
+
+    // Date Metadata
+    public DateTime GeneratedAt { get; init; } = DateTime.UtcNow;
+    public DateTime AppliedFrom { get; init; }
+    public DateTime AppliedTo { get; init; }
+
+    // Logic
+    public decimal Variance => TotalPlanned - TotalActual;
+    public decimal VariancePct => TotalPlanned != 0 ? (Variance / TotalPlanned) * 100 : 0;
+    public decimal UtilisationPct => TotalPlanned != 0 ? (TotalActual / TotalPlanned) * 100 : 0;
+}
+
