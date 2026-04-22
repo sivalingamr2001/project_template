@@ -17,7 +17,7 @@ import CreateBudgetModal from "../components/CreateBudgetModal"
 import type { StoredDraftRecord } from "../components/draft/DraftModal"
 import DraftModal from "../components/draft/DraftModal"
 import { ProjectInformation } from "../components/ProjectInformation"
-import { mapBudgetApiToUi, type BudgetRecord } from "../types"
+import { mapBudgetApiToUi, type BudgetRecord, type BudgetRecordResponse } from "../types"
 import { apiService } from "@/shared/lib/api-client"
 
 export default function Dashboard() {
@@ -131,7 +131,9 @@ export default function Dashboard() {
       params.data.projectHeader?.productNo ?? params.data.productNo
 
     if (projectNumber && productNumber) {
-      const response = await apiService.get(`/budgets/${params.data.budgetId}`)
+      const response = await apiService.get<BudgetRecordResponse>(
+        `/budgets/${params.data.budgetId}`
+      )
       navigate("/budget/plan-entry", {
         state: { record: mapBudgetApiToUi(response.data) },
       })

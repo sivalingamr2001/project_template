@@ -1,4 +1,3 @@
-import type { AxiosResponse } from "axios"
 import { apiService, type ApiResponse } from "@/shared/lib/api-client"
 
 export type AuthResponse = {
@@ -29,7 +28,7 @@ export type RegisterRequest = {
 }
 
 const handleResponse = async <T>(
-  promise: Promise<AxiosResponse<ApiResponse<T>>>
+  promise: Promise<{ data: ApiResponse<T>; status: number }>
 ) => {
   const response = await promise
   return response.data
