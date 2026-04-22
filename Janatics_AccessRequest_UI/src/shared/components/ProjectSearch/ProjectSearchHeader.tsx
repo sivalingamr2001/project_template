@@ -46,7 +46,7 @@ export default function ProjectSearchDashboard() {
   )
 
   return (
-    <div className="flex min-h-screen flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="rounded-sm border bg-card p-6 shadow-sm">
         <div className="flex flex-col items-end gap-6 md:flex-row">
           {/* Product Input */}
