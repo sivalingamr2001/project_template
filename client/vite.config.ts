@@ -11,13 +11,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server:{
-    port: 3000,
-  },
   build: {
-    outDir: path.resolve(__dirname, "../Artifact/Server/wwwroot"),
-    emptyOutDir: true,
+    outDir: path.resolve(__dirname, '../Artifact/client'),
   },
 })
-
-
