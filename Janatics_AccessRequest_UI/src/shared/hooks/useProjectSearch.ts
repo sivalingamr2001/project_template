@@ -4,6 +4,7 @@ import type { ProjectData } from "@/types"
 import { useDebounce } from "../lib/utils"
 
 interface BudgetSummaryItem {
+  budgetId: number
   productNo: string
   projectCode: string
   projectTitle: string
@@ -11,6 +12,7 @@ interface BudgetSummaryItem {
 
 function mapBudgetToProjectData(item: BudgetSummaryItem): ProjectData {
   return {
+    budgetId: item.budgetId,
     product_no: item.productNo,
     projectnumber: item.projectCode,
     projectname: item.projectTitle,

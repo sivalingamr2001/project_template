@@ -50,6 +50,21 @@ public static class BudgetRecordsEndpoint
         .WithName("GetBudgetSummary")
         .WithOpenApi();
 
+        group.MapGet("/summary/trend", async (
+            BudgetRecordsService service,
+            CancellationToken cancellationToken,
+            string? type = null,
+            string? projectCode = null) =>
+        {
+            var result = await service.GetTrendAsync(type, projectCode, cancellationToken);
+
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ToProblem(result.Error!);
+        })
+        .WithName("GetBudgetSummaryTrend")
+        .WithOpenApi();
+
 
         group.MapGet("/{budgetId:int}", async (int budgetId, BudgetRecordsService service, CancellationToken cancellationToken) =>
         {

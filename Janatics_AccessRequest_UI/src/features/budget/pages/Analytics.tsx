@@ -28,7 +28,7 @@ function Analytics() {
           <p className="mb-6 text-sm text-muted-foreground">
             Select a budget record from the plan entry page to view analytics.
           </p>
-          <Button onClick={() => navigate("/budget/plan-entry")}>
+          <Button onClick={() => navigate("/plan-entry")}>
             Go to Plan Entry
           </Button>
         </div>
@@ -44,7 +44,7 @@ function Analytics() {
             variant="ghost"
             className="px-2"
             onClick={() => {
-              navigate("/budget/plan-entry")
+              navigate("/plan-entry")
             }}
           >
             <ArrowLeft className="mr-2 inline-block size-5 text-muted-foreground" />

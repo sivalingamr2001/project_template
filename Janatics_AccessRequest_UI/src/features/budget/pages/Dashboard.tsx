@@ -82,7 +82,7 @@ export default function Dashboard() {
   }, [])
 
   const handleOpenDraft = (record: StoredDraftRecord) => {
-    navigate("/budget/plan-entry", {
+    navigate("/plan-entry", {
       state: { draftRecord: record },
     })
   }
@@ -134,7 +134,7 @@ export default function Dashboard() {
       const response = await apiService.get<BudgetRecordResponse>(
         `/budgets/${params.data.budgetId}`
       )
-      navigate("/budget/plan-entry", {
+      navigate("/plan-entry", {
         state: { record: mapBudgetApiToUi(response.data) },
       })
     } else {
@@ -220,7 +220,7 @@ export default function Dashboard() {
         "Draft budget record created. Complete the plan entry to save it."
       )
       setIsModalOpen(false)
-      navigate("/budget/plan-entry", {
+      navigate("/plan-entry", {
         state: { fromDashboard: true, inputData: input },
       })
     } else {

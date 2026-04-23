@@ -11,15 +11,42 @@ import { Input } from "@/shared/components/ui/input"
 import { useProjectSearch } from "@/shared/hooks/useProjectSearch"
 import type { ProjectData } from "@/types"
 import { FolderKanban, Package, Plus, Search } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
+import {
+  getBudgetById,
+  mapBudgetApiToUi,
+} from "@/features/budget/types"
 
 export default function ProjectSearchDashboard() {
   const { state, refs, actions } = useProjectSearch()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const navigate = useNavigate()
 
   const currentProductName = useMemo(() => {
     return state.filteredData[0]?.projectname || ""
   }, [state.filteredData])
+
+  const handleViewDetails = useCallback(async (row: ProjectData) => {
+    if (!row.budgetId) {
+      toast.error("Budget ID is missing for this record.")
+      return
+    }
+
+    try {
+      const response = await getBudgetById(row.budgetId)
+      navigate("/plan-entry", {
+        state: { record: mapBudgetApiToUi(response) },
+      })
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to load budget record."
+      toast.error(errorMessage)
+    }
+  }, [navigate])
 
   const columnDefs = useMemo(
     () => [
@@ -35,15 +62,29 @@ export default function ProjectSearchDashboard() {
           <Button
             variant="link"
             size="sm"
-            onClick={() => console.log(params.data)}
+            onClick={() => handleViewDetails(params.data)}
           >
             View
           </Button>
         ),
       },
     ],
-    []
+    [handleViewDetails]
   )
+
+  async function handleNavigateToPlanEntry(input: {
+    productName: string
+    projectCode: string
+    productNo: string
+  }) {
+    toast.success(
+      "Draft budget record created. Complete the plan entry to save it."
+    )
+    setIsModalOpen(false)
+    navigate("/plan-entry", {
+      state: { fromDashboard: true, inputData: input },
+    })
+  }
 
   return (
     <div className="flex flex-col gap-2">
@@ -135,6 +176,7 @@ export default function ProjectSearchDashboard() {
       <CreateBudgetModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onSubmit={handleNavigateToPlanEntry}
         initialData={{
           productName: currentProductName,
           productNo: state.productNo,

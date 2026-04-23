@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
 
   const from =
-    (location.state as { from?: string })?.from ?? "/budget/dashboard"
+    (location.state as { from?: string })?.from ?? "/dashboard"
 
   // Redirect if already authenticated
   useEffect(() => {

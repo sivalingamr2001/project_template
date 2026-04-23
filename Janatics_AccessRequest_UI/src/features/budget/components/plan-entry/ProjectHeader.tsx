@@ -13,12 +13,23 @@ import   { Button } from "@/shared/components/ui/button"
 import { FileDown, Save } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
+import type { TemplateOption } from "@/features/budget/utils/budgetTemplates"
 
 interface ProjectHeaderProps {
   record: BudgetRecord
   onSaveRecord?: () => Promise<void>
   onDiscardDraft: () => void
   onExportCsv: () => void | Promise<void>
+  selectedTemplateId: string
+  onTemplateChange: (value: string) => void
+  templateOptions: TemplateOption[]
 }
 
 export function ProjectHeader({
@@ -26,6 +37,9 @@ export function ProjectHeader({
   onSaveRecord,
   onDiscardDraft,
   onExportCsv,
+  selectedTemplateId,
+  onTemplateChange,
+  templateOptions,
 }: ProjectHeaderProps) {
   const [isRefreshConfirmOpen, setIsRefreshConfirmOpen] = useState(false)
 
@@ -69,6 +83,23 @@ export function ProjectHeader({
               <FileDown className="mr-2 h-4 w-4" />
               Export Excel
             </Button>
+            <div className="flex flex-col gap-2">
+              <Select
+                value={selectedTemplateId}
+                onValueChange={onTemplateChange}
+              >
+                <SelectTrigger className="w-full md:w-72">
+                  <SelectValue placeholder="Choose a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templateOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {onSaveRecord && (
               <Button
                 disabled={!isFormValid}

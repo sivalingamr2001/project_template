@@ -17,77 +17,22 @@ import { BudgetValidationAlert } from "../components/BudgetValidationAlert"
 import { BudgetTable } from "../components/plan-entry/BudgetTable"
 import { DraftConfirmationDialog } from "../components/DraftConfirmationDialog"
 import { exportBudgetWorkbook } from "../utils/exportBudgetWorkbook"
+import {
+  getTemplateOptions,
+  TEMPLATE_SESSION_KEY,
+  templateToBudgetData,
+  type TemplateCategory,
+} from "../utils/budgetTemplates"
 
 const DRAFT_KEY_PREFIX = "budget-plan-entry-draft"
 const DRAFT_TTL_MINUTES = 60 * 24 * 7
-
-const DEFAULT_CATEGORIES = [
-  {
-    category: "Product Design",
-    items: [
-      { name: "Benchmarking sample", planned: 0, actual: 0 },
-      { name: "FEA Analysis", planned: 0, actual: 0 },
-      { name: "CFD Analysis", planned: 0, actual: 0 },
-      { name: "Design consultancy", planned: 0, actual: 0 },
-      { name: "Others", planned: 0, actual: 0 },
-    ],
-  },
-  {
-    category: "Concept development",
-    items: [
-      { name: "Comp.devpt-Concept", planned: 0, actual: 0 },
-      { name: "Machining components", planned: 0, actual: 0 },
-      { name: "Plastic - Hand moulds", planned: 0, actual: 0 },
-      { name: "Rubber moulds", planned: 0, actual: 0 },
-      { name: "3D printing", planned: 0, actual: 0 },
-      { name: "RPT", planned: 0, actual: 0 },
-      { name: "MIM", planned: 0, actual: 0 },
-      { name: "Jigs & fixtures", planned: 0, actual: 0 },
-      { name: "Concept testing", planned: 0, actual: 0 },
-    ],
-  },
-  {
-    category: "Prototype development",
-    items: [
-      { name: "Machining components", planned: 0, actual: 0 },
-      { name: "Plastic - Inj. moulds", planned: 0, actual: 0 },
-      { name: "Aluminium - Die casting", planned: 0, actual: 0 },
-      { name: "Investment casting", planned: 0, actual: 0 },
-      { name: "Stamping tools", planned: 0, actual: 0 },
-      { name: "Rubber moulds", planned: 0, actual: 0 },
-      { name: "Jigs & fixtures", planned: 0, actual: 0 },
-      { name: "Comp. mfg.", planned: 0, actual: 0 },
-      { name: "Testing", planned: 0, actual: 0 },
-    ],
-  },
-  {
-    category: "Product testing",
-    items: [
-      { name: "Testing instruments", planned: 0, actual: 0 },
-      { name: "Testing fixtures", planned: 0, actual: 0 },
-      { name: "Certification", planned: 0, actual: 0 },
-      { name: "Others", planned: 0, actual: 0 },
-    ],
-  },
-  {
-    category: "Capital equipments",
-    items: [
-      { name: "Testing equipments", planned: 0, actual: 0 },
-      { name: "Special machines", planned: 0, actual: 0 },
-      { name: "Others", planned: 0, actual: 0 },
-    ],
-  },
-  {
-    category: "Field validation",
-    items: [{ name: "Product development", planned: 0, actual: 0 }],
-  },
-]
 
 function createLocalBudgetRecord(input: {
   productName: string
   projectCode: string
   productNo: string
   employeeId: number
+  categories: TemplateCategory[]
 }): BudgetRecord {
   return {
     id: `draft-${Date.now()}`,
@@ -101,7 +46,24 @@ function createLocalBudgetRecord(input: {
       status: "ON TRACK",
       lastUpdated: new Date().toISOString(),
     },
-    budgetData: DEFAULT_CATEGORIES,
+    budgetData: templateToBudgetData(input.categories),
+  }
+}
+
+function loadTemplateFromSessionStorage(): TemplateCategory[] | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  const stored = window.sessionStorage.getItem(TEMPLATE_SESSION_KEY)
+  if (!stored) {
+    return null
+  }
+
+  try {
+    return JSON.parse(stored) as TemplateCategory[]
+  } catch {
+    return null
   }
 }
 
@@ -123,6 +85,10 @@ export default function PlanEntry() {
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null
+  )
+  const templateOptions = useMemo(() => getTemplateOptions(), [])
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    () => templateOptions[0]?.id ?? ""
   )
 
   const draftStorageBaseKey = useMemo(
@@ -147,6 +113,8 @@ export default function PlanEntry() {
       draftRecord?: BudgetRecord
     } | null
 
+    const sessionTemplate = loadTemplateFromSessionStorage()
+
     if (state?.record) {
       setLocalRecord(state.record)
       setActiveRecord(state.record)
@@ -163,12 +131,34 @@ export default function PlanEntry() {
     }
 
     if (state?.inputData) {
+      const fallbackTemplate =
+        sessionTemplate ?? templateOptions[0]?.categories ?? []
+
       const newRecord = createLocalBudgetRecord({
         ...state.inputData,
         employeeId: user?.employeeId ?? 0,
+        categories: fallbackTemplate,
       })
+      if (sessionTemplate) {
+        window.sessionStorage.removeItem(TEMPLATE_SESSION_KEY)
+      }
       setLocalRecord(newRecord)
       setActiveRecord(newRecord)
+      return
+    }
+
+    if (sessionTemplate) {
+      const newRecord = createLocalBudgetRecord({
+        productName: "Selected Budget Template",
+        projectCode: "",
+        productNo: "",
+        employeeId: user?.employeeId ?? 0,
+        categories: sessionTemplate,
+      })
+      window.sessionStorage.removeItem(TEMPLATE_SESSION_KEY)
+      setLocalRecord(newRecord)
+      setActiveRecord(newRecord)
+      toast.success("Loaded budget template into plan entry.")
       return
     }
 
@@ -212,7 +202,7 @@ export default function PlanEntry() {
     } catch {
       // ignore
     }
-  }, [draftStorageBaseKey, location.state, createBudgetRecord, setActiveRecord])
+  }, [draftStorageBaseKey, location.state, setActiveRecord, templateOptions, user?.employeeId])
 
   useEffect(() => {
     if (!localRecord || !draftStorageKey) {
@@ -326,7 +316,7 @@ export default function PlanEntry() {
       // Wait for the toast to be visible before navigating away.
       await delay(2000)
 
-      navigate("/budget/dashboard")
+      navigate("/dashboard")
     } catch (err) {
       const errorMessage =
         err &&
@@ -341,7 +331,7 @@ export default function PlanEntry() {
 
   const discardDraft = () => {
     resetDraftState()
-    navigate("/budget/dashboard")
+    navigate("/dashboard")
   }
 
   const exportWorkbook = async () => {
@@ -364,6 +354,32 @@ export default function PlanEntry() {
   const handleRecordChange = (updatedRecord: BudgetRecord) => {
     setLocalRecord(updatedRecord)
     setHasUnsavedChanges(true)
+  }
+
+  const handleTemplateChange = (value: string) => {
+    setSelectedTemplateId(value)
+    const option = templateOptions.find((template) => template.id === value)
+
+    if (!option) {
+      return
+    }
+
+    setLocalRecord((current) => {
+      if (!current) {
+        return current
+      }
+
+      return {
+        ...current,
+        projectHeader: {
+          ...current.projectHeader,
+          lastUpdated: new Date().toISOString(),
+        },
+        budgetData: templateToBudgetData(option.categories),
+      }
+    })
+    setHasUnsavedChanges(true)
+    toast.success(`Applied template: ${option.name}`)
   }
 
   const handleSaveDraftAndNavigate = () => {
@@ -439,7 +455,7 @@ export default function PlanEntry() {
             Use the dashboard to search for a project or create a new budget
             record first.
           </p>
-          <Button onClick={() => navigate("/budget/dashboard")}>
+          <Button onClick={() => navigate("/dashboard")}>
             Return to dashboard
           </Button>
         </div>
@@ -455,6 +471,9 @@ export default function PlanEntry() {
           onSaveRecord={saveRecord}
           onDiscardDraft={discardDraft}
           onExportCsv={exportWorkbook}
+          selectedTemplateId={selectedTemplateId}
+          onTemplateChange={handleTemplateChange}
+          templateOptions={templateOptions}
         />
         <div className="mb-5 px-6">
           <BudgetValidationAlert

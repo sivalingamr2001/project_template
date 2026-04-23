@@ -86,6 +86,35 @@ export default function ReportPage() {
   const variance = summary?.variance ?? 0
   const variancePct = summary?.variancePct ?? 0
 
+  const productTotals = productBudget
+    ? productBudget.categories.reduce(
+        (totals, category) => {
+          const categoryPlanned = category.items.reduce(
+            (sum, item) => sum + item.planned,
+            0
+          )
+          const categoryActual = category.items.reduce(
+            (sum, item) => sum + item.actual,
+            0
+          )
+
+          return {
+            planned: totals.planned + categoryPlanned,
+            actual: totals.actual + categoryActual,
+            variance: totals.variance + (categoryPlanned - categoryActual),
+          }
+        },
+        { planned: 0, actual: 0, variance: 0 }
+      )
+    : { planned: 0, actual: 0, variance: 0 }
+
+  const pageTitle =
+    reportConfig === "product"
+      ? "Product report"
+      : reportConfig === "trend"
+      ? "Trend overview"
+      : "Summary report"
+
   const loadProductBudget = async () => {
     if (!productNo.trim()) {
       setProductError("Enter a product number to load the report.")
@@ -204,88 +233,177 @@ export default function ReportPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <BudgetMetricCard
-          title="Budgeted"
-          value={formatCurrency(summary?.totalPlanned ?? 0)}
-          subtitle="Selected period"
-          change="Planned"
-          trend="positive"
-        />
-        <BudgetMetricCard
-          title="Actuals"
-          value={formatCurrency(summary?.totalActual ?? 0)}
-          subtitle="Selected period"
-          change="Spent"
-          trend="neutral"
-        />
-        <BudgetMetricCard
-          title="Variance"
-          value={formatCurrency(variance)}
-          subtitle={`${variancePct.toFixed(1)}%`}
-          change={variance >= 0 ? "Under budget" : "Over budget"}
-          trend={variance >= 0 ? "positive" : "negative"}
-        />
-        <BudgetMetricCard
-          title="Active Projects"
-          value={String(summary?.activeProjects ?? 0)}
-          subtitle="Selected period"
-          change="Projects"
-          trend="neutral"
-        />
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-lg font-semibold text-foreground">{pageTitle}</p>
+            <p className="text-sm text-muted-foreground">
+              Use header filters to switch views, load a product report, or update the period.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+            <span>Selected period: {period}</span>
+            {period === "custom" ? (
+              <span>
+                {fromDate} → {toDate}
+              </span>
+            ) : null}
+          </div>
+        </div>
       </div>
 
-      {reportConfig === "product" && productBudget ? (
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-base font-semibold text-foreground">
-                Product budget report
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Product {productBudget.header.productNo} • {productBudget.header.projectTitle}
-              </p>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <p>Project code: {productBudget.header.projectCode}</p>
-              <p>
-                Budget last updated:{" "}
-                {new Date(productBudget.header.modifiedOn).toLocaleDateString()}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl border border-border bg-muted/50 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Categories
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-foreground">
-                {productBudget.categories.length}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-border bg-muted/50 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Line items
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-foreground">
-                {productBudget.categories.reduce((sum, category) => sum + category.items.length, 0)}
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : reportConfig === "product" && !productBudget && !productLoading && productNo ? (
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm text-sm text-muted-foreground">
-          No product report available. Enter a valid product number with a plan entry.
-        </div>
-      ) : null}
-
       {reportConfig !== "product" ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <PlannedVsActualBarChart data={trendData} />
-          <VarianceTrendChart
-            data={trendData.map((point) => ({ label: point.label, variance: point.variance }))}
-          />
+        <>
+          <div className="grid gap-4 lg:grid-cols-4">
+            <BudgetMetricCard
+              title="Budgeted"
+              value={formatCurrency(summary?.totalPlanned ?? 0)}
+              subtitle="Selected period"
+              change="Planned"
+              trend="positive"
+            />
+            <BudgetMetricCard
+              title="Actuals"
+              value={formatCurrency(summary?.totalActual ?? 0)}
+              subtitle="Selected period"
+              change="Spent"
+              trend="neutral"
+            />
+            <BudgetMetricCard
+              title="Variance"
+              value={formatCurrency(variance)}
+              subtitle={`${variancePct.toFixed(1)}%`}
+              change={variance >= 0 ? "Under budget" : "Over budget"}
+              trend={variance >= 0 ? "positive" : "negative"}
+            />
+            <BudgetMetricCard
+              title="Active Projects"
+              value={String(summary?.activeProjects ?? 0)}
+              subtitle="Selected period"
+              change="Projects"
+              trend="neutral"
+            />
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <PlannedVsActualBarChart data={trendData} />
+            <VarianceTrendChart
+              data={trendData.map((point) => ({ label: point.label, variance: point.variance }))}
+            />
+          </div>
+        </>
+      ) : productBudget ? (
+        <div className="grid gap-4">
+          <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Product budget overview
+              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                <div className="rounded-3xl border border-border bg-muted/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Product
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-foreground">
+                    {productBudget.header.productNo}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-border bg-muted/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Categories
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-foreground">
+                    {productBudget.categories.length}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-border bg-muted/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Line items
+                  </p>
+                  <p className="mt-2 text-lg font-semibold text-foreground">
+                    {productBudget.categories.reduce(
+                      (sum, category) => sum + category.items.length,
+                      0
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Planned total
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-foreground">
+                    {formatCurrency(productTotals.planned)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Actual total
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-foreground">
+                    {formatCurrency(productTotals.actual)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Variance
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-foreground">
+                    {formatCurrency(productTotals.variance)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Product details
+              </p>
+              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+                <div>
+                  <p className="font-medium text-foreground">Project</p>
+                  <p>{productBudget.header.projectTitle}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Project code</p>
+                  <p>{productBudget.header.projectCode}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Last updated</p>
+                  <p>{new Date(productBudget.header.modifiedOn).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Budget category breakdown
+            </p>
+            <div className="mt-4 space-y-4">
+              {productBudget.categories.map((category) => (
+                <div key={category.categoryId} className="rounded-3xl border border-border bg-muted/50 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{category.categoryName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {category.items.length} items
+                      </p>
+                    </div>
+                    <div className="text-right text-sm text-muted-foreground">
+                      <p>
+                        Planned {formatCurrency(category.items.reduce((sum, item) => sum + item.planned, 0))}
+                      </p>
+                      <p>
+                        Actual {formatCurrency(category.items.reduce((sum, item) => sum + item.actual, 0))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       ) : null}
     </div>

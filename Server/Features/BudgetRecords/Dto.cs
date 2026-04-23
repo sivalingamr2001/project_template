@@ -96,3 +96,8 @@ public record BudgetSummaryDto
     public decimal UtilisationPct => TotalPlanned != 0 ? (TotalActual / TotalPlanned) * 100 : 0;
 }
 
+public sealed record BudgetTrendPointDto(
+    string Label,
+    decimal Planned,
+    decimal Actual,
+    decimal Variance);

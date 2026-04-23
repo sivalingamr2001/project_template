@@ -13,6 +13,7 @@ export type NavigationSection = {
 }
 
 export interface ProjectData {
+  budgetId?: number
   projectnumber: string
   projectname: string
   description: string

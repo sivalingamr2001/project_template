@@ -12,6 +12,8 @@ public sealed class BudgetRecordsService(
     AppDbContext dbContext,
     ILogger<BudgetRecordsService> logger)
 {
+    private sealed record BudgetTrendAggregate(DateTime CreatedOn, decimal Planned, decimal Actual);
+
     public async Task<Result<IReadOnlyList<BudgetRecordProductNoDto>>> SearchByProductNoAsync(
     string searchTerm,
     IConfiguration configuration,
@@ -191,6 +193,129 @@ public sealed class BudgetRecordsService(
             AppliedFrom = startDate,
             AppliedTo = endDate.AddSeconds(-1)
         };
+    }
+
+    public async Task<Result<IReadOnlyList<BudgetTrendPointDto>>> GetTrendAsync(
+        string? type,
+        string? projectCode,
+        CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        var normalizedType = type?.Trim().ToLowerInvariant();
+
+        IQueryable<Budget> query = dbContext.Budgets
+            .AsNoTracking()
+            .Where(b => b.IsActive == 1);
+
+        if (!string.IsNullOrWhiteSpace(projectCode))
+        {
+            var trimmedProjectCode = projectCode.Trim();
+            query = query.Where(b => b.ProjectCode == trimmedProjectCode);
+        }
+
+        var rawPoints = await query
+            .Select(b => new
+            {
+                b.CreatedOn,
+                Planned = b.Categories.SelectMany(c => c.Items).Sum(i => i.Planned),
+                Actual = b.Categories.SelectMany(c => c.Items).Sum(i => i.Actual)
+            })
+            .Select(x => new BudgetTrendAggregate(x.CreatedOn, x.Planned, x.Actual))
+            .ToListAsync(ct);
+
+        List<BudgetTrendPointDto> points = normalizedType switch
+        {
+            "yearly" => BuildYearlyTrend(rawPoints, now),
+            "quarterly" => BuildQuarterlyTrend(rawPoints, now),
+            _ => BuildMonthlyTrend(rawPoints, now)
+        };
+
+        return points;
+    }
+
+    private static List<BudgetTrendPointDto> BuildMonthlyTrend(
+        IReadOnlyList<BudgetTrendAggregate> rawPoints,
+        DateTime now)
+    {
+        var monthStarts = Enumerable.Range(0, 6)
+            .Select(offset => new DateTime(now.Year, now.Month, 1).AddMonths(-(5 - offset)))
+            .ToList();
+
+        return monthStarts.Select(monthStart =>
+        {
+            var monthEnd = monthStart.AddMonths(1);
+            var matching = rawPoints.Where(point =>
+                point.CreatedOn >= monthStart && point.CreatedOn < monthEnd);
+
+            var planned = matching.Sum(point => (decimal)point.Planned);
+            var actual = matching.Sum(point => (decimal)point.Actual);
+
+            return new BudgetTrendPointDto(
+                monthStart.ToString("MMM"),
+                planned,
+                actual,
+                planned - actual
+            );
+        }).ToList();
+    }
+
+    private static List<BudgetTrendPointDto> BuildQuarterlyTrend(
+        IReadOnlyList<BudgetTrendAggregate> rawPoints,
+        DateTime now)
+    {
+        var currentQuarter = ((now.Month - 1) / 3) + 1;
+        var quarterStarts = Enumerable.Range(0, 4)
+            .Select(offset =>
+            {
+                var index = 3 - offset;
+                var target = new DateTime(now.Year, ((currentQuarter - 1) * 3) + 1, 1)
+                    .AddMonths(-3 * index);
+                return target;
+            })
+            .ToList();
+
+        return quarterStarts.Select(quarterStart =>
+        {
+            var quarterEnd = quarterStart.AddMonths(3);
+            var matching = rawPoints.Where(point =>
+                point.CreatedOn >= quarterStart && point.CreatedOn < quarterEnd);
+
+            var planned = matching.Sum(point => (decimal)point.Planned);
+            var actual = matching.Sum(point => (decimal)point.Actual);
+            var quarter = ((quarterStart.Month - 1) / 3) + 1;
+
+            return new BudgetTrendPointDto(
+                $"Q{quarter} {quarterStart:yy}",
+                planned,
+                actual,
+                planned - actual
+            );
+        }).ToList();
+    }
+
+    private static List<BudgetTrendPointDto> BuildYearlyTrend(
+        IReadOnlyList<BudgetTrendAggregate> rawPoints,
+        DateTime now)
+    {
+        var years = Enumerable.Range(now.Year - 4, 5).ToList();
+
+        return years.Select(year =>
+        {
+            var yearStart = new DateTime(year, 1, 1);
+            var yearEnd = yearStart.AddYears(1);
+            var matching = rawPoints.Where(point =>
+                point.CreatedOn >= yearStart && point.CreatedOn < yearEnd);
+
+            var planned = matching.Sum(point => (decimal)point.Planned);
+            var actual = matching.Sum(point => (decimal)point.Actual);
+
+            return new BudgetTrendPointDto(
+                year.ToString(),
+                planned,
+                actual,
+                planned - actual
+            );
+        }).ToList();
     }
 
     public async Task<Result<BudgetRecordDto>> CreateAsync(CreateBudgetRecordRequest request, CancellationToken cancellationToken)
