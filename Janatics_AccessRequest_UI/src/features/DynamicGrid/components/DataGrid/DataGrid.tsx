@@ -65,8 +65,7 @@ const BASE_COL_DEF: ColDef = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 function DataGridInner<TData extends Record<string, unknown>>(
-  props: DataGridProps<TData>,
-  _ref: React.ForwardedRef<unknown>
+  props: DataGridProps<TData>
 ) {
   const {
     rowData,

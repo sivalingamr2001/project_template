@@ -76,8 +76,6 @@ export default function ProjectSearchDashboard() {
                     actions.setShowProductSuggestions(false)
                   }}
                   type="product"
-                  // Ensure we pass the current search term to compare if needed
-                  searchTerm={state.productNo}
                 />
               )}
           </div>
@@ -109,7 +107,6 @@ export default function ProjectSearchDashboard() {
                     actions.setShowProjectSuggestions(false)
                   }}
                   type="project"
-                  searchTerm={state.projectNo}
                 />
               )}
           </div>
@@ -154,14 +151,12 @@ interface SuggestionDropdownProps {
   items: ProjectData[]
   onSelect: (item: ProjectData) => void
   type: "product" | "project"
-  searchTerm: string
 }
 
 function SuggestionDropdown({
   items,
   onSelect,
   type,
-  searchTerm,
 }: SuggestionDropdownProps) {
   return (
     <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-xl">

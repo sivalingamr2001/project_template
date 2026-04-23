@@ -3,17 +3,29 @@ import { apiService } from "@/shared/lib/api-client"
 import type { ProjectData } from "@/types"
 import { useDebounce } from "../lib/utils"
 
+interface BudgetSummaryItem {
+  productNo: string
+  projectCode: string
+  projectTitle: string
+}
+
+function mapBudgetToProjectData(item: BudgetSummaryItem): ProjectData {
+  return {
+    product_no: item.productNo,
+    projectnumber: item.projectCode,
+    projectname: item.projectTitle,
+    description: item.projectTitle,
+  }
+}
+
 export function useProjectSearch() {
   const [productNo, setProductNo] = useState("")
   const [projectNo, setProjectNo] = useState("")
+  const [allProjects, setAllProjects] = useState<ProjectData[]>([])
   const [filteredData, setFilteredData] = useState<ProjectData[]>([])
 
-  const [productSuggestions, setProductSuggestions] = useState<ProjectData[]>(
-    []
-  )
-  const [projectSuggestions, setProjectSuggestions] = useState<ProjectData[]>(
-    []
-  )
+  const [productSuggestions, setProductSuggestions] = useState<ProjectData[]>([])
+  const [projectSuggestions, setProjectSuggestions] = useState<ProjectData[]>([])
   const [showProductSuggestions, setShowProductSuggestions] = useState(false)
   const [showProjectSuggestions, setShowProjectSuggestions] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -21,57 +33,72 @@ export function useProjectSearch() {
   const productRef = useRef<HTMLDivElement>(null)
   const projectRef = useRef<HTMLDivElement>(null)
 
-  // Use your custom hook
   const debouncedProduct = useDebounce(productNo, 300)
   const debouncedProject = useDebounce(projectNo, 300)
 
-  // 1. Effect for Product Suggestions
+  useEffect(() => {
+    const fetchBudgets = async () => {
+      try {
+        const response = await apiService.get<BudgetSummaryItem[]>("/budgets")
+        const rows = response.data.map(mapBudgetToProjectData)
+        setAllProjects(rows)
+        setFilteredData(rows)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+
+    fetchBudgets()
+  }, [])
+
   useEffect(() => {
     if (!debouncedProduct || debouncedProduct.length < 2) {
       setProductSuggestions([])
       return
     }
-    const fetch = async () => {
-      try {
-        const res = await apiService.get<ProjectData[]>(
-          `/budgets/search?productNo=${debouncedProduct}`
-        )
-        setProductSuggestions(res.data)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    fetch()
-  }, [debouncedProduct])
 
-  // 2. Effect for Project Suggestions
+    setProductSuggestions(
+      allProjects
+        .filter((item) =>
+          item.product_no?.toLowerCase().includes(debouncedProduct.toLowerCase())
+        )
+        .slice(0, 6)
+    )
+  }, [debouncedProduct, allProjects])
+
   useEffect(() => {
     if (!debouncedProject || debouncedProject.length < 2) {
       setProjectSuggestions([])
       return
     }
-    const fetch = async () => {
-      try {
-        const res = await apiService.get<ProjectData[]>(
-          `/budgets/search?productNo=${debouncedProject}`
-        )
-        setProjectSuggestions(res.data)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    fetch()
-  }, [debouncedProject])
 
-  // 3. API: Fetch Final Table Data
+    setProjectSuggestions(
+      allProjects
+        .filter((item) =>
+          item.projectnumber?.toLowerCase().includes(debouncedProject.toLowerCase())
+        )
+        .slice(0, 6)
+    )
+  }, [debouncedProject, allProjects])
+
   const fetchTableData = async (prod: string, proj: string) => {
-    if (!prod || !proj) return
+    if (!allProjects.length) {
+      return
+    }
+
     setIsLoading(true)
+
     try {
-      const response = await apiService.get<ProjectData[]>(
-        `/budgets/by-project/${proj}/product/${prod}`
-      )
-      setFilteredData(response.data)
+      const filtered = allProjects.filter((item) => {
+        const matchesProduct = prod
+          ? item.product_no?.toLowerCase().includes(prod.toLowerCase())
+          : true
+        const matchesProject = proj
+          ? item.projectnumber?.toLowerCase().includes(proj.toLowerCase())
+          : true
+        return matchesProduct && matchesProject
+      })
+      setFilteredData(filtered)
     } catch (e) {
       console.error(e)
     } finally {
@@ -84,7 +111,6 @@ export function useProjectSearch() {
     setProjectNo(item.projectnumber || "")
     setShowProductSuggestions(false)
     setShowProjectSuggestions(false)
-    // Trigger table load immediately
     fetchTableData(item.product_no || "", item.projectnumber || "")
   }
 

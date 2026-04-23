@@ -39,12 +39,7 @@ export default function Dashboard() {
 
   const navigate = useNavigate()
 
-  useEffect(() => {
-    fetchBudgetRecords()
-    loadDraftRecords()
-  }, [])
-
-  const loadDraftRecords = () => {
+  function loadDraftRecords() {
     if (!isStorageAvailable(STORAGE_AREA)) {
       setDraftRecords([])
       return
@@ -80,6 +75,11 @@ export default function Dashboard() {
 
     setDraftRecords(drafts)
   }
+
+  useEffect(() => {
+    fetchBudgetRecords()
+    loadDraftRecords()
+  }, [])
 
   const handleOpenDraft = (record: StoredDraftRecord) => {
     navigate("/budget/plan-entry", {

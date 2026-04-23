@@ -2,6 +2,13 @@ import type { BudgetRecord, BudgetSummary } from '@/features/budget/types'
 import { useState, useEffect } from 'react'
 import { apiService } from '../lib/api-client'
 
+type TrendPoint = {
+  label: string
+  planned: number
+  actual: number
+  variance: number
+}
+
 // 1. Core Summary Hook
 export function useBudgetSummary(period: string = 'monthly', from?: string, to?: string) {
   const [summary, setSummary] = useState<BudgetSummary | null>(null)
@@ -43,12 +50,12 @@ export function useYearlyTrend(projectNumber?: string) {
 
 // Internal shared logic for Trends
 function useTrendData(type: string, projectCode?: string) {
-  const [data, setData] = useState<any[]>([])
+  const [data, setData] = useState<TrendPoint[]>([])
 
   useEffect(() => {
     const fetchTrend = async () => {
       try {
-        const { data } = await apiService.get<any[]>('/budgets/summary/trend', {
+        const { data } = await apiService.get<TrendPoint[]>('/budgets/summary/trend', {
           params: { type, projectCode }
         })
         setData(data)

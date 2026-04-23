@@ -13,7 +13,7 @@ const pageTitles: Record<string, string> = {
   "/projects": "Projects",
   "/plan-entry": "Plan Entry",
   "/reports": "Reports",
-  "/settings": "Budget Template",
+  "/budget-template": "Budget Template",
 }
 
 export default function AppLayout() {

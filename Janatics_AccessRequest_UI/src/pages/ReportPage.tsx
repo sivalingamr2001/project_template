@@ -51,8 +51,11 @@ type BudgetRecordDto = {
 
 type PeriodOption = "monthly" | "quarterly" | "yearly" | "custom"
 
-function Dashboard() {
+type ReportConfig = "summary" | "trend" | "product"
+
+export default function ReportPage() {
   const [period, setPeriod] = useState<PeriodOption>("monthly")
+  const [reportConfig, setReportConfig] = useState<ReportConfig>("summary")
   const [fromDate, setFromDate] = useState(() => {
     const date = new Date()
     date.setDate(date.getDate() - 30)
@@ -64,7 +67,7 @@ function Dashboard() {
   const [productError, setProductError] = useState<string | null>(null)
   const [productLoading, setProductLoading] = useState(false)
 
-  const summary = useBudgetSummary(
+  const { summary } = useBudgetSummary(
     period,
     period === "custom" ? fromDate : undefined,
     period === "custom" ? toDate : undefined
@@ -80,12 +83,12 @@ function Dashboard() {
     return monthlyTrend
   }, [period, monthlyTrend, quarterlyTrend, yearlyTrend])
 
-  const variance = summary.summary?.variance ?? 0
-  const variancePct = summary.summary?.variancePct ?? 0
+  const variance = summary?.variance ?? 0
+  const variancePct = summary?.variancePct ?? 0
 
   const loadProductBudget = async () => {
     if (!productNo.trim()) {
-      setProductError("Enter a product number to load budget details.")
+      setProductError("Enter a product number to load the report.")
       setProductBudget(null)
       return
     }
@@ -100,7 +103,9 @@ function Dashboard() {
       )
       setProductBudget(response.data)
     } catch {
-      setProductError("No budget plan entry found for that product number.")
+      setProductError(
+        "No report found for that product number or product has no plan entry."
+      )
     } finally {
       setProductLoading(false)
     }
@@ -109,10 +114,10 @@ function Dashboard() {
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-4">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Date range
+              Period
             </p>
             <Select
               value={period}
@@ -134,7 +139,7 @@ function Dashboard() {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Start date
+                  From date
                 </p>
                 <Input
                   type="date"
@@ -144,7 +149,7 @@ function Dashboard() {
               </div>
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  End date
+                  To date
                 </p>
                 <Input
                   type="date"
@@ -177,70 +182,112 @@ function Dashboard() {
               <p className="text-sm text-destructive">{productError}</p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Report config
+            </p>
+            <Select
+              value={reportConfig}
+              onValueChange={(value) => setReportConfig(value as ReportConfig)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select report view" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="summary">Summary</SelectItem>
+                <SelectItem value="trend">Trend</SelectItem>
+                <SelectItem value="product">Product report</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <BudgetMetricCard
-          title="Total Planned Budget (₹)"
-          value={formatCurrency(summary.summary?.totalPlanned ?? 0)}
-          subtitle="Overall plan"
-          change="Planned base"
+          title="Budgeted"
+          value={formatCurrency(summary?.totalPlanned ?? 0)}
+          subtitle="Selected period"
+          change="Planned"
           trend="positive"
         />
         <BudgetMetricCard
-          title="Total Actual Spent (₹)"
-          value={formatCurrency(summary.summary?.totalActual ?? 0)}
-          subtitle="Overall actuals"
-          change="ERP actuals"
+          title="Actuals"
+          value={formatCurrency(summary?.totalActual ?? 0)}
+          subtitle="Selected period"
+          change="Spent"
           trend="neutral"
         />
         <BudgetMetricCard
-          title="Overall Variance"
+          title="Variance"
           value={formatCurrency(variance)}
-          subtitle={`${variancePct.toFixed(1)}% vs planned`}
-          change={variance >= 0 ? "Savings" : "Deficit"}
+          subtitle={`${variancePct.toFixed(1)}%`}
+          change={variance >= 0 ? "Under budget" : "Over budget"}
           trend={variance >= 0 ? "positive" : "negative"}
         />
         <BudgetMetricCard
           title="Active Projects"
-          value={String(summary.summary?.activeProjects ?? 0)}
-          subtitle="Live execution"
-          change="Project count"
+          value={String(summary?.activeProjects ?? 0)}
+          subtitle="Selected period"
+          change="Projects"
           trend="neutral"
         />
       </div>
 
-      {productBudget ? (
+      {reportConfig === "product" && productBudget ? (
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-semibold text-foreground">
-                Selected product budget
+              <p className="text-base font-semibold text-foreground">
+                Product budget report
               </p>
               <p className="text-sm text-muted-foreground">
-                {productBudget.header.projectTitle} • {productBudget.header.projectCode}
+                Product {productBudget.header.productNo} • {productBudget.header.projectTitle}
               </p>
             </div>
-            <div className="text-right text-sm text-muted-foreground">
-              <p>Budget ID: {productBudget.header.budgetId}</p>
+            <div className="text-sm text-muted-foreground">
+              <p>Project code: {productBudget.header.projectCode}</p>
               <p>
-                Last updated:{" "}
+                Budget last updated:{" "}
                 {new Date(productBudget.header.modifiedOn).toLocaleDateString()}
               </p>
             </div>
           </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-muted/50 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Categories
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-foreground">
+                {productBudget.categories.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-border bg-muted/50 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Line items
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-foreground">
+                {productBudget.categories.reduce((sum, category) => sum + category.items.length, 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : reportConfig === "product" && !productBudget && !productLoading && productNo ? (
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm text-sm text-muted-foreground">
+          No product report available. Enter a valid product number with a plan entry.
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <PlannedVsActualBarChart data={trendData} />
-        <VarianceTrendChart
-          data={trendData.map((point) => ({ label: point.label, variance: point.variance }))}
-        />
-      </div>
+      {reportConfig !== "product" ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PlannedVsActualBarChart data={trendData} />
+          <VarianceTrendChart
+            data={trendData.map((point) => ({ label: point.label, variance: point.variance }))}
+          />
+        </div>
+      ) : null}
     </div>
   )
 }
-
-export default Dashboard

@@ -183,12 +183,13 @@ export default function ProjectSearchDashboard() {
             />
             {showProductSuggestions && productSuggestions.length > 0 && (
               <div className="absolute z-50 mt-1 w-full animate-in rounded-md border border-border bg-popover shadow-xl zoom-in-95 fade-in">
-                <Command className="bg-transparent">
+                <Command shouldFilter={false} className="bg-transparent">
                   <CommandList>
                     <CommandGroup heading="Product Matches">
                       {productSuggestions.map((item) => (
                         <CommandItem
                           key={item.projectnumber}
+                          value={item.product_no || item.projectnumber}
                           onSelect={() => {
                             setProductNo(item.product_no || "")
                             setProjectNo(item.projectnumber)
@@ -197,11 +198,11 @@ export default function ProjectSearchDashboard() {
                           className="flex cursor-pointer items-center gap-3 p-2.5 transition-colors hover:bg-accent"
                         >
                           <Package className="h-4 w-4 text-primary/60" />
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium">
+                          <div className="flex min-w-0 flex-col overflow-hidden">
+                            <span className="truncate text-sm font-medium">
                               {item.product_no}
                             </span>
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="truncate text-[10px] text-muted-foreground">
                               {item.projectname}
                             </span>
                           </div>
@@ -231,12 +232,13 @@ export default function ProjectSearchDashboard() {
             />
             {showProjectSuggestions && projectSuggestions.length > 0 && (
               <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-xl">
-                <Command className="bg-transparent">
+                <Command shouldFilter={false} className="bg-transparent">
                   <CommandList>
                     <CommandGroup heading="Project Matches">
                       {projectSuggestions.map((item) => (
                         <CommandItem
                           key={item.projectnumber}
+                          value={item.projectnumber}
                           onSelect={() => {
                             setProjectNo(item.projectnumber)
                             setProductNo(item.product_no || "")
@@ -245,9 +247,14 @@ export default function ProjectSearchDashboard() {
                           className="flex cursor-pointer items-center gap-3 p-2.5 transition-colors"
                         >
                           <FolderKanban className="h-4 w-4 text-primary/60" />
-                          <span className="text-sm font-medium">
-                            {item.projectnumber}
-                          </span>
+                          <div className="flex min-w-0 flex-col overflow-hidden">
+                            <span className="truncate text-sm font-medium">
+                              {item.projectnumber}
+                            </span>
+                            <span className="truncate text-[10px] text-muted-foreground">
+                              {item.projectname}
+                            </span>
+                          </div>
                         </CommandItem>
                       ))}
                     </CommandGroup>

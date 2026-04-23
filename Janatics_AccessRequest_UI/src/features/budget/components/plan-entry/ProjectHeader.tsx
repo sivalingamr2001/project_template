@@ -18,7 +18,7 @@ interface ProjectHeaderProps {
   record: BudgetRecord
   onSaveRecord?: () => Promise<void>
   onDiscardDraft: () => void
-  onExportCsv: () => void
+  onExportCsv: () => void | Promise<void>
 }
 
 export function ProjectHeader({
@@ -67,7 +67,7 @@ export function ProjectHeader({
           <div className="flex shrink-0 flex-col gap-3 px-2 md:flex-row md:items-center md:justify-end">
             <Button onClick={onExportCsv} size="sm" variant="outline">
               <FileDown className="mr-2 h-4 w-4" />
-              Export CSV
+              Export Excel
             </Button>
             {onSaveRecord && (
               <Button

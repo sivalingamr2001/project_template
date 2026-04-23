@@ -31,6 +31,26 @@ export function usePlanEntryDraft(): UsePlanEntryDraftReturn {
     [user?.employeeId]
   )
 
+  function loadDraft(): BudgetRecord | null {
+    if (!isStorageAvailable("local")) {
+      return null
+    }
+
+    try {
+      const parsed = getStorageItem<{
+        timestamp: number
+        record: BudgetRecord
+      }>(draftKey, {
+        namespace: "budget",
+        area: "local",
+      })
+      return parsed?.record ?? null
+    } catch (err) {
+      console.error("Failed to load draft:", err)
+      return null
+    }
+  }
+
   useEffect(() => {
     const stored = loadDraft()
     if (stored) {
@@ -83,26 +103,6 @@ export function usePlanEntryDraft(): UsePlanEntryDraftReturn {
       setHasUnsavedChanges(false)
     } catch (err) {
       console.error("Failed to save draft:", err)
-    }
-  }
-
-  const loadDraft = (): BudgetRecord | null => {
-    if (!isStorageAvailable("local")) {
-      return null
-    }
-
-    try {
-      const parsed = getStorageItem<{
-        timestamp: number
-        record: BudgetRecord
-      }>(draftKey, {
-        namespace: "budget",
-        area: "local",
-      })
-      return parsed?.record ?? null
-    } catch (err) {
-      console.error("Failed to load draft:", err)
-      return null
     }
   }
 

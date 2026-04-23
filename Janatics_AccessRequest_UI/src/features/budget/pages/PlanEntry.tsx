@@ -16,6 +16,7 @@ import type { StoredDraftRecord } from "../components/draft/DraftModal"
 import { BudgetValidationAlert } from "../components/BudgetValidationAlert"
 import { BudgetTable } from "../components/plan-entry/BudgetTable"
 import { DraftConfirmationDialog } from "../components/DraftConfirmationDialog"
+import { exportBudgetWorkbook } from "../utils/exportBudgetWorkbook"
 
 const DRAFT_KEY_PREFIX = "budget-plan-entry-draft"
 const DRAFT_TTL_MINUTES = 60 * 24 * 7
@@ -309,7 +310,10 @@ export default function PlanEntry() {
 
     try {
       if (recordToSave.id.startsWith("draft-")) {
-        const { id, ...createPayload } = recordToSave
+        const createPayload = {
+          projectHeader: recordToSave.projectHeader,
+          budgetData: recordToSave.budgetData,
+        }
         await createBudgetRecord(createPayload)
         toast.success("Record created! Redirecting...")
       } else {
@@ -340,44 +344,21 @@ export default function PlanEntry() {
     navigate("/budget/dashboard")
   }
 
-  const exportCsv = () => {
+  const exportWorkbook = async () => {
     if (!localRecord) {
       return
     }
 
-    const rows: string[] = [
-      "Category,Cost Item,Planned (INR),Actual (INR),Variance (INR),Variance (%)",
-    ]
-
-    localRecord.budgetData.forEach((category) => {
-      category.items.forEach((item) => {
-        const variance = item.planned - item.actual
-        const variancePercent =
-          item.planned > 0 ? (variance / item.planned) * 100 : 0
-        rows.push(
-          [
-            category.category,
-            item.name,
-            item.planned,
-            item.actual,
-            variance,
-            variancePercent.toFixed(1),
-          ]
-            .map((value) => `"${String(value).replaceAll('"', '""')}"`)
-            .join(",")
-        )
-      })
-    })
-
-    const blob = new Blob([rows.join("\n")], {
-      type: "text/csv;charset=utf-8;",
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `${localRecord.projectHeader.projectCode.toLowerCase()}-budget.csv`
-    link.click()
-    URL.revokeObjectURL(url)
+    try {
+      await exportBudgetWorkbook(localRecord)
+      toast.success("Budget workbook exported successfully")
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to export budget workbook"
+      toast.error(errorMessage)
+    }
   }
 
   const handleRecordChange = (updatedRecord: BudgetRecord) => {
@@ -473,7 +454,7 @@ export default function PlanEntry() {
           record={localRecord}
           onSaveRecord={saveRecord}
           onDiscardDraft={discardDraft}
-          onExportCsv={exportCsv}
+          onExportCsv={exportWorkbook}
         />
         <div className="mb-5 px-6">
           <BudgetValidationAlert
