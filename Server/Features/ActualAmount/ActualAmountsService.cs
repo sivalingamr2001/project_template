@@ -9,13 +9,13 @@ public class ActualAmountItem
 
 public class ActualAmountsRequest
 {
-    public string ProjectCode { get; set; } = string.Empty;
+    public string projectNumber { get; set; } = string.Empty;
     public string ProductNo { get; set; } = string.Empty;
 }
 
 public class ActualAmountsResponse
 {
-    public string ProjectCode { get; set; } = string.Empty;
+    public string projectNumber { get; set; } = string.Empty;
     public string ProductNo { get; set; } = string.Empty;
     public List<ActualAmountItem> Items { get; set; } = new();
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
@@ -51,16 +51,16 @@ public class ActualAmountsService
         }
     };
 
-    public static ActualAmountsResponse GetActualAmounts(string projectCode, string productNo)
+    public static ActualAmountsResponse GetActualAmounts(string projectNumber, string productNo)
     {
-        var key = $"{productNo}:{projectCode}";
+        var key = $"{productNo}:{projectNumber}";
         
         if (!MockActualAmounts.TryGetValue(key, out var amounts))
         {
             // Return empty list if no mock data found
             return new ActualAmountsResponse
             {
-                ProjectCode = projectCode,
+                projectNumber = projectNumber,
                 ProductNo = productNo,
                 Items = new List<ActualAmountItem>(),
                 LastUpdated = DateTime.UtcNow,
@@ -69,7 +69,7 @@ public class ActualAmountsService
 
         return new ActualAmountsResponse
         {
-            ProjectCode = projectCode,
+            projectNumber = projectNumber,
             ProductNo = productNo,
             Items = amounts,
             LastUpdated = DateTime.UtcNow,
@@ -85,7 +85,7 @@ public class ActualAmountsService
     /*
     public static async Task<ActualAmountsResponse> GetActualAmountsFromDbAsync(
         AppDbContext dbContext,
-        string projectCode,
+        string projectNumber,
         string productNo,
         CancellationToken ct = default)
     {
@@ -104,19 +104,19 @@ public class ActualAmountsService
                     SubCategory,
                     Amount
                 FROM ActualAmounts
-                WHERE ProjectCode = @ProjectCode 
+                WHERE projectNumber = @projectNumber 
                     AND ProductNo = @ProductNo
                     AND IsActive = 1
                 ORDER BY Category, SubCategory";
 
             var items = (await connection.QueryAsync<ActualAmountItem>(
                 query,
-                new { ProjectCode = projectCode, ProductNo = productNo }
+                new { projectNumber = projectNumber, ProductNo = productNo }
             )).ToList();
 
             return new ActualAmountsResponse
             {
-                ProjectCode = projectCode,
+                projectNumber = projectNumber,
                 ProductNo = productNo,
                 Items = items,
                 LastUpdated = DateTime.UtcNow,
@@ -127,7 +127,7 @@ public class ActualAmountsService
             Console.WriteLine($"Error fetching actual amounts: {ex.Message}");
             return new ActualAmountsResponse
             {
-                ProjectCode = projectCode,
+                projectNumber = projectNumber,
                 ProductNo = productNo,
                 Items = new List<ActualAmountItem>(),
                 LastUpdated = DateTime.UtcNow,

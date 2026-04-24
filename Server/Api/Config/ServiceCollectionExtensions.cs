@@ -1,6 +1,7 @@
 using ConnectionDll;
 using Microsoft.EntityFrameworkCore;
 using Server.Features.Auth.Login;
+using Server.Features.BudgetExport;
 using Server.Features.BudgetRecords;
 using Server.Features.Employees;
 using Server.Features.Template;
@@ -62,6 +63,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DatabaseInitializer>();
         services.AddScoped<LoginService>();
         services.AddScoped<BudgetRecordsService>();
+        services.AddScoped<BudgetExportService>();
+        services.AddScoped<ExcelReportBuilder>();
         services.AddScoped<EmployeesService>();
         services.AddScoped<TemplateService>();
         if (string.Equals(databaseOptions.Provider, "Oracle", StringComparison.OrdinalIgnoreCase))

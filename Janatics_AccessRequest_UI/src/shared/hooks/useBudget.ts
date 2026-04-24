@@ -49,14 +49,14 @@ export function useYearlyTrend(projectNumber?: string) {
 }
 
 // Internal shared logic for Trends
-function useTrendData(type: string, projectCode?: string) {
+function useTrendData(type: string, projectNumber?: string) {
   const [data, setData] = useState<TrendPoint[]>([])
 
   useEffect(() => {
     const fetchTrend = async () => {
       try {
         const { data } = await apiService.get<TrendPoint[]>('/budgets/summary/trend', {
-          params: { type, projectCode }
+          params: { type, projectNumber }
         })
         setData(data)
       } catch (error) {
@@ -64,7 +64,7 @@ function useTrendData(type: string, projectCode?: string) {
       }
     }
     fetchTrend()
-  }, [type, projectCode])
+  }, [type, projectNumber])
 
   return data
 }

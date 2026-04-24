@@ -54,7 +54,7 @@ function Analytics() {
               Budget Variance & Analysis
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {activeRecord.projectHeader.projectCode} ·{" "}
+              {activeRecord.projectHeader.projectNumber} ·{" "}
               {activeRecord.projectHeader.productName} ·{" "}
               {activeRecord.projectHeader.phase}
             </p>

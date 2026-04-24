@@ -11,7 +11,7 @@ const DRAFT_TTL_MINUTES = 60 * 24 * 7
 
 interface DraftData {
   productName: string
-  projectCode: string
+  projectNumber: string
   productNo: string
 }
 
@@ -36,7 +36,7 @@ export function useDraftStorage(
 ): UseDraftStorageReturn {
   const [formData, setFormData] = useState<DraftData>({
     productName: "",
-    projectCode: "",
+    projectNumber: "",
     productNo: "",
   })
   const [hasStoredDraft, setHasStoredDraft] = useState(false)
@@ -46,7 +46,7 @@ export function useDraftStorage(
     if (isOpen && initialData) {
       setFormData({
         productName: initialData.productName || "",
-        projectCode: initialData.projectCode || "",
+        projectNumber: initialData.projectNumber || "",
         productNo: initialData.productNo || "",
       })
       setShouldPromptResume(false)
@@ -71,7 +71,7 @@ export function useDraftStorage(
 
       const hasAnyDraftValue = Boolean(
         parsed.data.productName.trim() ||
-        parsed.data.projectCode.trim() ||
+        parsed.data.projectNumber.trim() ||
         parsed.data.productNo.trim()
       )
 
@@ -97,7 +97,7 @@ export function useDraftStorage(
     const timeout = window.setTimeout(() => {
       const hasAnyValue = Boolean(
         formData.productName.trim() ||
-        formData.projectCode.trim() ||
+        formData.projectNumber.trim() ||
         formData.productNo.trim()
       )
 

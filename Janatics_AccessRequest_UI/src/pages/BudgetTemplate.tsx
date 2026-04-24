@@ -1,65 +1,36 @@
-import { useEffect, useMemo, useState, useCallback } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { ColDef } from "ag-grid-community"
 import { useNavigate } from "react-router-dom"
-import { Trash2, Edit3, CheckCircle } from "lucide-react"
+import { CheckCircle, Edit3, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
+import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardTitle } from "@/shared/components/ui/card"
-import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
 import {
   budgetTemplateApi,
-  type TemplateResponse,
-  type TemplateCategory,
+  mapTemplateToRow,
+  TEMPLATE_SESSION_KEY,
+  type TemplateRow,
 } from "@/features/budget/utils/budgetTemplates"
-
-// ─── TYPES ──────────────────────────────────────────────────────────────────
-
-type TemplateRow = {
-  id: number
-  name: string
-  categoryCount: number
-  itemCount: number
-  preview: string
-  template: TemplateCategory[]
-}
-
-const TEMPLATE_SESSION_KEY = "budgetTemplate"
-
-// ─── COMPONENT ──────────────────────────────────────────────────────────────
 
 export default function BudgetTemplate() {
   const navigate = useNavigate()
   const [templates, setTemplates] = useState<TemplateRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  // 1. Fetch & Map Data (READ)
   const fetchTemplates = useCallback(async () => {
     setIsLoading(true)
+
     try {
       const response = await budgetTemplateApi.getAll(1, 100)
 
       if (response.data.success) {
-        // Only mapping data received from the Oracle API
-        const mappedRows: TemplateRow[] = response.data.data.data.map(
-          (t: TemplateResponse) => ({
-            id: t.templateId,
-            name: t.name,
-            categoryCount: t.structure.length,
-            itemCount: t.structure.reduce(
-              (sum, cat) => sum + (cat.items?.length || 0),
-              0
-            ),
-            preview: t.structure.map((cat) => cat.category).join(", "),
-            template: t.structure,
-          })
-        )
-        setTemplates(mappedRows)
+        setTemplates(response.data.data.data.map(mapTemplateToRow))
       } else {
         toast.error(response.data.message || "Failed to load templates")
       }
     } catch (error) {
-      console.error("API Error:", error)
       toast.error("Network error while fetching templates")
     } finally {
       setIsLoading(false)
@@ -67,18 +38,20 @@ export default function BudgetTemplate() {
   }, [])
 
   useEffect(() => {
-    fetchTemplates()
+    void fetchTemplates()
   }, [fetchTemplates])
 
-  // 2. Delete Action (DELETE)
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Delete this template from Oracle DB?")) return
+    if (!window.confirm("Delete this template?")) {
+      return
+    }
 
     try {
       const response = await budgetTemplateApi.delete(id)
+
       if (response.data.success) {
         toast.success("Template deleted")
-        fetchTemplates()
+        void fetchTemplates()
       } else {
         toast.error(response.data.message || "Delete failed")
       }
@@ -87,18 +60,17 @@ export default function BudgetTemplate() {
     }
   }
 
-  // 3. Use Template Action (Session for Plan Entry)
-  const handleUseTemplate = (template: TemplateCategory[]) => {
+  const handleUseTemplate = (template: TemplateRow["template"]) => {
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(
         TEMPLATE_SESSION_KEY,
         JSON.stringify(template)
       )
     }
+
     navigate("/plan-entry")
   }
 
-  // 4. Column Definitions
   const columnDefs = useMemo<ColDef<TemplateRow>[]>(
     () => [
       { field: "name", headerName: "Template", flex: 1, minWidth: 200 },
@@ -114,7 +86,7 @@ export default function BudgetTemplate() {
       },
       {
         headerName: "Actions",
-        width: 150,
+        width: 180,
         pinned: "right",
         sortable: false,
         filter: false,
@@ -123,10 +95,20 @@ export default function BudgetTemplate() {
             <Button
               size="icon"
               variant="ghost"
+              className="h-8 w-8 text-emerald-600"
+              onClick={() => handleUseTemplate(params.data.template)}
+              title="Use template"
+            >
+              <CheckCircle className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
               className="h-8 w-8 text-blue-600"
               onClick={() =>
                 navigate(`/budget-template/editor/${params.data.id}`)
               }
+              title="Edit template"
             >
               <Edit3 className="h-4 w-4" />
             </Button>
@@ -135,6 +117,7 @@ export default function BudgetTemplate() {
               variant="ghost"
               className="h-8 w-8 text-destructive"
               onClick={() => handleDelete(params.data.id)}
+              title="Delete template"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -155,10 +138,8 @@ export default function BudgetTemplate() {
                 Budget Templates
               </CardTitle>
             </div>
-            <Button
-              size="sm"
-              onClick={() => navigate("/budget-template/editor")}
-            >
+
+            <Button size="sm" onClick={() => navigate("/budget-template/editor")}>
               + Create Template
             </Button>
           </div>

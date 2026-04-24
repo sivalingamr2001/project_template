@@ -53,7 +53,7 @@ export const ProjectSearchFilters = ({
             Product Number
           </label>
           <Input
-            placeholder="Type product no..."
+            placeholder="Type product number..."
             value={productNo}
             onChange={(e) => {
               setProductNo(e.target.value)

@@ -180,7 +180,7 @@ GET /api/budgets/summary/trend
 |------|------|----------|-------------|--------|
 | `type` | string | ✗ | Aggregation period | "monthly", "quarterly", "yearly" |
 | `productNo` | string | ✗ | Filter by product number | - |
-| `projectCode` | string | ✗ | Filter by project code | - |
+| `projectNumber` | string | ✗ | Filter by project code | - |
 
 **Response Type:** `TrendPoint[]`
 
@@ -239,7 +239,7 @@ GET /api/budgets/summary/trend?type=monthly
 GET /api/budgets/summary/trend?type=quarterly&productNo=NPD-2025-08
 
 # Yearly trend for specific project
-GET /api/budgets/summary/trend?type=yearly&projectCode=NPD-2025-07
+GET /api/budgets/summary/trend?type=yearly&projectNumber=NPD-2025-07
 ```
 
 ---
@@ -336,7 +336,7 @@ GET /api/budgets/by-project/NPD-2025-08
 
 ### 7. Get Budget by Project & Product Code
 ```
-GET /api/budgets/by-project/{projectCode}/product/{productNo}
+GET /api/budgets/by-project/{projectNumber}/product/{productNo}
 ```
 
 **Description:** Get budget by combining project code and product number
@@ -344,7 +344,7 @@ GET /api/budgets/by-project/{projectCode}/product/{productNo}
 **Parameters:**
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `projectCode` | string | ✓ | Project code (path parameter) |
+| `projectNumber` | string | ✓ | Project code (path parameter) |
 | `productNo` | string | ✓ | Product number (path parameter) |
 
 **Response Type:** `BudgetRecord | null`

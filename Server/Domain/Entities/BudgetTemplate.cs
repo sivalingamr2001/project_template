@@ -8,8 +8,8 @@ public class BudgetTemplateEntity : BaseEntity
     public int TemplateId { get; set; }
 
     [Required]
-    public  string  Name { get; set; }
+    public  string  Name { get; set; } = string.Empty;
 
     [Required]
-    public string TemplateJson { get; set; }
+    public string TemplateJson { get; set; } =  string.Empty;
 }

@@ -60,7 +60,7 @@ public sealed class BudgetRecordsService(
             .OrderByDescending(b => b.ModifiedOn)
             .Select(b => new BudgetRecordSummaryDto(
                 b.BudgetId,
-                b.ProjectCode,
+                b.ProjectNumber,
                 b.ProductNo,
                 b.ProjectTitle,
                 b.EmployeeId,
@@ -78,7 +78,7 @@ public sealed class BudgetRecordsService(
             .Select(b => new BudgetRecordHeaderDto(
                 b.BudgetId,
                 b.EmployeeId,
-                b.ProjectCode,
+                b.ProjectNumber,
                 b.ProductNo,
                 b.ProjectTitle,
                 b.CreatedOn,
@@ -121,22 +121,22 @@ public sealed class BudgetRecordsService(
             : await GetByIdAsync(budgetId.Value, cancellationToken);
     }
 
-    public async Task<Result<BudgetRecordDto>> GetByProjectCodeAndProductNoAsync(
-        string projectCode,
+    public async Task<Result<BudgetRecordDto>> GetByprojectNumberAndProductNoAsync(
+        string projectNumber,
         string productNo,
         CancellationToken cancellationToken)
     {
-        var code = projectCode.Trim();
+        var code = projectNumber.Trim();
         var product = productNo.Trim();
 
         var budgetId = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.ProjectCode == code && b.ProductNo == product && b.IsActive == 1)
+            .Where(b => b.ProjectNumber == code && b.ProductNo == product && b.IsActive == 1)
             .Select(b => (int?)b.BudgetId)
             .SingleOrDefaultAsync(cancellationToken);
 
         return budgetId is null
-            ? BudgetErrors.NotFoundByProjectCodeAndProductNo(code, product)
+            ? BudgetErrors.NotFoundByProjectNumberAndProductNo(code, product)
             : await GetByIdAsync(budgetId.Value, cancellationToken);
     }
 
@@ -197,7 +197,7 @@ public sealed class BudgetRecordsService(
 
     public async Task<Result<IReadOnlyList<BudgetTrendPointDto>>> GetTrendAsync(
         string? type,
-        string? projectCode,
+        string? projectNumber,
         CancellationToken ct)
     {
         var now = DateTime.UtcNow;
@@ -207,10 +207,10 @@ public sealed class BudgetRecordsService(
             .AsNoTracking()
             .Where(b => b.IsActive == 1);
 
-        if (!string.IsNullOrWhiteSpace(projectCode))
+        if (!string.IsNullOrWhiteSpace(projectNumber))
         {
-            var trimmedProjectCode = projectCode.Trim();
-            query = query.Where(b => b.ProjectCode == trimmedProjectCode);
+            var trimmedprojectNumber = projectNumber.Trim();
+            query = query.Where(b => b.ProjectNumber == trimmedprojectNumber);
         }
 
         var rawPoints = await query
@@ -320,9 +320,10 @@ public sealed class BudgetRecordsService(
 
     public async Task<Result<BudgetRecordDto>> CreateAsync(CreateBudgetRecordRequest request, CancellationToken cancellationToken)
     {
-        var projectCode = request.ProjectCode.Trim();
+        var projectNumber = request.projectNumber.Trim();
         var productNo = request.ProductNo.Trim();
         var projectTitle = (request.ProjectTitle ?? request.ProductName ?? string.Empty).Trim();
+        var templateId = request.TemplateId ?? 1;
 
         // Start the Transaction at the very beginning
         using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -339,16 +340,25 @@ public sealed class BudgetRecordsService(
                 return new ServiceError($"Employee '{request.EmployeeId}' was not found.", ErrorCode.Validation);
             }
 
-            if (await dbContext.Budgets.CountAsync(b => b.ProjectCode == projectCode, cancellationToken) > 0)
+            if (await dbContext.Budgets.CountAsync(b => b.ProjectNumber == projectNumber, cancellationToken) > 0)
             {
-                return BudgetErrors.DuplicateProjectCode(projectCode);
+                return BudgetErrors.DuplicateProjectNumber(projectNumber);
+            }
+
+            var templateExists = await dbContext.BudgetTemplates
+                .AnyAsync(t => t.TemplateId == templateId, cancellationToken);
+
+            if (!templateExists)
+            {
+                return BudgetErrors.TemplateNotFound(templateId);
             }
 
             // 2. Create the Parent Budget Record
             var budget = new Budget
             {
                 EmployeeId = request.EmployeeId,
-                ProjectCode = projectCode,
+                TemplateId = templateId,
+                ProjectNumber = projectNumber,
                 ProductNo = productNo,
                 ProjectTitle = projectTitle,
                 CreatedOn = DateTime.UtcNow,
@@ -440,7 +450,7 @@ public sealed class BudgetRecordsService(
             // the Budget created in Step 2 is removed from the database.
             await transaction.RollbackAsync(cancellationToken);
 
-            logger.LogError(ex, "Transaction failed. All changes rolled back for Project: {ProjectCode}", projectCode);
+            logger.LogError(ex, "Transaction failed. All changes rolled back for Project: {projectNumber}", projectNumber);
 
             // Return a clean error message instead of crashing
             if (ex.InnerException is OracleException oex && oex.Number == 1)
@@ -465,23 +475,23 @@ public sealed class BudgetRecordsService(
             return BudgetErrors.NotFound(budgetId);
         }
 
-        var projectCode = request.ProjectCode.Trim();
+        var projectNumber = request.projectNumber.Trim();
         var productNo = request.ProductNo.Trim();
-        var projectTitle = request.ProjectTitle.Trim();
+        var projectTitle = (request.ProjectTitle ?? request.ProductName ?? string.Empty).Trim();
 
-        if (!string.Equals(budget.ProjectCode, projectCode, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(budget.ProjectNumber, projectNumber, StringComparison.OrdinalIgnoreCase))
         {
             var duplicate = await dbContext.Budgets.AnyAsync(
-                b => b.ProjectCode == projectCode && b.BudgetId != budgetId,
+                b => b.ProjectNumber == projectNumber && b.BudgetId != budgetId,
                 cancellationToken);
 
             if (duplicate)
             {
-                return BudgetErrors.DuplicateProjectCode(projectCode);
+                return BudgetErrors.DuplicateProjectNumber(projectNumber);
             }
         }
 
-        budget.ProjectCode = projectCode;
+        budget.ProjectNumber = projectNumber;
         budget.ProductNo = productNo;
         budget.ProjectTitle = projectTitle;
         budget.ModifiedOn = DateTime.UtcNow;

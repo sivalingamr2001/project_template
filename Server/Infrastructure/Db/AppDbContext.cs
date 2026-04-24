@@ -39,13 +39,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.ToTable("jan_budgets");
             entity.HasKey(e => e.BudgetId);
-            entity.HasIndex(e => e.ProjectCode).IsUnique();
+            entity.HasIndex(e => e.ProjectNumber).IsUnique();
 
-            // 3. Link Budget to Template (Optional but recommended)
-            entity.HasOne<BudgetTemplateEntity>()
+            // 3. Link Budget to Template (Optional)
+            entity.HasOne(b => b.Template)
                   .WithMany()
-                  .HasForeignKey("TemplateId")
-                  .IsRequired(false);
+                  .HasForeignKey(b => b.TemplateId)
+                  .IsRequired(false)
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Budget Categories

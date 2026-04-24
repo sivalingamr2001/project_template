@@ -10,13 +10,12 @@ public class Budget : BaseEntity
     [Required]
     public int EmployeeId { get; set; }
 
-    [Required]
-    public int TemplateId { get; set; }
+    public int? TemplateId { get; set; }
 
-    public BudgetTemplateEntity Template { get; set; }
+    public BudgetTemplateEntity? Template { get; set; }
 
     [Required]
-    public string ProjectCode { get; set; } = string.Empty;
+    public string ProjectNumber { get; set; } = string.Empty;
 
     [Required]
     public string ProductNo { get; set; } = string.Empty;

@@ -32,6 +32,16 @@ public static class TemplateEndpoint
             return result.Success ? Results.Created($"/api/templates/{result.Data!.TemplateId}", result) : Results.BadRequest(result);
         });
 
+        // UPDATE
+        group.MapPut("/{id:int}", async (int id, TemplateRequest request, TemplateService service, CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Name))
+                return Results.BadRequest(ApiResult<TemplateResponse>.Fail("Name is required"));
+
+            var result = await service.UpdateAsync(id, request, ct);
+            return result.Success ? Results.Ok(result) : Results.NotFound(result);
+        });
+
         // DELETE
         group.MapDelete("/{id:int}", async (int id, TemplateService service, CancellationToken ct) =>
         {

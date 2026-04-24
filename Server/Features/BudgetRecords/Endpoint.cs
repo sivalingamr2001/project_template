@@ -54,9 +54,9 @@ public static class BudgetRecordsEndpoint
             BudgetRecordsService service,
             CancellationToken cancellationToken,
             string? type = null,
-            string? projectCode = null) =>
+            string? projectNumber = null) =>
         {
-            var result = await service.GetTrendAsync(type, projectCode, cancellationToken);
+            var result = await service.GetTrendAsync(type, projectNumber, cancellationToken);
 
             return result.IsSuccess
                 ? Results.Ok(result.Value)
@@ -93,15 +93,15 @@ public static class BudgetRecordsEndpoint
         .WithOpenApi();
 
         // productNo may contain slashes (e.g., "XYZ-5/2-PSV"), so this is a catch-all route.
-        group.MapGet("/by-project/{projectCode}/product/{*productNo}", async (
-            string projectCode,
+        group.MapGet("/by-project/{projectNumber}/product/{*productNo}", async (
+            string projectNumber,
             string productNo,
             BudgetRecordsService service,
             CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(projectCode))
+            if (string.IsNullOrWhiteSpace(projectNumber))
             {
-                throw new AppValidationException("projectCode is required.");
+                throw new AppValidationException("projectNumber is required.");
             }
 
             if (string.IsNullOrWhiteSpace(productNo))
@@ -109,15 +109,15 @@ public static class BudgetRecordsEndpoint
                 throw new AppValidationException("productNo is required.");
             }
 
-            var decodedProjectCode = DecodeRouteValue(projectCode, "projectCode");
+            var decodedprojectNumber = DecodeRouteValue(projectNumber, "projectNumber");
             var decodedProductNo = DecodeRouteValue(productNo, "productNo");
 
-            var result = await service.GetByProjectCodeAndProductNoAsync(decodedProjectCode, decodedProductNo, cancellationToken);
+            var result = await service.GetByprojectNumberAndProductNoAsync(decodedprojectNumber, decodedProductNo, cancellationToken);
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : ToProblem(result.Error!);
         })
-        .WithName("GetBudgetByProjectCodeAndProductNo")
+        .WithName("GetBudgetByprojectNumberAndProductNo")
         .WithOpenApi();
 
         group.MapPost("/", async (CreateBudgetRecordRequest request, BudgetRecordsService service, CancellationToken cancellationToken) =>
@@ -166,9 +166,9 @@ public static class BudgetRecordsEndpoint
             throw new AppValidationException("EmployeeId is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.ProjectCode))
+        if (string.IsNullOrWhiteSpace(request.projectNumber))
         {
-            throw new AppValidationException("ProjectCode is required.");
+            throw new AppValidationException("projectNumber is required.");
         }
 
         if (string.IsNullOrWhiteSpace(request.ProductNo))
@@ -211,9 +211,9 @@ public static class BudgetRecordsEndpoint
 
     private static void ValidateUpdateRequest(UpdateBudgetRecordRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.ProjectCode))
+        if (string.IsNullOrWhiteSpace(request.projectNumber))
         {
-            throw new AppValidationException("ProjectCode is required.");
+            throw new AppValidationException("projectNumber is required.");
         }
 
         if (string.IsNullOrWhiteSpace(request.ProductNo))
@@ -221,9 +221,10 @@ public static class BudgetRecordsEndpoint
             throw new AppValidationException("ProductNo is required.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.ProjectTitle))
+        var title = (request.ProjectTitle ?? request.ProductName)?.Trim();
+        if (string.IsNullOrWhiteSpace(title))
         {
-            throw new AppValidationException("ProjectTitle is required.");
+            throw new AppValidationException("ProductName (or projectTitle) is required.");
         }
 
         if (request.Items is null)

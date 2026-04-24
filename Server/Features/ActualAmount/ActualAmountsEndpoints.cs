@@ -23,19 +23,19 @@ public static class ActualAmountsEndpoints
         CancellationToken ct)
     {
         // Validate input
-        if (string.IsNullOrWhiteSpace(request.ProjectCode) || string.IsNullOrWhiteSpace(request.ProductNo))
+        if (string.IsNullOrWhiteSpace(request.projectNumber) || string.IsNullOrWhiteSpace(request.ProductNo))
         {
             return Results.BadRequest(
-                ApiResult<string>.Fail("ProjectCode and ProductNo are required"));
+                ApiResult<string>.Fail("projectNumber and ProductNo are required"));
         }
 
         try
         {
             // Get actual amounts (using mock data for now)
-            var result = ActualAmountsService.GetActualAmounts(request.ProjectCode, request.ProductNo);
+            var result = ActualAmountsService.GetActualAmounts(request.projectNumber, request.ProductNo);
 
             // For future database integration, uncomment below:
-            // var result = await ActualAmountsService.GetActualAmountsFromDbAsync(db, request.ProjectCode, request.ProductNo, ct);
+            // var result = await ActualAmountsService.GetActualAmountsFromDbAsync(db, request.projectNumber, request.ProductNo, ct);
 
             return Results.Ok(ApiResult<ActualAmountsResponse>.Ok(result));
         }

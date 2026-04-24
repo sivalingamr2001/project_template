@@ -56,9 +56,9 @@ export default function ProjectSearchDashboard() {
 
   const columnDefs = useMemo(
     () => [
-      { field: "product_no", headerName: "Product No", flex: 1 },
+      { field: "product_no", headerName: "Product Number", flex: 1 },
       { field: "projectnumber", headerName: "Project Number", flex: 1 },
-      { field: "projectname", headerName: "Project Name", flex: 2 },
+      { field: "projectname", headerName: "Product Name", flex: 2 },
       {
         headerName: "Actions",
         pinned: "right" as const,
@@ -79,7 +79,7 @@ export default function ProjectSearchDashboard() {
 
   async function handleNavigateToPlanEntry(input: {
     productName: string
-    projectCode: string
+    projectNumber: string
     productNo: string
   }) {
     toast.success(
@@ -188,7 +188,7 @@ export default function ProjectSearchDashboard() {
         initialData={{
           productName: currentProductName,
           productNo: state.productNo,
-          projectCode: state.projectNo,
+          projectNumber: state.projectNo,
         }}
       />
     </div>

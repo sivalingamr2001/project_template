@@ -36,6 +36,7 @@ import {
   useYearlyTrend,
 } from "@/shared/hooks/useBudget"
 import { apiService } from "@/shared/lib/api-client"
+import { exportBudgetWorkbook } from "@/features/budget/utils/exportBudgetWorkbook"
 
 type PeriodOption = "monthly" | "quarterly" | "yearly" | "custom"
 
@@ -59,6 +60,7 @@ export default function ReportPage() {
   })
 
   const [productLoading, setProductLoading] = useState(false)
+  const [productExporting, setProductExporting] = useState(false)
   const [productBudget, setProductBudget] =
     useState<BudgetRecordResponse | null>(null)
   const [productError, setProductError] = useState<string | null>(null)
@@ -111,6 +113,24 @@ export default function ReportPage() {
     }
   }, [productBudget])
 
+  const productCategoryChartData = useMemo(() => {
+    if (!productBudget) {
+      return []
+    }
+
+    return productBudget.categories.map((category) => {
+      const planned = category.items.reduce((sum, item) => sum + item.planned, 0)
+      const actual = category.items.reduce((sum, item) => sum + item.actual, 0)
+
+      return {
+        label: category.categoryName,
+        planned,
+        actual,
+        variance: planned - actual,
+      }
+    })
+  }, [productBudget])
+
   const loadProductBudget = async () => {
     const trimmedProductNo = productNo.trim()
     if (!trimmedProductNo) return
@@ -130,6 +150,23 @@ export default function ReportPage() {
       setProductError("Unable to find budget for this product number.")
     } finally {
       setProductLoading(false)
+    }
+  }
+
+  const handleExportProductReport = async () => {
+    if (!productBudget?.header.budgetId) {
+      setProductError("Load a product report before exporting.")
+      return
+    }
+
+    try {
+      setProductExporting(true)
+      await exportBudgetWorkbook(productBudget.header.budgetId)
+    } catch (error) {
+      console.error("Failed to export product report", error)
+      setProductError("Unable to export the product cost report.")
+    } finally {
+      setProductExporting(false)
     }
   }
 
@@ -160,7 +197,7 @@ export default function ReportPage() {
           <div className="flex items-center gap-2 rounded-full border bg-card pl-4 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/50">
             <Search className="h-3.5 w-3.5 text-muted-foreground" />
             <input
-              placeholder="Product No..."
+              placeholder="Product Number..."
               value={productNo}
               onChange={(e) => setProductNo(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && loadProductBudget()}
@@ -182,10 +219,11 @@ export default function ReportPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => alert("Exporting report...")}
+              onClick={handleExportProductReport}
+              disabled={!productBudget?.header.budgetId || productExporting}
               className="h-7 rounded-full px-4 text-[11px] font-bold tracking-wider uppercase"
             >
-              Export
+              {productExporting ? "Exporting..." : "Export"}
             </Button>
 
           <div className="flex items-center gap-2 rounded-full border bg-card pl-4 shadow-sm">
@@ -360,16 +398,16 @@ export default function ReportPage() {
               </p>
               <div className="mt-4 space-y-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Title</p>
+                  <p className="text-xs text-muted-foreground">Product Name</p>
                   <p className="text-sm font-semibold">
-                    {productBudget.header.projectTitle}
+                    {productBudget.header.productName ?? productBudget.header.projectTitle}
                   </p>
                 </div>
                 <div className="flex justify-between border-t pt-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Code</p>
+                    <p className="text-xs text-muted-foreground">Project Number</p>
                     <p className="text-sm font-semibold">
-                      {productBudget.header.projectCode}
+                      {productBudget.header.projectNumber}
                     </p>
                   </div>
                   <div className="text-right">
@@ -385,41 +423,74 @@ export default function ReportPage() {
             </div>
           </div>
 
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border bg-card p-2 shadow-sm transition-all hover:shadow-md">
+              <PlannedVsActualBarChart data={productCategoryChartData} />
+            </div>
+            <div className="rounded-3xl border bg-card p-2 shadow-sm transition-all hover:shadow-md">
+              <VarianceTrendChart
+                data={productCategoryChartData.map((point) => ({
+                  label: point.label,
+                  variance: point.variance,
+                }))}
+              />
+            </div>
+          </div>
+
           {/* Categories Section */}
           <div className="rounded-3xl border bg-card p-6 shadow-sm">
             <p className="mb-4 text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
               Budget category breakdown
             </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {productBudget.categories.map((category: any) => (
-                <div
-                  key={category.categoryId}
-                  className="group rounded-2xl border bg-muted/20 p-4 transition-colors hover:bg-muted/40"
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs font-bold text-primary">
-                      {category.categoryName}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground uppercase">
-                      {category.items.length} line items
-                    </span>
-                    <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
-                      <div className="text-xs">
-                        <p className="text-muted-foreground">Spent</p>
-                        <p className="font-bold">
-                          {formatCurrency(
-                            category.items.reduce(
-                              (s: any, i: any) => s + i.actual,
-                              0
-                            )
-                          )}
-                        </p>
+              {productBudget.categories.map((category) => {
+                const planned = category.items.reduce(
+                  (sum, item) => sum + item.planned,
+                  0
+                )
+                const actual = category.items.reduce(
+                  (sum, item) => sum + item.actual,
+                  0
+                )
+                const variance = planned - actual
+
+                return (
+                  <div
+                    key={category.categoryId}
+                    className="group rounded-2xl border bg-muted/20 p-4 transition-colors hover:bg-muted/40"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-bold text-primary">
+                        {category.categoryName}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground uppercase">
+                        {category.items.length} line items
+                      </span>
+                      <div className="mt-3 grid gap-3 border-t border-border/50 pt-3 text-xs">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-muted-foreground">Planned</p>
+                            <p className="font-bold">{formatCurrency(planned)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-muted-foreground">Actual</p>
+                            <p className="font-bold">{formatCurrency(actual)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-muted-foreground">Variance</p>
+                            <p className="font-bold text-primary">
+                              {formatCurrency(variance)}
+                            </p>
+                          </div>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                        </div>
                       </div>
-                      <ArrowRight className="h-3 w-3 text-muted-foreground transition-transform group-hover:translate-x-1" />
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

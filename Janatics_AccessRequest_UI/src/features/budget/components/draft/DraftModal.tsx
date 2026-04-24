@@ -81,7 +81,7 @@ export default function DraftModal({
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
                         <div className="font-semibold text-foreground">
-                          {record.projectHeader.projectCode}
+                          {record.projectHeader.projectNumber}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {record.projectHeader.productName}

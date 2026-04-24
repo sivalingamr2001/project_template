@@ -5,8 +5,11 @@ namespace Server.Features.BudgetRecords;
 public sealed class CreateBudgetRecordRequest
 {
     public int EmployeeId { get; init; }
-    public string ProjectCode { get; init; } = string.Empty;
+    public string projectNumber { get; init; } = string.Empty;
     public string ProductNo { get; init; } = string.Empty;
+
+    [JsonPropertyName("templateId")]
+    public int? TemplateId { get; init; }
 
     // Client sometimes sends "productName" instead of "projectTitle".
     [JsonPropertyName("productName")]
@@ -41,17 +44,26 @@ public sealed class CreateBudgetItemRequest
     public decimal Actual { get; init; }
 }
 
-public sealed record UpdateBudgetRecordRequest(
-    string ProjectCode,
-    string ProductNo,
-    string ProjectTitle,
-    IReadOnlyList<BudgetItemUpdateDto>? Items);
+public sealed class UpdateBudgetRecordRequest
+{
+    public string projectNumber { get; init; } = string.Empty;
+    public string ProductNo { get; init; } = string.Empty;
+
+    [JsonPropertyName("productName")]
+    public string? ProductName { get; init; }
+
+    [JsonPropertyName("projectTitle")]
+    public string? ProjectTitle { get; init; }
+
+    [JsonPropertyName("items")]
+    public IReadOnlyList<BudgetItemUpdateDto>? Items { get; init; }
+}
 
 public sealed record BudgetItemUpdateDto(int ItemId, decimal Planned, decimal Actual);
 
 public sealed record BudgetRecordSummaryDto(
     int BudgetId,
-    string ProjectCode,
+    string projectNumber,
     string ProductNo,
     string ProjectTitle,
     int EmployeeId,
@@ -70,11 +82,15 @@ public sealed record BudgetRecordDto(BudgetRecordHeaderDto Header, IReadOnlyList
 public sealed record BudgetRecordHeaderDto(
     int BudgetId,
     int EmployeeId,
-    string ProjectCode,
+    string projectNumber,
     string ProductNo,
     string ProjectTitle,
     DateTime CreatedOn,
-    DateTime ModifiedOn);
+    DateTime ModifiedOn)
+{
+    [JsonPropertyName("productName")]
+    public string ProductName => ProjectTitle;
+}
 
 public sealed record BudgetCategoryDto(int CategoryId, string CategoryName, IReadOnlyList<BudgetItemDto> Items);
 

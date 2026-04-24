@@ -1,4 +1,5 @@
 ﻿import type { BudgetRecord } from "@/features/budget/types"
+import type { TemplateOption } from "@/features/budget/utils/budgetTemplates"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,6 +42,7 @@ interface ProjectHeaderProps {
   onSaveRecord?: () => Promise<void>
   onDiscardDraft: () => void
   onExportCsv: () => void | Promise<void>
+  isExporting?: boolean
   selectedTemplateId: string
   onTemplateChange: (value: string) => void
   templateOptions: TemplateOption[]
@@ -51,6 +53,7 @@ export function ProjectHeader({
   onSaveRecord,
   onDiscardDraft,
   onExportCsv,
+  isExporting = false,
   selectedTemplateId,
   onTemplateChange,
   templateOptions,
@@ -58,7 +61,7 @@ export function ProjectHeader({
   const [isRefreshConfirmOpen, setIsRefreshConfirmOpen] = useState(false)
 
   const isFormValid = Boolean(
-    record.projectHeader.projectCode && record.projectHeader.productNo
+    record.projectHeader.projectNumber && record.projectHeader.productNo
   )
 
   function confirmRefresh() {
@@ -79,16 +82,16 @@ export function ProjectHeader({
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className="font-medium">Budget Name:</span>
+            <span className="font-medium">Product Name:</span>
             <h1 className="font-display text-2xl font-bold text-foreground">
               {projectHeader.productName}
             </h1>
           </div>
           <p className="mt-1 text-sm text-foreground">
-            <span className="font-medium text-muted-foreground">Project:</span>{" "}
-            {projectHeader.projectCode} |{" "}
+            <span className="font-medium text-muted-foreground">Project Number:</span>{" "}
+            {projectHeader.projectNumber} | {" "}
             <span className="font-medium text-muted-foreground">
-              Product No:
+              Product Number:
             </span>{" "}
             {projectHeader.productNo}
           </p>
@@ -186,13 +189,14 @@ export function ProjectHeader({
             </div>
 
             <Button
+              disabled={isExporting}
               onClick={onExportCsv}
               size="sm"
               variant="outline"
               className="rounded-full"
             >
               <FileDown className="mr-2 h-4 w-4" />
-              Export
+              {isExporting ? "Exporting..." : "Export"}
             </Button>
 
             {onSaveRecord && (

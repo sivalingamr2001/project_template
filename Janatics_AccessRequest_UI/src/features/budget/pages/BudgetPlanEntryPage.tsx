@@ -10,21 +10,28 @@ import {
 import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { toast } from "sonner"
+import { BudgetValidationAlert } from "../components/BudgetValidationAlert"
+import { DraftConfirmationDialog } from "../components/DraftConfirmationDialog"
 import type { StoredDraftRecord } from "../components/draft/DraftModal"
+import { BudgetTable } from "../components/plan-entry/BudgetTable"
+import { ProjectHeader } from "../components/plan-entry/ProjectHeader"
 import type { BudgetRecord } from "../types"
-import type { TemplateCategory } from "../utils/budgetTemplates"
+import { exportBudgetWorkbook } from "../utils/exportBudgetWorkbook"
 import {
   budgetTemplateApi,
+  mapTemplateToOption,
   TEMPLATE_SESSION_KEY,
+  templateToBudgetData,
+  type TemplateCategory,
+  type TemplateOption,
 } from "../utils/budgetTemplates"
-import { exportBudgetWorkbook } from "../utils/exportBudgetWorkbook"
 
 const DRAFT_KEY_PREFIX = "budget-plan-entry-draft"
 const DRAFT_TTL_MINUTES = 60 * 24 * 7
 
 function createLocalBudgetRecord(input: {
   productName: string
-  projectCode: string
+  projectNumber: string
   productNo: string
   employeeId: number
   categories: TemplateCategory[]
@@ -34,7 +41,7 @@ function createLocalBudgetRecord(input: {
     projectHeader: {
       employeeId: input.employeeId,
       productName: input.productName,
-      projectCode: input.projectCode,
+      projectNumber: input.projectNumber,
       productNo: input.productNo,
       phase: "Product development",
       department: "Research and Development",
@@ -62,7 +69,7 @@ function loadTemplateFromSessionStorage(): TemplateCategory[] | null {
   }
 }
 
-export default function PlanEntry() {
+export default function BudgetPlanEntryPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -83,22 +90,36 @@ export default function PlanEntry() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null
   )
-  const [templateOptions, setTemplateOptions] = useState([])
-
+  const [templateOptions, setTemplateOptions] = useState<TemplateOption[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState("")
+  const [isExporting, setIsExporting] = useState(false)
 
   useEffect(() => {
-    const fetchTemplates = async () => {
-      const data = await budgetTemplateApi.getAll()
-      setTemplateOptions(data.data.data.data)
+    let isMounted = true
 
-      // Set initial selection once data is loaded
-      if (data.length > 0) {
-        setSelectedTemplateId(data[0].id)
+    const fetchTemplates = async () => {
+      try {
+        const response = await budgetTemplateApi.getAll(1, 100)
+        const options = response.data.data.data.map(mapTemplateToOption)
+
+        if (!isMounted) {
+          return
+        }
+
+        setTemplateOptions(options)
+        setSelectedTemplateId((current) => current || options[0]?.id || "")
+      } catch (fetchError) {
+        if (isMounted) {
+          toast.error("Unable to load budget templates")
+        }
       }
     }
 
-    fetchTemplates()
+    void fetchTemplates()
+
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const draftStorageBaseKey = useMemo(
@@ -117,7 +138,7 @@ export default function PlanEntry() {
       record?: BudgetRecord
       inputData?: {
         productName: string
-        projectCode: string
+        projectNumber: string
         productNo: string
       }
       draftRecord?: BudgetRecord
@@ -144,14 +165,20 @@ export default function PlanEntry() {
       const fallbackTemplate =
         sessionTemplate ?? templateOptions[0]?.categories ?? []
 
+      if (fallbackTemplate.length === 0) {
+        return
+      }
+
       const newRecord = createLocalBudgetRecord({
         ...state.inputData,
         employeeId: user?.employeeId ?? 0,
         categories: fallbackTemplate,
       })
+
       if (sessionTemplate) {
         window.sessionStorage.removeItem(TEMPLATE_SESSION_KEY)
       }
+
       setLocalRecord(newRecord)
       setActiveRecord(newRecord)
       return
@@ -160,7 +187,7 @@ export default function PlanEntry() {
     if (sessionTemplate) {
       const newRecord = createLocalBudgetRecord({
         productName: "Selected Budget Template",
-        projectCode: "",
+        projectNumber: "",
         productNo: "",
         employeeId: user?.employeeId ?? 0,
         categories: sessionTemplate,
@@ -182,8 +209,8 @@ export default function PlanEntry() {
       let latestDraft: BudgetRecord | null = null
       let latestUpdated = 0
 
-      for (let i = 0; i < storage.length; i++) {
-        const key = storage.key(i)
+      for (let index = 0; index < storage.length; index += 1) {
+        const key = storage.key(index)
         if (!key || !key.startsWith(keyPrefix)) {
           continue
         }
@@ -193,7 +220,7 @@ export default function PlanEntry() {
           area: "local",
         })
 
-        if (!parsed || !parsed.id || !parsed.projectHeader?.projectCode) {
+        if (!parsed || !parsed.id || !parsed.projectHeader?.projectNumber) {
           removeStorageItem(key, { rawKey: true, area: "local" })
           continue
         }
@@ -210,7 +237,7 @@ export default function PlanEntry() {
         setActiveRecord(latestDraft)
       }
     } catch {
-      // ignore
+      // ignore local storage recovery errors
     }
   }, [
     draftStorageBaseKey,
@@ -232,21 +259,19 @@ export default function PlanEntry() {
     })
   }, [localRecord, draftStorageKey])
 
-  // Handle browser back button and beforeunload
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
-        e.preventDefault()
-        e.returnValue = ""
+        event.preventDefault()
+        event.returnValue = ""
       }
     }
 
-    const handlePopState = (e: PopStateEvent) => {
+    const handlePopState = (event: PopStateEvent) => {
       if (hasUnsavedChanges) {
-        e.preventDefault()
+        event.preventDefault()
         setShowConfirmationDialog(true)
         setPendingNavigation("back")
-        // Push the current state back to prevent navigation
         window.history.pushState(null, "", window.location.pathname)
       }
     }
@@ -262,11 +287,10 @@ export default function PlanEntry() {
     }
   }, [hasUnsavedChanges])
 
-  // Update navigation block when unsaved changes change
   useEffect(() => {
     if (hasUnsavedChanges && localRecord) {
       onBlock(
-        `You have unsaved changes for ${localRecord.projectHeader.productName} (${localRecord.projectHeader.projectCode}). Would you like to save as draft or clear?`,
+        `You have unsaved changes for ${localRecord.projectHeader.productName} (${localRecord.projectHeader.projectNumber}). Would you like to save as draft or clear?`,
         localRecord
       )
     } else {
@@ -274,9 +298,8 @@ export default function PlanEntry() {
     }
   }, [hasUnsavedChanges, localRecord, onBlock, onUnblock])
 
-  // Helper to create a delay
   const delay = (ms: number | undefined) =>
-    new Promise((res) => setTimeout(res, ms))
+    new Promise((resolve) => setTimeout(resolve, ms))
 
   const resetDraftState = () => {
     if (activeDraftStorageKey) {
@@ -303,7 +326,9 @@ export default function PlanEntry() {
   }
 
   const saveRecord = async () => {
-    if (!localRecord) return
+    if (!localRecord) {
+      return
+    }
 
     const recordToSave = {
       ...localRecord,
@@ -316,11 +341,14 @@ export default function PlanEntry() {
 
     try {
       if (recordToSave.id.startsWith("draft-")) {
-        const createPayload = {
+        await createBudgetRecord({
           projectHeader: recordToSave.projectHeader,
+          templateId:
+            Number(selectedTemplateId) ||
+            templateOptions[0]?.templateId ||
+            1,
           budgetData: recordToSave.budgetData,
-        }
-        await createBudgetRecord(createPayload)
+        })
         toast.success("Record created! Redirecting...")
       } else {
         await updateBudgetRecord(recordToSave.id, recordToSave)
@@ -328,19 +356,17 @@ export default function PlanEntry() {
       }
 
       resetDraftState()
-
-      // Wait for the toast to be visible before navigating away.
       await delay(2000)
-
       navigate("/dashboard")
-    } catch (err) {
+    } catch (saveError) {
       const errorMessage =
-        err &&
-        typeof err === "object" &&
-        "message" in err &&
-        typeof err.message === "string"
-          ? err.message
+        saveError &&
+        typeof saveError === "object" &&
+        "message" in saveError &&
+        typeof saveError.message === "string"
+          ? saveError.message
           : "Failed to save budget record"
+
       toast.error(errorMessage)
     }
   }
@@ -355,15 +381,30 @@ export default function PlanEntry() {
       return
     }
 
+    if (localRecord.id.startsWith("draft-")) {
+      toast.error("Save the budget record before exporting the Excel report.")
+      return
+    }
+
+    const budgetId = Number(localRecord.id)
+    if (!Number.isInteger(budgetId) || budgetId <= 0) {
+      toast.error("This budget record cannot be exported yet.")
+      return
+    }
+
     try {
-      await exportBudgetWorkbook(localRecord)
+      setIsExporting(true)
+      await exportBudgetWorkbook(budgetId)
       toast.success("Budget workbook exported successfully")
-    } catch (error) {
+    } catch (exportError) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
+        exportError instanceof Error
+          ? exportError.message
           : "Failed to export budget workbook"
+
       toast.error(errorMessage)
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -374,9 +415,7 @@ export default function PlanEntry() {
 
   const handleTemplateChange = (value: string) => {
     setSelectedTemplateId(value)
-    const option = templateOptions.find(
-      (template: { id: string }) => template.id === value
-    )
+    const option = templateOptions.find((template) => template.id === value)
 
     if (!option) {
       return
@@ -396,6 +435,7 @@ export default function PlanEntry() {
         budgetData: templateToBudgetData(option.categories),
       }
     })
+
     setHasUnsavedChanges(true)
     toast.success(`Applied template: ${option.name}`)
   }
@@ -409,6 +449,7 @@ export default function PlanEntry() {
       })
       toast.success("Draft saved successfully")
     }
+
     setShowConfirmationDialog(false)
     setHasUnsavedChanges(false)
 
@@ -417,6 +458,7 @@ export default function PlanEntry() {
     } else if (pendingNavigation) {
       navigate(pendingNavigation)
     }
+
     setPendingNavigation(null)
   }
 
@@ -427,6 +469,7 @@ export default function PlanEntry() {
         area: "local",
       })
     }
+
     setLocalRecord(null)
     setActiveRecord(null)
     setShowConfirmationDialog(false)
@@ -437,6 +480,7 @@ export default function PlanEntry() {
     } else if (pendingNavigation) {
       navigate(pendingNavigation)
     }
+
     setPendingNavigation(null)
   }
 
@@ -484,30 +528,32 @@ export default function PlanEntry() {
   return (
     <div className="flex flex-col">
       <div className="h-full flex-1 overflow-auto p-0">
-        <PlanEntryHeader
+        <ProjectHeader
           record={localRecord}
           onSaveRecord={saveRecord}
           onDiscardDraft={discardDraft}
           onExportCsv={exportWorkbook}
+          isExporting={isExporting}
           selectedTemplateId={selectedTemplateId}
           onTemplateChange={handleTemplateChange}
           templateOptions={templateOptions}
         />
-        <PlanEntryTable
-          record={localRecord}
-          onRecordChange={handleRecordChange}
-        />
+        <div className="mb-5 px-6">
+          <BudgetValidationAlert
+            actualAmounts={null}
+            budgetCategories={localRecord.budgetData}
+          />
+        </div>
+        <BudgetTable record={localRecord} onRecordChange={handleRecordChange} />
       </div>
 
-      {localRecord && (
-        <PlanEntryDraftDialog
-          isOpen={showConfirmationDialog}
-          onClose={handleDialogClose}
-          onSaveDraft={handleSaveDraftAndNavigate}
-          onClear={handleClearAndNavigate}
-          record={localRecord}
-        />
-      )}
+      <DraftConfirmationDialog
+        isOpen={showConfirmationDialog}
+        onClose={handleDialogClose}
+        onSaveDraft={handleSaveDraftAndNavigate}
+        onClear={handleClearAndNavigate}
+        record={localRecord}
+      />
     </div>
   )
 }

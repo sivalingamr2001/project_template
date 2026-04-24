@@ -51,6 +51,10 @@ export default function AppRoutes() {
           path="/budget-template/editor"
           element={<TemplateEditorPage />}
         />
+        <Route
+          path="/budget-template/editor/:templateId"
+          element={<TemplateEditorPage />}
+        />
       </Route>
     </Routes>
   )

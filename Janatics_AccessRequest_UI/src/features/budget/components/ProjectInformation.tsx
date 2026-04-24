@@ -38,7 +38,7 @@ interface ProjectInformationProps {
 
 type ProjectSearchResult = {
   productNo?: string
-  projectCode?: string
+  projectNumber?: string
   projectTitle?: string
 }
 
@@ -159,9 +159,9 @@ export function ProjectInformation({
                     <CommandGroup>
                       {projects.map((p, index) => {
                         const projectKey =
-                          p.projectCode ?? p.productNo ?? String(index)
-                        const projectLabel = p.projectCode
-                          ? `${p.projectCode}${p.productNo ? ` — ${p.productNo}` : ""}`
+                          p.projectNumber ?? p.productNo ?? String(index)
+                        const projectLabel = p.projectNumber
+                          ? `${p.projectNumber}${p.productNo ? ` — ${p.productNo}` : ""}`
                           : (p.productNo ?? "Unknown project")
 
                         return (

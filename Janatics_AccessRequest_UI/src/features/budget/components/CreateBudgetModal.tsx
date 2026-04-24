@@ -13,32 +13,19 @@ import { useDraftStorage } from "./hooks/useDraftStorage"
 import { DraftResumePrompt } from "./CreateBudgetModal/DraftResumePrompt"
 import { BudgetFormFields } from "./CreateBudgetModal/BudgetFormFields"
 import { SearchResultDisplay } from "./CreateBudgetModal/SearchResultDisplay"
-import type { BudgetCategoryResponse } from "../types"
-
-export type BudgetRecordResponse = {
-  header: {
-    budgetId: number
-    employeeId: number
-    projectCode: string
-    productNo: string
-    projectTitle: string
-    createdOn: string
-    modifiedOn: string
-  }
-  categories: BudgetCategoryResponse[]
-}
+import type { BudgetRecordResponse } from "../types"
 
 type CreateBudgetModalProps = {
   isOpen: boolean
   onClose: () => void
   onSubmit?: (input: {
     productName: string
-    projectCode: string
+    projectNumber: string
     productNo: string
   }) => Promise<void>
   initialData?: {
     productName: string
-    projectCode: string
+    projectNumber: string
     productNo: string
   }
 }
@@ -79,14 +66,14 @@ export default function CreateBudgetModal({
     if (onSubmit) {
       await onSubmit({
         productName: formData.productName,
-        projectCode: formData.projectCode,
+        projectNumber: formData.projectNumber,
         productNo: formData.productNo,
       })
     }
 
     setFormData({
       productName: "",
-      projectCode: "",
+      projectNumber: "",
       productNo: "",
     })
     discardStoredDraft()
@@ -99,7 +86,7 @@ export default function CreateBudgetModal({
   const handleCancel = () => {
     setFormData({
       productName: "",
-      projectCode: "",
+      projectNumber: "",
       productNo: "",
     })
     discardStoredDraft()
@@ -135,7 +122,7 @@ export default function CreateBudgetModal({
 
           <BudgetFormFields
             productName={formData.productName}
-            projectCode={formData.projectCode}
+            projectNumber={formData.projectNumber}
             productNo={formData.productNo}
             onChange={handleChange}
           />

@@ -26,7 +26,7 @@ Steps
      - `GET /api/budgets`
      - `GET /api/budgets/search?productNo=...`
      - `GET /api/budgets/by-project/{productNo}`
-     - `GET /api/budgets/by-project/{projectCode}/product/{productNo}`
+     - `GET /api/budgets/by-project/{projectNumber}/product/{productNo}`
      - `POST /api/budgets`
      - `PUT /api/budgets/{budgetId}`
      - `DELETE /api/budgets/{budgetId}`

@@ -16,7 +16,7 @@ export interface BudgetContextType {
     productNumber: string
   ) => Promise<void>
   createBudgetRecord: (
-    record: Omit<BudgetRecord, "id">
+    record: Omit<BudgetRecord, "id"> & { templateId?: number }
   ) => Promise<BudgetRecord>
   updateBudgetRecord: (
     id: string,

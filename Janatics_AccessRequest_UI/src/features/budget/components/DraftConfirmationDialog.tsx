@@ -33,9 +33,9 @@ export function DraftConfirmationDialog({
           <AlertDialogDescription>
             You have unsaved changes for the budget record:
             <br />
-            <strong>Project:</strong> {record.projectHeader.productName}
+            <strong>Product Name:</strong> {record.projectHeader.productName}
             <br />
-            <strong>Project Code:</strong> {record.projectHeader.projectCode}
+            <strong>Project Number:</strong> {record.projectHeader.projectNumber}
             <br />
             <strong>Product Number:</strong> {record.projectHeader.productNo}
             <br />

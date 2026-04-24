@@ -37,7 +37,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
   const mapTableBudgetApiToUi = (data: any) => ({
     ...data,
     projectHeader: {
-      projectCode: data.projectHeader?.projectCode ?? data.projectCode,
+      projectNumber: data.projectHeader?.projectNumber ?? data.projectNumber,
       productNo: data.projectHeader?.productNo ?? data.productNo,
       productName: data.projectHeader?.productName ?? data.projectTitle,
       status: data.projectHeader?.status ?? data.status ?? "N/A",
@@ -121,15 +121,16 @@ function BudgetProvider({ children }: BudgetProviderProps) {
   )
 
   const createBudgetRecord = useCallback(
-    async (record: Omit<BudgetRecord, "id">) => {
+    async (record: Omit<BudgetRecord, "id"> & { templateId?: number }) => {
       setLoading(true)
       setError(null)
       try {
         const request = {
           employeeId: record.projectHeader.employeeId,
-          projectCode: record.projectHeader.projectCode,
+          projectNumber: record.projectHeader.projectNumber,
           productNo: record.projectHeader.productNo,
-          projectTitle: record.projectHeader.productName,
+          productName: record.projectHeader.productName,
+          templateId: record.templateId,
           budgetData: record.budgetData.map((category) => ({
             category: category.category,
             items: category.items.map((item) => ({
@@ -180,9 +181,9 @@ function BudgetProvider({ children }: BudgetProviderProps) {
         }
 
         const request = {
-          projectCode: updates.projectHeader?.projectCode ?? "",
+          projectNumber: updates.projectHeader?.projectNumber ?? "",
           productNo: updates.projectHeader?.productNo ?? "",
-          projectTitle: updates.projectHeader?.productName ?? "",
+          productName: updates.projectHeader?.productName ?? "",
           items: updates.budgetData
             ? updates.budgetData.flatMap((category) =>
                 category.items

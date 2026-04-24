@@ -1,17 +1,4 @@
-import { type BudgetCategoryResponse } from "../../types"
-
-interface BudgetRecordResponse {
-  header: {
-    budgetId: number
-    employeeId: number
-    projectCode: string
-    productNo: string
-    projectTitle: string
-    createdOn: string
-    modifiedOn: string
-  }
-  categories: BudgetCategoryResponse[]
-}
+import { type BudgetRecordResponse } from "../../types"
 
 interface SearchResultDisplayProps {
   searchResult: BudgetRecordResponse | null
@@ -51,16 +38,16 @@ export function SearchResultDisplay({
       </div>
       <div className="grid gap-1 text-xs text-muted-foreground">
         <div>
-          <span className="font-semibold text-foreground">Product No:</span>{" "}
+          <span className="font-semibold text-foreground">Product Number:</span>{" "}
           {searchResult.header.productNo}
         </div>
         <div>
-          <span className="font-semibold text-foreground">Project Code:</span>{" "}
-          {searchResult.header.projectCode}
+          <span className="font-semibold text-foreground">Project Number:</span>{" "}
+          {searchResult.header.projectNumber}
         </div>
         <div>
-          <span className="font-semibold text-foreground">Project Title:</span>{" "}
-          {searchResult.header.projectTitle}
+          <span className="font-semibold text-foreground">Product Name:</span>{" "}
+          {searchResult.header.productName ?? searchResult.header.projectTitle}
         </div>
       </div>
 

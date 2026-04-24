@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Card, CardContent, CardTitle } from "@/shared/components/ui/card"
@@ -18,23 +18,43 @@ import type { TemplateCategory } from "@/features/budget/utils/budgetTemplates"
 type TemplateEditorProps = {
   isOpen: boolean
   onClose: () => void
-  onSave: (template: { name: string; categories: TemplateCategory[] }) => void
+  onSave: (template: {
+    name: string
+    categories: TemplateCategory[]
+  }) => void | Promise<void>
   onBack: () => void
+  initialName?: string
+  initialCategories?: TemplateCategory[]
+  isSaving?: boolean
+  submitLabel?: string
 }
 
 export function TemplateEditor({
   isOpen,
-  onClose,
   onSave,
   onBack,
+  initialName = "",
+  initialCategories = [],
+  isSaving = false,
+  submitLabel = "Save template",
 }: TemplateEditorProps) {
-  const [templateName, setTemplateName] = useState("")
+  const [templateName, setTemplateName] = useState(initialName)
   const [categoryName, setCategoryName] = useState("")
   const [subCategoryName, setSubCategoryName] = useState("")
   const [pendingItems, setPendingItems] = useState<string[]>([])
-  const [categories, setCategories] = useState<TemplateCategory[]>([])
+  const [categories, setCategories] = useState<TemplateCategory[]>(
+    initialCategories
+  )
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    setTemplateName(initialName)
+  }, [initialName])
+
+  useEffect(() => {
+    setCategories(initialCategories)
+  }, [initialCategories])
 
   // --- Handlers ---
   const handleAddSubcategory = useCallback(() => {
@@ -78,12 +98,11 @@ export function TemplateEditor({
     setEditIndex(index)
   }
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!templateName.trim()) return toast.error("Template name is required")
     if (categories.length === 0) return toast.error("Add at least one category")
-    onSave({ name: templateName.trim(), categories })
-    toast.success("Template saved")
-    onClose()
+
+    await onSave({ name: templateName.trim(), categories })
   }
 
   if (!isOpen) return null
@@ -266,9 +285,9 @@ export function TemplateEditor({
             <div className="shrink-0 pt-6">
               <Button
                 onClick={handleSaveTemplate}
-                disabled={categories.length === 0 || !templateName}
+                disabled={categories.length === 0 || !templateName || isSaving}
               >
-                Save template
+                {isSaving ? "Saving..." : submitLabel}
               </Button>
             </div>
           </section>

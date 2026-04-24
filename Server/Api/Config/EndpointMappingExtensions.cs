@@ -2,6 +2,7 @@ using Server.Common.Realtime;
 using Server.Features.ActualAmount;
 using Server.Features.Auth.Login;
 using Server.Features.BudgetRecords;
+using Server.Features.BudgetExport;
 using Server.Features.Employees;
 using Server.Features.Template;
 
@@ -17,6 +18,7 @@ public static class EndpointMappingExtensions
         var budgetGroup = app.MapGroup("/api/budgets").WithTags("Budgets");
         BudgetRecordsEndpoint.Map(budgetGroup);
         ActualAmountsEndpoints.Map(budgetGroup);
+        BudgetExportEndpoint.Map(budgetGroup);
 
         var employeeGroup = app.MapGroup("/api/employees").WithTags("Employees");
         EmployeesEndpoint.Map(employeeGroup);

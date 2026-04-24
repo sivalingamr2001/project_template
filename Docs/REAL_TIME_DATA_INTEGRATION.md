@@ -117,7 +117,7 @@ Get trend data for charts
 Parameters:
   - type?: "monthly" | "quarterly" | "yearly"
   - productNo?: string (optional)
-  - projectCode?: string (optional)
+  - projectNumber?: string (optional)
 
 Response: TrendPoint[] {
   label: string
@@ -148,7 +148,7 @@ Get budget by product number
 Response: BudgetRecord | null
 ```
 
-#### 7. **GET /api/budgets/by-project/{projectCode}/product/{productNo}**
+#### 7. **GET /api/budgets/by-project/{projectNumber}/product/{productNo}**
 Get budget by both project and product codes
 ```
 Response: BudgetRecord | null

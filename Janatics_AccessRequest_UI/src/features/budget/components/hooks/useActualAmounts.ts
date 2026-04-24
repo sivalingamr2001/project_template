@@ -13,7 +13,7 @@ interface UseActualAmountsResult {
 }
 
 export function useActualAmounts(
-  projectCode: string,
+  projectNumber: string,
   productNo: string
 ): UseActualAmountsResult {
   const [actualAmounts, setActualAmounts] = useState<ActualAmountItem[] | null>(
@@ -28,7 +28,7 @@ export function useActualAmounts(
       setError(null)
 
       const response: ActualAmountsResponse = await getActualAmounts(
-        projectCode,
+        projectNumber,
         productNo
       )
 
@@ -48,10 +48,10 @@ export function useActualAmounts(
   }
 
   useEffect(() => {
-    if (projectCode && productNo) {
+    if (projectNumber && productNo) {
       fetchActualAmounts()
     }
-  }, [projectCode, productNo])
+  }, [projectNumber, productNo])
 
   return {
     actualAmounts,

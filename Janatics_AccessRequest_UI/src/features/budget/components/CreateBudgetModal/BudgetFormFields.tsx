@@ -3,14 +3,14 @@ import { Label } from "@/shared/components/ui/label"
 
 interface BudgetFormFieldsProps {
   productName: string
-  projectCode: string
+  projectNumber: string
   productNo: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
 }
 
 export function BudgetFormFields({
   productName,
-  projectCode,
+  projectNumber,
   productNo,
   onChange,
 }: BudgetFormFieldsProps) {
@@ -43,12 +43,12 @@ export function BudgetFormFields({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="projectCode">Project Code</Label>
+          <Label htmlFor="projectNumber">Project Number</Label>
           <Input
-            id="projectCode"
-            name="projectCode"
+            id="projectNumber"
+            name="projectNumber"
             placeholder="RD-001"
-            value={projectCode}
+            value={projectNumber}
             onChange={onChange}
             required
             className="h-11 rounded-xl"

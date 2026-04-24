@@ -78,6 +78,31 @@ public class TemplateService(AppDbContext context, ILogger<TemplateService> logg
         }
     }
 
+    public async Task<ApiResult<TemplateResponse>> UpdateAsync(int id, TemplateRequest request, CancellationToken ct)
+    {
+        try
+        {
+            var entity = await context.BudgetTemplates.FindAsync([id], ct);
+            if (entity == null)
+                return ApiResult<TemplateResponse>.Fail("Template not found");
+
+            entity.Name = request.Name;
+            entity.TemplateJson = JsonSerializer.Serialize(request.Structure);
+
+            await context.SaveChangesAsync(ct);
+
+            return ApiResult<TemplateResponse>.Ok(
+                new TemplateResponse(entity.TemplateId, entity.Name, request.Structure),
+                "Template updated"
+            );
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Update template failed");
+            return ApiResult<TemplateResponse>.Fail("Could not update template", [ex.Message]);
+        }
+    }
+
     public async Task<ApiResult<bool>> DeleteAsync(int id, CancellationToken ct)
     {
         var entity = await context.BudgetTemplates.FindAsync([id], ct);

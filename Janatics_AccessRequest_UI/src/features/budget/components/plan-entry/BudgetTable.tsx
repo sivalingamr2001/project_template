@@ -16,7 +16,7 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
 
   // Fetch actual amounts from API
   const { actualAmounts, loading, error } = useActualAmounts(
-    record.projectHeader.projectCode,
+    record.projectHeader.projectNumber,
     record.projectHeader.productNo
   )
 

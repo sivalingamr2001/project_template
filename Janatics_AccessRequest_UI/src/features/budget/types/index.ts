@@ -16,7 +16,7 @@ export interface BudgetCategory {
 export interface ProjectHeaderData {
   employeeId: number
   productName: string
-  projectCode: string
+  projectNumber: string
   productNo: string
   phase: string
   department: string
@@ -83,7 +83,7 @@ export interface BudgetCategoryTotals {
 
 export type BudgetRecordSummaryResponse = {
   budgetId: number
-  projectCode: string
+  projectNumber: string
   productNo: string
   projectTitle: string
   employeeId: number
@@ -107,9 +107,10 @@ export type BudgetRecordResponse = {
   header: {
     budgetId: number
     employeeId: number
-    projectCode: string
+    projectNumber: string
     productNo: string
     projectTitle: string
+    productName?: string
     createdOn: string
     modifiedOn: string
   }
@@ -118,9 +119,10 @@ export type BudgetRecordResponse = {
 
 export type CreateBudgetRequest = {
   employeeId: number
-  projectCode: string
+  projectNumber: string
   productNo: string
-  projectTitle: string
+  productName?: string
+  projectTitle?: string
   budgetData?: {
     category: string
     items: {
@@ -132,9 +134,10 @@ export type CreateBudgetRequest = {
 }
 
 export type UpdateBudgetRequest = {
-  projectCode: string
+  projectNumber: string
   productNo: string
-  projectTitle: string
+  productName?: string
+  projectTitle?: string
   items: {
     itemId: number
     planned: number
@@ -152,10 +155,10 @@ export async function getBudgetById(budgetId: number) {
   return response.data
 }
 
-export async function getBudgetByProjectCode(projectCode: string) {
-  const encodedProjectCode = encodeURIComponent(projectCode)
+export async function getBudgetByprojectNumber(projectNumber: string) {
+  const encodedprojectNumber = encodeURIComponent(projectNumber)
   const response = await api.get<BudgetRecordResponse>(
-    `/budgets/by-project/${encodedProjectCode}`
+    `/budgets/by-project/${encodedprojectNumber}`
   )
   return response.data
 }
@@ -168,14 +171,14 @@ export async function getBudgetByProductNo(productNo: string) {
   return response.data
 }
 
-export async function getBudgetByProjectCodeAndProductNo(
-  projectCode: string,
+export async function getBudgetByprojectNumberAndProductNo(
+  projectNumber: string,
   productNo: string
 ) {
-  const encodedProjectCode = encodeURIComponent(projectCode)
+  const encodedprojectNumber = encodeURIComponent(projectNumber)
   const encodedProductNo = encodeURIComponent(productNo)
   const response = await api.get<BudgetRecordResponse>(
-    `/budgets/by-project/${encodedProjectCode}/product/${encodedProductNo}`
+    `/budgets/by-project/${encodedprojectNumber}/product/${encodedProductNo}`
   )
   return response.data
 }
@@ -228,8 +231,8 @@ export function mapBudgetApiToUi(response: BudgetRecordResponse): BudgetRecord {
     id: response.header.budgetId.toString(),
     projectHeader: {
       employeeId: response.header.employeeId,
-      productName: response.header.projectTitle,
-      projectCode: response.header.projectCode,
+      productName: response.header.productName ?? response.header.projectTitle,
+      projectNumber: response.header.projectNumber,
       productNo: response.header.productNo,
       phase: "Product development",
       department: "Research and Development",
@@ -248,22 +251,22 @@ export interface ActualAmountItem {
 }
 
 export interface ActualAmountsRequest {
-  projectCode: string
+  projectNumber: string
   productNo: string
 }
 
 export interface ActualAmountsResponse {
-  projectCode: string
+  projectNumber: string
   productNo: string
   items: ActualAmountItem[]
   lastUpdated: string
 }
 
-export async function getActualAmounts(projectCode: string, productNo: string) {
+export async function getActualAmounts(projectNumber: string, productNo: string) {
   const response = await api.post<ActualAmountsResponse>(
     "/budgets/actual-amounts",
     {
-      projectCode,
+      projectNumber,
       productNo,
     }
   )
