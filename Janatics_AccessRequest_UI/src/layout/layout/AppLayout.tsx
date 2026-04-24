@@ -21,18 +21,18 @@ export default function AppLayout() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <AppSidebar isCollapsed={isSidebarCollapsed} />
 
       <div
         className={cn(
-          "flex min-h-screen flex-col transition-all duration-300",
+          "flex flex-col transition-all duration-300",
           isSidebarCollapsed ? "lg:pl-20" : "lg:pl-64"
         )}
       >
         <header
           className={cn(
-            "fixed top-0 right-0 z-30 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 transition-all duration-300",
+            "fixed top-0 right-0 z-30 border-b bg-background/95 backdrop-blur transition-all duration-300 supports-backdrop-filter:bg-background/80",
             isSidebarCollapsed ? "left-0 lg:left-20" : "left-0 lg:left-64"
           )}
         >
