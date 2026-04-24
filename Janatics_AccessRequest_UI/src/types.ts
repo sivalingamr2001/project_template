@@ -16,7 +16,6 @@ export interface ProjectData {
   budgetId?: number
   projectnumber: string
   projectname: string
-  description: string
   project_category?: string
   sub_category?: string
   product_no?: string

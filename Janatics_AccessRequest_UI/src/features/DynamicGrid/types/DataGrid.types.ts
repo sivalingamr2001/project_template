@@ -53,6 +53,7 @@ export interface DataGridProps<
   onFilterChanged?: (event: FilterChangedEvent<TData>) => void
   onSortChanged?: (event: SortChangedEvent<TData>) => void
   onPaginationChanged?: (event: PaginationChangedEvent<TData>) => void
+  onClearFilters?: () => void | Promise<void>
   onExport?: (fileName: string) => void
 
   // Styling

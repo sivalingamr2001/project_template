@@ -143,12 +143,10 @@ export default function BudgetTemplate() {
   return (
     <div className="space-y-6">
       <Card className="rounded-3xl border border-border bg-card">
-        <CardHeader className="p-6">
-          <CardTitle>Budget Template</CardTitle>
-        </CardHeader>
         <CardContent className="space-y-6 p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-0 sm:flex-row sm:items-center sm:justify-between">
             <div>
+              <h1>Budget Template</h1>
               <p className="text-sm text-muted-foreground">
                 Browse existing templates, or create a new template with the editor.
               </p>

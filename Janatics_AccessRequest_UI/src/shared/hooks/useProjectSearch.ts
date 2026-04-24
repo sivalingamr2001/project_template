@@ -4,33 +4,29 @@ import type { ProjectData } from "@/types"
 import { useDebounce } from "../lib/utils"
 
 interface BudgetSummaryItem {
-  budgetId: number
-  productNo: string
-  projectCode: string
-  projectTitle: string
+  projectNumber: string
+  product_No: string
 }
 
-function mapBudgetToProjectData(item: BudgetSummaryItem): ProjectData {
+function mapBudgetToProjectData(item: any): ProjectData {
   return {
-    budgetId: item.budgetId,
-    product_no: item.productNo,
+    product_no: item.product_No  || item.productNo,
     projectnumber: item.projectCode,
     projectname: item.projectTitle,
-    description: item.projectTitle,
+    budgetId: item.budgetId,
   }
 }
 
 export function useProjectSearch() {
   const [productNo, setProductNo] = useState("")
   const [projectNo, setProjectNo] = useState("")
-  const [allProjects, setAllProjects] = useState<ProjectData[]>([])
   const [filteredData, setFilteredData] = useState<ProjectData[]>([])
 
   const [productSuggestions, setProductSuggestions] = useState<ProjectData[]>([])
   const [projectSuggestions, setProjectSuggestions] = useState<ProjectData[]>([])
   const [showProductSuggestions, setShowProductSuggestions] = useState(false)
   const [showProjectSuggestions, setShowProjectSuggestions] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   const productRef = useRef<HTMLDivElement>(null)
   const projectRef = useRef<HTMLDivElement>(null)
@@ -38,35 +34,45 @@ export function useProjectSearch() {
   const debouncedProduct = useDebounce(productNo, 300)
   const debouncedProject = useDebounce(projectNo, 300)
 
+  // Initial fetch of all budgets
   useEffect(() => {
-    const fetchBudgets = async () => {
+    const fetchInitialBudgets = async () => {
       try {
         const response = await apiService.get<BudgetSummaryItem[]>("/budgets")
         const rows = response.data.map(mapBudgetToProjectData)
-        setAllProjects(rows)
         setFilteredData(rows)
       } catch (e) {
+        console.error("Error fetching initial budgets:", e)
+        setFilteredData([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchInitialBudgets()
+  }, [])
+
+  useEffect(() => {
+    const fetchBudgets = async () => {
+      if (!debouncedProduct || debouncedProduct.length < 2) {
+        setProductSuggestions([])
+        return
+      }
+
+      try {
+        const response = await apiService.get<BudgetSummaryItem[]>(
+          `/budgets/search?productNo=${debouncedProduct}`
+        )
+        const rows = response.data.map(mapBudgetToProjectData)
+        setProductSuggestions(rows.slice(0, 6))
+      } catch (e) {
         console.error(e)
+        setProductSuggestions([])
       }
     }
 
     fetchBudgets()
-  }, [])
-
-  useEffect(() => {
-    if (!debouncedProduct || debouncedProduct.length < 2) {
-      setProductSuggestions([])
-      return
-    }
-
-    setProductSuggestions(
-      allProjects
-        .filter((item) =>
-          item.product_no?.toLowerCase().includes(debouncedProduct.toLowerCase())
-        )
-        .slice(0, 6)
-    )
-  }, [debouncedProduct, allProjects])
+  }, [debouncedProduct])
 
   useEffect(() => {
     if (!debouncedProject || debouncedProject.length < 2) {
@@ -74,32 +80,36 @@ export function useProjectSearch() {
       return
     }
 
-    setProjectSuggestions(
-      allProjects
-        .filter((item) =>
-          item.projectnumber?.toLowerCase().includes(debouncedProject.toLowerCase())
+    const fetchProjectSuggestions = async () => {
+      try {
+        // Assuming search also works by project number
+        const response = await apiService.get<BudgetSummaryItem[]>(
+          `/budgets/search?projectNumber=${debouncedProject}`
         )
-        .slice(0, 6)
-    )
-  }, [debouncedProject, allProjects])
-
-  const fetchTableData = async (prod: string, proj: string) => {
-    if (!allProjects.length) {
-      return
+        const rows = response.data.map(mapBudgetToProjectData)
+        setProjectSuggestions(rows.slice(0, 6))
+      } catch (e) {
+        console.error(e)
+        setProjectSuggestions([])
+      }
     }
 
+    fetchProjectSuggestions()
+  }, [debouncedProject])
+
+  const fetchTableData = async (prod: string, proj: string) => {
     setIsLoading(true)
 
     try {
-      const filtered = allProjects.filter((item) => {
-        const matchesProduct = prod
-          ? item.product_no?.toLowerCase().includes(prod.toLowerCase())
-          : true
-        const matchesProject = proj
-          ? item.projectnumber?.toLowerCase().includes(proj.toLowerCase())
-          : true
-        return matchesProduct && matchesProject
-      })
+      // Build query parameters based on provided search criteria
+      const queryParams = new URLSearchParams()
+      if (prod) queryParams.append("productNo", prod)
+      if (proj) queryParams.append("projectNumber", proj)
+
+      const response = await apiService.get<BudgetSummaryItem[]>(
+        `/budgets/search?${queryParams.toString()}`
+      )
+      const filtered = response.data.map(mapBudgetToProjectData)
       setFilteredData(filtered)
     } catch (e) {
       console.error(e)
@@ -114,6 +124,25 @@ export function useProjectSearch() {
     setShowProductSuggestions(false)
     setShowProjectSuggestions(false)
     fetchTableData(item.product_no || "", item.projectnumber || "")
+  }
+
+  const clearSearch = () => {
+    setProductNo("")
+    setProjectNo("")
+    setProductSuggestions([])
+    setProjectSuggestions([])
+    // Reload initial data
+    const fetchInitialBudgets = async () => {
+      try {
+        const response = await apiService.get<BudgetSummaryItem[]>("/budgets")
+        const rows = response.data.map(mapBudgetToProjectData)
+        setFilteredData(rows)
+      } catch (e) {
+        console.error("Error fetching budgets:", e)
+        setFilteredData([])
+      }
+    }
+    fetchInitialBudgets()
   }
 
   return {
@@ -134,6 +163,7 @@ export function useProjectSearch() {
       setShowProductSuggestions,
       setShowProjectSuggestions,
       handleSelect,
+      clearSearch,
       handleSearch: () => fetchTableData(productNo, projectNo),
     },
   }

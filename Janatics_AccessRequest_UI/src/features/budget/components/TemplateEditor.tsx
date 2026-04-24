@@ -1,14 +1,17 @@
-import { useMemo, useState } from "react"
+import { useState, useCallback } from "react"
 import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/shared/components/ui/card"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { Edit, Plus, Trash, X } from "lucide-react"
+import {
+  ArrowLeft,
+  Edit,
+  Plus,
+  Trash,
+  X,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react"
 import { toast } from "sonner"
 import type { TemplateCategory } from "@/features/budget/utils/budgetTemplates"
 
@@ -16,12 +19,14 @@ type TemplateEditorProps = {
   isOpen: boolean
   onClose: () => void
   onSave: (template: { name: string; categories: TemplateCategory[] }) => void
+  onBack: () => void
 }
 
 export function TemplateEditor({
   isOpen,
   onClose,
   onSave,
+  onBack,
 }: TemplateEditorProps) {
   const [templateName, setTemplateName] = useState("")
   const [categoryName, setCategoryName] = useState("")
@@ -29,275 +34,246 @@ export function TemplateEditor({
   const [pendingItems, setPendingItems] = useState<string[]>([])
   const [categories, setCategories] = useState<TemplateCategory[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
 
-  const handleAddSubcategory = () => {
-    const trimmed = subCategoryName.trim()
-    if (!trimmed) {
-      toast.error("Enter a subcategory before adding.")
-      return
-    }
-    if (pendingItems.includes(trimmed)) {
-      toast.error("This subcategory is already added.")
-      return
-    }
-    setPendingItems((current) => [...current, trimmed])
+  // --- Handlers ---
+  const handleAddSubcategory = useCallback(() => {
+    const val = subCategoryName.trim()
+    if (!val) return toast.error("Enter a subcategory name")
+    if (pendingItems.includes(val)) return toast.error("Duplicate subcategory")
+    setPendingItems((prev) => [...prev, val])
     setSubCategoryName("")
+  }, [subCategoryName, pendingItems])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault()
+      handleAddSubcategory()
+    }
   }
 
   const handleSaveCategory = () => {
-    const trimmedCategory = categoryName.trim()
-    if (!trimmedCategory) {
-      toast.error("Provide a category name.")
-      return
-    }
-    if (pendingItems.length === 0) {
-      toast.error("Add at least one subcategory.")
-      return
+    const catName = categoryName.trim()
+    if (!catName || pendingItems.length === 0) {
+      return toast.error("Provide a name and at least one subcategory")
     }
 
-    const newCategory: TemplateCategory = {
-      category: trimmedCategory,
-      items: pendingItems,
-    }
-
-    if (editIndex !== null) {
-      setCategories((current) =>
-        current.map((item, index) => (index === editIndex ? newCategory : item))
-      )
-      setEditIndex(null)
-    } else {
-      setCategories((current) => [...current, newCategory])
-    }
+    const newCategory = { category: catName, items: pendingItems }
+    setCategories((prev) => {
+      const updated = [...prev]
+      if (editIndex !== null) updated[editIndex] = newCategory
+      else updated.push(newCategory)
+      return updated
+    })
 
     setCategoryName("")
-    setSubCategoryName("")
     setPendingItems([])
+    setEditIndex(null)
   }
 
   const handleEditCategory = (index: number) => {
-    const category = categories[index]
-    setCategoryName(category.category)
-    setPendingItems(category.items)
+    const target = categories[index]
+    setCategoryName(target.category)
+    setPendingItems(target.items)
     setEditIndex(index)
   }
 
-  const handleDeleteCategory = (index: number) => {
-    setCategories((current) => current.filter((_, idx) => idx !== index))
-    if (editIndex === index) {
-      setCategoryName("")
-      setPendingItems([])
-      setSubCategoryName("")
-      setEditIndex(null)
-    }
-  }
-
   const handleSaveTemplate = () => {
-    const trimmedTemplateName = templateName.trim()
-    if (!trimmedTemplateName) {
-      toast.error("Provide a template name.")
-      return
-    }
-    if (categories.length === 0) {
-      toast.error("Add at least one category before saving.")
-      return
-    }
-    onSave({ name: trimmedTemplateName, categories })
-    setTemplateName("")
-    setCategoryName("")
-    setSubCategoryName("")
-    setPendingItems([])
-    setCategories([])
-    setEditIndex(null)
+    if (!templateName.trim()) return toast.error("Template name is required")
+    if (categories.length === 0) return toast.error("Add at least one category")
+    onSave({ name: templateName.trim(), categories })
+    toast.success("Template saved")
     onClose()
-    toast.success("Template saved.")
   }
 
-  const jsonPreview = useMemo(
-    () => JSON.stringify(categories, null, 2),
-    [categories]
-  )
-
-  if (!isOpen) {
-    return null
-  }
+  if (!isOpen) return null
 
   return (
-    <Card className="rounded-3xl border border-border bg-card">
-      <CardHeader className="p-6">
-        <CardTitle className="text-2xl">Template Editor</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6 p-6">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-6 rounded-3xl border border-border bg-background/80 p-6">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">
-                Template Name
-              </label>
-              <Input
-                value={templateName}
-                onChange={(event) => setTemplateName(event.target.value)}
-                placeholder="Enter template name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">
-                Category Name
-              </label>
-              <Input
-                value={categoryName}
-                onChange={(event) => setCategoryName(event.target.value)}
-                placeholder="Example: Product Design"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground">
-                Subcategory Name
-              </label>
-              <div className="flex gap-2">
+    <div className="flex h-full flex-col overflow-hidden">
+      <Card className="flex h-full flex-col border-none bg-card shadow-none">
+        {/* Fixed Header */}
+        <header className="flex shrink-0 items-center gap-2 border-b px-6 py-4">
+          <Button variant="ghost" size="icon" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <CardTitle className="text-xl">Template Editor</CardTitle>
+        </header>
+
+        {/* Dynamic Content Area */}
+        <CardContent className="grid flex-1 gap-6 overflow-hidden p-6 lg:grid-cols-2">
+          {/* Left: Editor Form */}
+          <section className="flex flex-col space-y-4 overflow-hidden rounded-xl border bg-muted/10 p-6">
+            <div className="shrink-0 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold">Template Name</label>
                 <Input
-                  value={subCategoryName}
-                  onChange={(event) => setSubCategoryName(event.target.value)}
-                  placeholder="Example: CFD Analysis"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder="Enter template name..."
                 />
-                <Button
-                  onClick={handleAddSubcategory}
-                  size="sm"
-                  className="shrink-0"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
               </div>
+              <hr />
             </div>
-            {pendingItems.length > 0 && (
-              <div className="rounded-2xl border border-border bg-muted/20 p-4">
-                <p className="text-sm font-semibold text-foreground">
-                  Current subcategories
-                </p>
-                <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                  {pendingItems.map((item) => (
-                    <li
-                      key={item}
-                      className="rounded-xl bg-slate-950/80 px-3 py-2"
+
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-4 py-2">
+                <h3 className="text-sm font-bold tracking-tight text-primary uppercase">
+                  {editIndex !== null ? "Edit Category" : "Add New Category"}
+                </h3>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Category Label</label>
+                  <Input
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    placeholder="e.g., Marketing"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Subcategories</label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={subCategoryName}
+                      onChange={(e) => setSubCategoryName(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type and press Enter..."
+                    />
+                    <Button
+                      onClick={handleAddSubcategory}
+                      size="icon"
+                      className="shrink-0"
                     >
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {pendingItems.map((item) => (
+                      <span
+                        key={item}
+                        className="flex items-center gap-1.5 rounded-full border bg-background px-3 py-1 text-xs font-medium"
+                      >
+                        {item}
+                        <button
+                          onClick={() =>
+                            setPendingItems((p) => p.filter((i) => i !== item))
+                          }
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="flex flex-wrap gap-2 pt-2">
+            </ScrollArea>
+
+            <div className="shrink-0 pt-4">
               <Button onClick={handleSaveCategory}>
-                {editIndex !== null ? "Update Category" : "Add Category"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setCategoryName("")
-                  setSubCategoryName("")
-                  setPendingItems([])
-                  setEditIndex(null)
-                }}
-              >
-                Reset
+                {editIndex !== null ? "Update Category" : "Add to Preview"}
               </Button>
             </div>
-          </div>
+          </section>
 
-          <div className="space-y-4 rounded-3xl border border-border bg-background/80 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-foreground">
-                  Live Preview
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Review category cards, edit or delete items before saving.
-                </p>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-muted-foreground hover:text-foreground"
-                onClick={onClose}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+          {/* Right: Live Preview */}
+          <section className="flex flex-col overflow-hidden rounded-xl border bg-card p-6">
+            <div className="mb-4 flex shrink-0 items-center justify-between border-b pb-2">
+              <span className="font-bold">Live Preview</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold">
+                {categories.length} {categories.length === 1 ? "ITEM" : "ITEMS"}
+              </span>
             </div>
 
-            <ScrollArea className="h-105 rounded-3xl border border-border bg-slate-950/70 p-4">
-              <div className="space-y-4">
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-3">
                 {categories.length === 0 ? (
-                  <div className="rounded-3xl border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
-                    No categories added yet.
+                  <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-dashed text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Preview will appear here
+                    </p>
                   </div>
                 ) : (
-                  categories.map((category, index) => (
+                  categories.map((cat, idx) => (
                     <div
-                      key={`${category.category}-${index}`}
-                      className="rounded-3xl border border-border/70 bg-slate-950/80 p-4"
+                      key={idx}
+                      className={`rounded-lg border transition-all ${editIndex === idx ? "border-primary ring-2 ring-primary" : ""}`}
                     >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">
-                            {category.category}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {category.items.length} subcategories
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between p-3">
+                        <button
+                          className="flex flex-1 items-center gap-2 text-left"
+                          onClick={() =>
+                            setExpandedIndex(expandedIndex === idx ? null : idx)
+                          }
+                        >
+                          {expandedIndex === idx ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
+                          <div>
+                            <p className="text-sm font-semibold">
+                              {cat.category}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground uppercase">
+                              {cat.items.length} items
+                            </p>
+                          </div>
+                        </button>
+                        <div className="flex gap-1">
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-9 w-9 rounded-full"
-                            onClick={() => handleEditCategory(index)}
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEditCategory(idx)}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="h-9 w-9 rounded-full"
-                            onClick={() => handleDeleteCategory(index)}
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() =>
+                              setCategories((c) =>
+                                c.filter((_, i) => i !== idx)
+                              )
+                            }
                           >
-                            <Trash className="h-4 w-4" />
+                            <Trash className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
-                      <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                        {category.items.map((item) => (
-                          <li
-                            key={item}
-                            className="flex items-center gap-2 rounded-2xl border border-border/60 bg-muted/10 px-3 py-2"
-                          >
-                            <span className="text-primary">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                      {expandedIndex === idx && (
+                        <ul className="space-y-1 bg-muted/30 px-9 pt-1 pb-3">
+                          {cat.items.map((item, i) => (
+                            <li
+                              key={i}
+                              className="flex items-center gap-2 text-xs text-muted-foreground"
+                            >
+                              <div className="h-1 w-1 rounded-full bg-primary/50" />{" "}
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   ))
                 )}
               </div>
             </ScrollArea>
 
-            <div>
-              <p className="mb-2 text-sm font-semibold text-foreground">
-                JSON Preview
-              </p>
-              <div className="overflow-hidden rounded-3xl border border-border bg-background/90 p-4 text-xs text-muted-foreground">
-                <pre className="whitespace-pre-wrap">{jsonPreview}</pre>
-              </div>
+            <div className="shrink-0 pt-6">
+              <Button
+                onClick={handleSaveTemplate}
+                disabled={categories.length === 0 || !templateName}
+              >
+                Save template
+              </Button>
             </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleSaveTemplate}>Save Template</Button>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          </section>
+        </CardContent>
+      </Card>
+    </div>
   )
 }

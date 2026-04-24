@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/shared/components/ui/card"
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
-import { TemplateEditor } from "@/features/budget/components/TemplateEditor"
 import {
   getTemplateOptions,
   TEMPLATE_SESSION_KEY,
@@ -24,11 +23,6 @@ type TemplateRow = {
   preview: string
   source: "json" | "custom"
   template: TemplateCategory[]
-}
-
-type SavedTemplatePayload = {
-  name: string
-  categories: TemplateCategory[]
 }
 
 export default function BudgetTemplate() {
@@ -52,7 +46,6 @@ export default function BudgetTemplate() {
   )
 
   const [templates, setTemplates] = useState<TemplateRow[]>(initialTemplates)
-  const [isEditorOpen, setIsEditorOpen] = useState(false)
 
   const handleUseTemplate = (template: TemplateCategory[]) => {
     if (typeof window !== "undefined") {
@@ -62,25 +55,6 @@ export default function BudgetTemplate() {
       )
     }
     navigate("/plan-entry")
-  }
-
-  const handleSaveTemplate = (payload: SavedTemplatePayload) => {
-    setTemplates((current) => [
-      ...current,
-      {
-        id: `custom-${Date.now()}`,
-        name: payload.name,
-        categoryCount: payload.categories.length,
-        itemCount: payload.categories.reduce(
-          (sum, category) => sum + category.items.length,
-          0
-        ),
-        preview: payload.categories.map((category) => category.category).join(", "),
-        source: "custom",
-        template: payload.categories,
-      },
-    ])
-    setIsEditorOpen(false)
   }
 
   const columnDefs = useMemo<ColDef<TemplateRow>[]>(
@@ -130,28 +104,17 @@ export default function BudgetTemplate() {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-3xl border border-border bg-card">
-        <CardHeader className="p-6">
-          <CardTitle>Budget Template</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6 p-6">
+      <Card className="rounded-sm border border-border bg-card">
+        <CardContent className="space-y-6 px-6 py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div className="space-y-2">
+              <CardTitle>Budget Template</CardTitle>
               <p className="text-sm text-muted-foreground">
                 Browse existing templates, or create a new template with the
                 editor.
               </p>
             </div>
-            <Button onClick={() => setIsEditorOpen(true)}>
-              Create Template
-            </Button>
           </div>
-
-          <TemplateEditor
-            isOpen={isEditorOpen}
-            onClose={() => setIsEditorOpen(false)}
-            onSave={handleSaveTemplate}
-          />
 
           <div className="rounded-3xl border border-border bg-background p-4">
             <DataGrid<TemplateRow>
@@ -164,7 +127,7 @@ export default function BudgetTemplate() {
               gridHeight="420px"
               showSearch={true}
               showRefreshButton={false}
-              showClearFiltersButton={true}
+              showClearFiltersButton={false}
               showExportCsvButton={false}
               showSelectedCount={true}
               toolbarRight={
@@ -172,7 +135,7 @@ export default function BudgetTemplate() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setIsEditorOpen(true)}
+                    onClick={() => navigate("/budget-template/editor")}
                   >
                     New Template
                   </Button>

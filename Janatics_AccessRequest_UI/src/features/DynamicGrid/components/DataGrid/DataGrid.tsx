@@ -87,6 +87,7 @@ function DataGridInner<TData extends Record<string, unknown>>(
     noRowsMessage = "No records found",
     loadingMessage = "Loading data…",
     onRowClicked,
+    onClearFilters: onClearFiltersCallback,
     gridHeight = "400px",
     compact = false,
     theme = "system",
@@ -244,7 +245,10 @@ function DataGridInner<TData extends Record<string, unknown>>(
           toolbarRight={toolbarRight}
           onQuickFilterChange={handlers.onQuickFilterChange}
           onRefresh={handlers.onRefresh}
-          onClearFilters={handlers.onClearFilters}
+          onClearFilters={async () => {
+            await handlers.onClearFilters()
+            await onClearFiltersCallback?.()
+          }}
           onExportCsv={handlers.onExportCsv}
         />
 

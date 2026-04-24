@@ -211,25 +211,6 @@ export default function ReportPage() {
               <p className="text-sm text-destructive">{productError}</p>
             )}
           </div>
-
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Report config
-            </p>
-            <Select
-              value={reportConfig}
-              onValueChange={(value) => setReportConfig(value as ReportConfig)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select report view" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="summary">Summary</SelectItem>
-                <SelectItem value="trend">Trend</SelectItem>
-                <SelectItem value="product">Product report</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
 

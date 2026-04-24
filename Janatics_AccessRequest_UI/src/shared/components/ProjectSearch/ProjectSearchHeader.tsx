@@ -14,10 +14,7 @@ import { FolderKanban, Package, Plus, Search } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import {
-  getBudgetById,
-  mapBudgetApiToUi,
-} from "@/features/budget/types"
+import { getBudgetById, mapBudgetApiToUi } from "@/features/budget/types"
 
 export default function ProjectSearchDashboard() {
   const { state, refs, actions } = useProjectSearch()
@@ -28,32 +25,39 @@ export default function ProjectSearchDashboard() {
     return state.filteredData[0]?.projectname || ""
   }, [state.filteredData])
 
-  const handleViewDetails = useCallback(async (row: ProjectData) => {
-    if (!row.budgetId) {
-      toast.error("Budget ID is missing for this record.")
-      return
-    }
+  const handleViewDetails = useCallback(
+    async (row: ProjectData) => {
+      // If we don't have a budgetId from search results,
+      // prompt user to create a new budget instead
+      if (!row.budgetId) {
+        toast.info(
+          "No budget record found. Please create a new budget for this project."
+        )
+        setIsModalOpen(true)
+        return
+      }
 
-    try {
-      const response = await getBudgetById(row.budgetId)
-      navigate("/plan-entry", {
-        state: { record: mapBudgetApiToUi(response) },
-      })
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to load budget record."
-      toast.error(errorMessage)
-    }
-  }, [navigate])
+      try {
+        const response = await getBudgetById(row.budgetId)
+        navigate("/plan-entry", {
+          state: { record: mapBudgetApiToUi(response) },
+        })
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to load budget record."
+        toast.error(errorMessage)
+      }
+    },
+    [navigate]
+  )
 
   const columnDefs = useMemo(
     () => [
       { field: "product_no", headerName: "Product No", flex: 1 },
       { field: "projectnumber", headerName: "Project Number", flex: 1 },
       { field: "projectname", headerName: "Project Name", flex: 2 },
-      { field: "project_category", headerName: "Category", flex: 1.5 },
       {
         headerName: "Actions",
         pinned: "right" as const,
@@ -101,6 +105,7 @@ export default function ProjectSearchDashboard() {
             <Input
               value={state.productNo}
               onChange={(e) => {
+                e.target.value = e.target.value.toUpperCase()
                 actions.setProductNo(e.target.value)
                 actions.setShowProductSuggestions(true)
               }}
@@ -132,6 +137,7 @@ export default function ProjectSearchDashboard() {
             <Input
               value={state.projectNo}
               onChange={(e) => {
+                e.target.value = e.target.value.toUpperCase()
                 actions.setProjectNo(e.target.value)
                 actions.setShowProjectSuggestions(true)
               }}
@@ -155,7 +161,6 @@ export default function ProjectSearchDashboard() {
           <Button
             onClick={actions.handleSearch}
             className="h-8 px-8"
-            disabled={state.isLoading}
           >
             <Search className="mr-2 h-4 w-4" /> Search
           </Button>
@@ -165,10 +170,15 @@ export default function ProjectSearchDashboard() {
       <DataGrid
         rowData={state.filteredData}
         columnDefs={columnDefs}
+        showSearch={true}
+        showRefreshButton={false}
+        showClearFiltersButton={true}
+        showExportCsvButton={false}
         gridHeight="500px"
+        onClearFilters={actions.clearSearch}
         toolbarRight={
           <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600">
-            <Plus className="mr-2 h-4 w-4" /> Create New Budget
+            <Plus className="mr-0 h-4 w-4" /> New Budget
           </Button>
         }
       />

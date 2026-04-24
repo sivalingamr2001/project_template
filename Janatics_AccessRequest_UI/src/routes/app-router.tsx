@@ -9,6 +9,7 @@ import ProjectSearch from "@/pages/ProjectSearch"
 import PlanEntry from "@/pages/PlanEntry"
 import ReportPage from "@/pages/ReportPage"
 import BudgetTemplate from "@/pages/BudgetTemplate"
+import TemplateEditorPage from "@/pages/TemplateEditorPage"
 
 export default function AppRoutes() {
   return (
@@ -32,6 +33,7 @@ export default function AppRoutes() {
         <Route path="/plan-entry" element={<PlanEntry />} />
         <Route path="/reports" element={<ReportPage />} />
         <Route path="/budget-template" element={<BudgetTemplate />} />
+        <Route path="/budget-template/editor" element={<TemplateEditorPage />} />
       </Route>
     </Routes>
   )
