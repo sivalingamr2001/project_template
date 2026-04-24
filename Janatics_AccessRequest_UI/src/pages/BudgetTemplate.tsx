@@ -1,52 +1,93 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useCallback } from "react"
 import type { ColDef } from "ag-grid-community"
 import { useNavigate } from "react-router-dom"
+import { Trash2, Edit3, CheckCircle } from "lucide-react"
+import { toast } from "sonner"
+
 import { Button } from "@/shared/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/shared/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/shared/components/ui/card"
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
 import {
-  getTemplateOptions,
-  TEMPLATE_SESSION_KEY,
+  budgetTemplateApi,
+  type TemplateResponse,
   type TemplateCategory,
 } from "@/features/budget/utils/budgetTemplates"
 
+// ─── TYPES ──────────────────────────────────────────────────────────────────
+
 type TemplateRow = {
-  id: string
+  id: number
   name: string
   categoryCount: number
   itemCount: number
   preview: string
-  source: "json" | "custom"
   template: TemplateCategory[]
 }
 
+const TEMPLATE_SESSION_KEY = "budgetTemplate"
+
+// ─── COMPONENT ──────────────────────────────────────────────────────────────
+
 export default function BudgetTemplate() {
   const navigate = useNavigate()
+  const [templates, setTemplates] = useState<TemplateRow[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const initialTemplates = useMemo<TemplateRow[]>(
-    () =>
-      getTemplateOptions().map((group) => ({
-        id: group.id,
-        name: group.name,
-        categoryCount: group.categories.length,
-        itemCount: group.categories.reduce(
-          (sum, category) => sum + category.items.length,
-          0
-        ),
-        preview: group.categories.map((category) => category.category).join(", "),
-        source: "json" as const,
-        template: group.categories,
-      })),
-    []
-  )
+  // 1. Fetch & Map Data (READ)
+  const fetchTemplates = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const response = await budgetTemplateApi.getAll(1, 100)
 
-  const [templates, setTemplates] = useState<TemplateRow[]>(initialTemplates)
+      if (response.data.success) {
+        // Only mapping data received from the Oracle API
+        const mappedRows: TemplateRow[] = response.data.data.data.map(
+          (t: TemplateResponse) => ({
+            id: t.templateId,
+            name: t.name,
+            categoryCount: t.structure.length,
+            itemCount: t.structure.reduce(
+              (sum, cat) => sum + (cat.items?.length || 0),
+              0
+            ),
+            preview: t.structure.map((cat) => cat.category).join(", "),
+            template: t.structure,
+          })
+        )
+        setTemplates(mappedRows)
+      } else {
+        toast.error(response.data.message || "Failed to load templates")
+      }
+    } catch (error) {
+      console.error("API Error:", error)
+      toast.error("Network error while fetching templates")
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
+  useEffect(() => {
+    fetchTemplates()
+  }, [fetchTemplates])
+
+  // 2. Delete Action (DELETE)
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Delete this template from Oracle DB?")) return
+
+    try {
+      const response = await budgetTemplateApi.delete(id)
+      if (response.data.success) {
+        toast.success("Template deleted")
+        fetchTemplates()
+      } else {
+        toast.error(response.data.message || "Delete failed")
+      }
+    } catch (error) {
+      toast.error("Error connecting to server")
+    }
+  }
+
+  // 3. Use Template Action (Session for Plan Entry)
   const handleUseTemplate = (template: TemplateCategory[]) => {
     if (typeof window !== "undefined") {
       window.sessionStorage.setItem(
@@ -57,90 +98,84 @@ export default function BudgetTemplate() {
     navigate("/plan-entry")
   }
 
+  // 4. Column Definitions
   const columnDefs = useMemo<ColDef<TemplateRow>[]>(
     () => [
-      { field: "name", headerName: "Template", flex: 1, minWidth: 220 },
-      {
-        field: "categoryCount",
-        headerName: "Categories",
-        flex: 0.5,
-        minWidth: 140,
-      },
-      {
-        field: "itemCount",
-        headerName: "Items",
-        flex: 0.5,
-        minWidth: 120,
-      },
+      { field: "name", headerName: "Template", flex: 1, minWidth: 200 },
+      { field: "categoryCount", headerName: "Categories", width: 120 },
+      { field: "itemCount", headerName: "Items", width: 100 },
       {
         field: "preview",
         headerName: "Category Preview",
         flex: 1.5,
-        minWidth: 240,
+        minWidth: 250,
         filter: false,
+        cellStyle: { color: "#6b7280", fontSize: "12px" },
       },
       {
         headerName: "Actions",
-        field: "actions" as never,
-        minWidth: 130,
-        maxWidth: 160,
-        pinned: "right" as const,
+        width: 150,
+        pinned: "right",
         sortable: false,
         filter: false,
         cellRenderer: (params: { data: TemplateRow }) => (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 px-3 text-xs"
-            onClick={() => handleUseTemplate(params.data.template)}
-          >
-            Use
-          </Button>
+          <div className="flex h-full items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-blue-600"
+              onClick={() =>
+                navigate(`/budget-template/editor/${params.data.id}`)
+              }
+            >
+              <Edit3 className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-destructive"
+              onClick={() => handleDelete(params.data.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         ),
       },
     ],
-    []
+    [navigate]
   )
 
   return (
-    <div className="space-y-6">
-      <Card className="rounded-sm border border-border bg-card">
+    <div className="space-y-2">
+      <Card className="rounded-sm border border-border shadow-sm">
         <CardContent className="space-y-6 px-6 py-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-2">
-              <CardTitle>Budget Template</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Browse existing templates, or create a new template with the
-                editor.
-              </p>
+            <div className="space-y-1">
+              <CardTitle className="text-xl font-bold">
+                Budget Templates
+              </CardTitle>
             </div>
+            <Button
+              size="sm"
+              onClick={() => navigate("/budget-template/editor")}
+            >
+              + Create Template
+            </Button>
           </div>
 
-          <div className="rounded-3xl border border-border bg-background p-4">
+          <div className="rounded-xl border border-border bg-background p-2">
             <DataGrid<TemplateRow>
               gridId="budget-template-grid"
-              title="Template library"
               rowData={templates}
               columnDefs={columnDefs}
-              pageSize={10}
-              rowSelection="single"
-              gridHeight="420px"
               showSearch={true}
               showRefreshButton={false}
               showClearFiltersButton={false}
               showExportCsvButton={false}
-              showSelectedCount={true}
-              toolbarRight={
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => navigate("/budget-template/editor")}
-                  >
-                    New Template
-                  </Button>
-                </div>
-              }
+              loading={isLoading}
+              pageSize={10}
+              gridHeight="500px"
+              onRefresh={fetchTemplates}
             />
           </div>
         </CardContent>

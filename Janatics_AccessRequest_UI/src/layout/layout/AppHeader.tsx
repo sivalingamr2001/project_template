@@ -20,7 +20,7 @@ export function AppHeader({
   const { user, logout } = useAuth()
 
   return (
-    <header className="sticky top-0 z-20 space-y-3 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+    <header className="sticky top-0 z-20 space-y-3 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="rounded-none border-b border-border/70 bg-card/90 p-3 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 flex-1 items-center gap-2">

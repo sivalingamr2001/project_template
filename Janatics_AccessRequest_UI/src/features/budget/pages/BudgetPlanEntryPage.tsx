@@ -1,23 +1,23 @@
 import { useAuth } from "@/providers/auth-provider"
-import { Button } from "@/shared/components/ui/button"
-import { useEffect, useMemo, useState } from "react"
-import { useLocation, useNavigate } from "react-router-dom"
-import type { BudgetRecord } from "../types"
 import { useBudget } from "@/providers/Budget/BudgetProvider"
 import { useNavigationBlock } from "@/providers/NavigationBlockProvider"
-import { toast } from "sonner"
+import { Button } from "@/shared/components/ui/button"
 import {
   getStorageItem,
   removeStorageItem,
   setStorageItem,
 } from "@/shared/lib/storage"
-import { ProjectHeader } from "../components/plan-entry/ProjectHeader"
+import { useEffect, useMemo, useState } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 import type { StoredDraftRecord } from "../components/draft/DraftModal"
-import { BudgetValidationAlert } from "../components/BudgetValidationAlert"
-import { BudgetTable } from "../components/plan-entry/BudgetTable"
-import { DraftConfirmationDialog } from "../components/DraftConfirmationDialog"
-import { exportBudgetWorkbook } from "../utils/exportBudgetWorkbook"
+import type { BudgetRecord } from "../types"
 import type { TemplateCategory } from "../utils/budgetTemplates"
+import {
+  budgetTemplateApi,
+  TEMPLATE_SESSION_KEY,
+} from "../utils/budgetTemplates"
+import { exportBudgetWorkbook } from "../utils/exportBudgetWorkbook"
 
 const DRAFT_KEY_PREFIX = "budget-plan-entry-draft"
 const DRAFT_TTL_MINUTES = 60 * 24 * 7
@@ -75,16 +75,31 @@ export default function PlanEntry() {
   } = useBudget()
   const { onBlock, onUnblock } = useNavigationBlock()
   const [localRecord, setLocalRecord] = useState<BudgetRecord | null>(null)
-  const [activeDraftStorageKey, setActiveDraftStorageKey] = useState<string | null>(null)
+  const [activeDraftStorageKey, setActiveDraftStorageKey] = useState<
+    string | null
+  >(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(
     null
   )
-  const templateOptions = useMemo(() => getTemplateOptions(), [])
-  const [selectedTemplateId, setSelectedTemplateId] = useState(
-    () => templateOptions[0]?.id ?? ""
-  )
+  const [templateOptions, setTemplateOptions] = useState([])
+
+  const [selectedTemplateId, setSelectedTemplateId] = useState("")
+
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      const data = await budgetTemplateApi.getAll()
+      setTemplateOptions(data.data.data.data)
+
+      // Set initial selection once data is loaded
+      if (data.length > 0) {
+        setSelectedTemplateId(data[0].id)
+      }
+    }
+
+    fetchTemplates()
+  }, [])
 
   const draftStorageBaseKey = useMemo(
     () => `${DRAFT_KEY_PREFIX}:${user?.employeeId ?? "guest"}`,
@@ -197,7 +212,13 @@ export default function PlanEntry() {
     } catch {
       // ignore
     }
-  }, [draftStorageBaseKey, location.state, setActiveRecord, templateOptions, user?.employeeId])
+  }, [
+    draftStorageBaseKey,
+    location.state,
+    setActiveRecord,
+    templateOptions,
+    user?.employeeId,
+  ])
 
   useEffect(() => {
     if (!localRecord || !draftStorageKey) {
@@ -353,7 +374,9 @@ export default function PlanEntry() {
 
   const handleTemplateChange = (value: string) => {
     setSelectedTemplateId(value)
-    const option = templateOptions.find((template) => template.id === value)
+    const option = templateOptions.find(
+      (template: { id: string }) => template.id === value
+    )
 
     if (!option) {
       return
@@ -461,7 +484,7 @@ export default function PlanEntry() {
   return (
     <div className="flex flex-col">
       <div className="h-full flex-1 overflow-auto p-0">
-        <ProjectHeader
+        <PlanEntryHeader
           record={localRecord}
           onSaveRecord={saveRecord}
           onDiscardDraft={discardDraft}
@@ -470,17 +493,14 @@ export default function PlanEntry() {
           onTemplateChange={handleTemplateChange}
           templateOptions={templateOptions}
         />
-        <div className="mb-5 px-6">
-          <BudgetValidationAlert
-            actualAmounts={null}
-            budgetCategories={localRecord.budgetData}
-          />
-        </div>
-        <BudgetTable record={localRecord} onRecordChange={handleRecordChange} />
+        <PlanEntryTable
+          record={localRecord}
+          onRecordChange={handleRecordChange}
+        />
       </div>
 
       {localRecord && (
-        <DraftConfirmationDialog
+        <PlanEntryDraftDialog
           isOpen={showConfirmationDialog}
           onClose={handleDialogClose}
           onSaveDraft={handleSaveDraftAndNavigate}

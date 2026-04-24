@@ -1,59 +1,85 @@
-import planEntryTemplate from "@/data/planEntryTemplate.json"
-import type { BudgetCategory } from "@/features/budget/types"
+import { apiService } from "@/shared/lib/api-client"
+
+// ─── API Wrapper Types ─────────────────────────────────────────
+export interface ApiResult<T> {
+  success: boolean
+  message: string | null
+  data: T
+  errors: string[] | null
+}
+
+export interface PagedResult<T> {
+  totalCount: number
+  pageNumber: number
+  pageSize: number
+  totalPages: number
+  data: T[]
+}
+
+export interface TemplateResponse {
+  templateId: number
+  name: string
+  structure: TemplateCategory[]
+}
 
 export type TemplateCategory = {
-  category: string
-  items: string[]
-}
+  category: string;
+  items: string[];
+};
 
-type RawTemplateCategory = TemplateCategory & {
-  budgetId?: string
-}
+export const TEMPLATE_SESSION_KEY = "jan_budgetTemplate"
 
-export type TemplateOption = {
-  id: string
-  name: string
-  categories: TemplateCategory[]
-}
+// ─── Mapping Utility ───────────────────────────────────────────
+// Converts Backend Response to Table Row
+export const mapTemplateToRow = (t: TemplateResponse) => ({
+  id: t.templateId,
+  name: t.name,
+  categoryCount: t.structure.length,
+  itemCount: t.structure.reduce(
+    (sum, cat) => sum + (cat.items?.length || 0),
+    0
+  ),
+  preview: t.structure.map((cat) => cat.category).join(", "),
+  template: t.structure, // Original JSON for SessionStorage
+})
 
-export const TEMPLATE_SESSION_KEY = "budgetTemplate"
+// ─── API Endpoints ─────────────────────────────────────────────
+export const budgetTemplateApi = {
+  /**
+   * Fetch paged templates from Oracle DB
+   */
+  getAll: (page = 1, size = 10) =>
+    apiService.get<ApiResult<PagedResult<TemplateResponse>>>(
+      `/templates?pageNumber=${page}&pageSize=${size}`
+    ),
 
-export function getTemplateOptions(): TemplateOption[] {
-  const rawCategories = planEntryTemplate as RawTemplateCategory[]
-  const grouped = rawCategories.reduce((map, entry) => {
-    const budgetId = entry.budgetId ?? "default"
+  /**
+   * Fetch a single template by ID
+   */
+  getById: (id: number) =>
+    apiService.get<ApiResult<TemplateResponse>>(`/templates/${id}`),
 
-    if (!map.has(budgetId)) {
-      map.set(budgetId, {
-        id: budgetId,
-        name:
-          budgetId === "default"
-            ? "Default Budget Template"
-            : entry.budgetId ?? "Default Budget Template",
-        categories: [] as TemplateCategory[],
-      })
-    }
-
-    map.get(budgetId)?.categories.push({
-      category: entry.category,
-      items: entry.items,
-    })
-
-    return map
-  }, new Map<string, TemplateOption>())
-
-  return Array.from(grouped.values())
-}
-
-export function templateToBudgetData(
-  categories: TemplateCategory[]
-): BudgetCategory[] {
-  return categories.map((category) => ({
-    category: category.category,
-    items: category.items.map((name) => ({
+  /**
+   * Save a new budget structure
+   */
+  create: (name: string, structure: TemplateCategory[]) =>
+    apiService.post<ApiResult<TemplateResponse>>("/templates", {
       name,
-      planned: 0,
-      actual: 0,
-    })),
-  }))
+      structure,
+    }),
+
+  /**
+   * Update an existing template in Oracle
+   */
+  update: (id: number, name: string, structure: TemplateCategory[]) =>
+    apiService.put<ApiResult<boolean>>(`/templates/${id}`, {
+      name,
+      structure,
+    }),
+
+  /**
+   * Permanently delete a template
+   */
+  delete: (id: number) =>
+    apiService.delete<ApiResult<boolean>>(`/templates/${id}`),
 }

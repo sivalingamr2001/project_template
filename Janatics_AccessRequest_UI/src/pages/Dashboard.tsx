@@ -162,7 +162,7 @@ export default function Dashboard() {
       <hr className="opacity-10" />
 
       {/* 📊 METRICS GRID */}
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-6 mb-6 sm:grid-cols-2 xl:grid-cols-4">
         <BudgetMetricCard
           title="Total Planned Budget (₹)"
           value={formatCurrency(summary.summary?.totalPlanned ?? 0)}

@@ -34,7 +34,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/shared/components/ui/tooltip"
-import type { TemplateOption } from "@/features/budget/utils/budgetTemplates"
 import { Link } from "react-router-dom"
 
 interface ProjectHeaderProps {

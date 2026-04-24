@@ -1,11 +1,17 @@
 "use client"
 
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/shared/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/shared/components/ui/tooltip"
 import { NAVIGATION_ITEMS } from "@/shared/lib/navigationItems"
 import { PORTAL_CONFIG } from "@/shared/lib/portalConfig"
 import { cn } from "@/shared/lib/utils"
 import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
+import Logo from "@/assets/jana.png"
 
 type SidebarProps = {
   variant?: "desktop" | "mobile"
@@ -23,7 +29,7 @@ export function AppSidebar({
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "bg-card p-4 overflow-y-auto transition-all duration-300",
+          "overflow-y-auto bg-card p-4 transition-all duration-300",
           !isCollapsed && "lg:border-r lg:border-border",
           variant === "desktop"
             ? "fixed top-0 left-0 z-30 hidden h-screen lg:block"
@@ -33,20 +39,20 @@ export function AppSidebar({
       >
         <div
           className={cn(
-            "mb-6 flex items-center gap-2",
+            "mb-6 flex items-center justify-center gap-2",
             isCollapsed ? "justify-center" : ""
           )}
         >
-          <Link to={PORTAL_CONFIG.brand.homePath} className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-sm font-semibold text-primary-foreground shadow-sm">
-              JP
-            </div>
+          <Link
+            to={PORTAL_CONFIG.brand.homePath}
+            className="flex items-center gap-3"
+          >
             {!isCollapsed && (
               <div>
-                <p className="text-lg font-semibold text-foreground">
-                  {PORTAL_CONFIG.brand.name}
+                <img src={Logo} alt="Janatics" className="h-6 w-fit" />
+                <p className="text-xs text-muted-foreground">
+                  Budget management portal
                 </p>
-                <p className="text-xs text-muted-foreground">Budget management portal</p>
               </div>
             )}
           </Link>

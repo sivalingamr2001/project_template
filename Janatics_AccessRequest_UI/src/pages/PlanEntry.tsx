@@ -1,4 +1,4 @@
-import BudgetPlanEntryPage from "@/features/budget/pages/PlanEntry"
+import BudgetPlanEntryPage from "@/features/budget/pages/BudgetPlanEntryPage"
 
 export default function PlanEntry() {
   return <BudgetPlanEntryPage />

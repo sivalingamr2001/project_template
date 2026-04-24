@@ -157,7 +157,7 @@ export default function ReportPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 self-end">
-          <div className="flex items-center gap-2 rounded-full border bg-card p-1.5 pl-4 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/50">
+          <div className="flex items-center gap-2 rounded-full border bg-card pl-4 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/50">
             <Search className="h-3.5 w-3.5 text-muted-foreground" />
             <input
               placeholder="Product No..."
@@ -179,8 +179,16 @@ export default function ReportPage() {
               )}
             </Button>
           </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => alert("Exporting report...")}
+              className="h-7 rounded-full px-4 text-[11px] font-bold tracking-wider uppercase"
+            >
+              Export
+            </Button>
 
-          <div className="flex items-center gap-2 rounded-full border bg-card p-1.5 pl-4 shadow-sm">
+          <div className="flex items-center gap-2 rounded-full border bg-card pl-4 shadow-sm">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
               <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
@@ -259,12 +267,10 @@ export default function ReportPage() {
         </div>
       </div>
 
-      <hr className="opacity-10" />
-
       {/* 📊 CONTENT SECTION */}
       {reportConfig !== "product" ? (
-        <div className="space-y-6">
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="space-y-2">
+          <div className="grid gap-6 mb-6 sm:grid-cols-2 xl:grid-cols-4">
             <BudgetMetricCard
               title="Budgeted"
               value={formatCurrency(summary.summary?.totalPlanned ?? 0)}
