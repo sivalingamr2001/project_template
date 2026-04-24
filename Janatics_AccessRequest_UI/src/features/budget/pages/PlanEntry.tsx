@@ -465,7 +465,7 @@ export default function PlanEntry() {
 
   return (
     <div className="flex flex-col">
-      <div className="h-full flex-1 overflow-auto py-5">
+      <div className="h-full flex-1 overflow-auto p-0">
         <ProjectHeader
           record={localRecord}
           onSaveRecord={saveRecord}

@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom"
+import { Routes, Route, useNavigate } from "react-router-dom"
 
 import Dashboard from "../pages/Dashboard"
 import LoginPage from "../pages/LoginPage"
@@ -10,8 +10,22 @@ import PlanEntry from "@/pages/PlanEntry"
 import ReportPage from "@/pages/ReportPage"
 import BudgetTemplate from "@/pages/BudgetTemplate"
 import TemplateEditorPage from "@/pages/TemplateEditorPage"
+import { useEffect } from "react"
 
 export default function AppRoutes() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const user = localStorage.getItem("janatics-auth-user")
+    if (!user) return
+    try {
+      JSON.parse(user)
+      navigate("/")
+    } catch {
+      localStorage.removeItem("janatics-auth-user")
+    }
+  }, [])
+
   return (
     <Routes>
       {/* Public */}
@@ -33,7 +47,10 @@ export default function AppRoutes() {
         <Route path="/plan-entry" element={<PlanEntry />} />
         <Route path="/reports" element={<ReportPage />} />
         <Route path="/budget-template" element={<BudgetTemplate />} />
-        <Route path="/budget-template/editor" element={<TemplateEditorPage />} />
+        <Route
+          path="/budget-template/editor"
+          element={<TemplateEditorPage />}
+        />
       </Route>
     </Routes>
   )

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Server.Domain.Entities;
 
-public sealed class EmployeeEntity
+public sealed class EmployeeEntity : BaseEntity
 {
     [Key]
     [Column("emp_id")]

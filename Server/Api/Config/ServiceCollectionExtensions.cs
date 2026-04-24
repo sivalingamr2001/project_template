@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Server.Features.Auth.Login;
 using Server.Features.BudgetRecords;
 using Server.Features.Employees;
+using Server.Features.Template;
 using Server.Infrastructure.Db;
 using Server.Infrastructure.Oracle;
 using Server.Shared.Constants;
@@ -62,6 +63,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LoginService>();
         services.AddScoped<BudgetRecordsService>();
         services.AddScoped<EmployeesService>();
+        services.AddScoped<TemplateService>();
         if (string.Equals(databaseOptions.Provider, "Oracle", StringComparison.OrdinalIgnoreCase))
         {
             services.AddScoped<OracleService>();

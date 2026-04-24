@@ -11,8 +11,8 @@ interface BudgetSummaryItem {
 function mapBudgetToProjectData(item: any): ProjectData {
   return {
     product_no: item.product_No  || item.productNo,
-    projectnumber: item.projectCode,
-    projectname: item.projectTitle,
+    projectnumber: item.projectCode || item.projectNumber,
+    projectname: item.projectTitle || item.projectName,
     budgetId: item.budgetId,
   }
 }

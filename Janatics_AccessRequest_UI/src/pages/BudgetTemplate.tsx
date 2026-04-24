@@ -134,7 +134,7 @@ export default function BudgetTemplate() {
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="default"
                     onClick={() => navigate("/budget-template/editor")}
                   >
                     New Template

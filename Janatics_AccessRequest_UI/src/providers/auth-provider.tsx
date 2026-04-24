@@ -12,6 +12,7 @@ import {
   type LoginRequest,
   type RegisterRequest,
 } from "@/features/auth/api/authApi"
+import { setStorageItem } from "@/shared/lib/storage"
 
 const STORAGE_KEY = "janatics-auth-user"
 
@@ -56,7 +57,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const login = async (request: LoginRequest) => {
     const auth: any = await authApi.login(request)
     setUser(auth.session.user)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(auth.session.user))
+    setStorageItem(STORAGE_KEY, auth.session.user, {
+      expiresInMinutes: 30,
+    })
     return auth
   }
 

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
+using System.Text.Json;
 
 namespace Server.Infrastructure.Db;
 
@@ -9,54 +10,66 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<BudgetCategory> BudgetCategories => Set<BudgetCategory>();
     public DbSet<BudgetItem> BudgetItems => Set<BudgetItem>();
+    public DbSet<BudgetTemplateEntity> BudgetTemplates => Set<BudgetTemplateEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // 1. Employee Configuration
+        // Employee Configuration
         modelBuilder.Entity<EmployeeEntity>(entity =>
         {
             entity.ToTable("jan_employees");
             entity.HasKey(e => e.EmployeeId);
         });
 
-        // 2. Budget Header (The Project)
+        // 2. Budget Template Configuration
+        modelBuilder.Entity<BudgetTemplateEntity>(entity =>
+        {
+            entity.ToTable("jan_budget_templates");
+            entity.HasKey(e => e.TemplateId);
+
+            // Map the string property to Oracle's native JSON type
+            entity.Property(e => e.TemplateJson)
+                  .HasColumnType("JSON");
+        });
+
+        // Budget Header
         modelBuilder.Entity<Budget>(entity =>
         {
             entity.ToTable("jan_budgets");
             entity.HasKey(e => e.BudgetId);
-
-            // Unique constraint on ProjectCode
             entity.HasIndex(e => e.ProjectCode).IsUnique();
+
+            // 3. Link Budget to Template (Optional but recommended)
+            entity.HasOne<BudgetTemplateEntity>()
+                  .WithMany()
+                  .HasForeignKey("TemplateId")
+                  .IsRequired(false);
         });
 
-        // 3. Budget Categories
+        // Budget Categories
         modelBuilder.Entity<BudgetCategory>(entity =>
         {
             entity.ToTable("jan_budget_categories");
             entity.HasKey(e => e.CategoryId);
             entity.Property(e => e.CategoryId).ValueGeneratedOnAdd();
 
-            // Relationship: Budget -> Categories (1:N)
             entity.HasOne(d => d.Budget)
                   .WithMany(p => p.Categories)
                   .HasForeignKey(d => d.BudgetId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // 4. Budget Items (Line Items)
+        // Budget Items
         modelBuilder.Entity<BudgetItem>(entity =>
         {
             entity.ToTable("jan_budget_items");
             entity.HasKey(e => e.ItemId);
             entity.Property(e => e.ItemId).ValueGeneratedOnAdd();
-
-            // Precision for financial data
             entity.Property(e => e.Planned).HasPrecision(18, 2);
             entity.Property(e => e.Actual).HasPrecision(18, 2);
 
-            // Relationship: Category -> Items (1:N)
             entity.HasOne(d => d.Category)
                   .WithMany(p => p.Items)
                   .HasForeignKey(d => d.CategoryId)
@@ -68,60 +81,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     private static void SeedBudgetData(ModelBuilder modelBuilder)
     {
-        // Seed Categories
-        modelBuilder.Entity<BudgetCategory>().HasData(
-            new BudgetCategory { CategoryId = 1, CategoryName = "Product Design" },
-            new BudgetCategory { CategoryId = 2, CategoryName = "Concept Development" },
-            new BudgetCategory { CategoryId = 3, CategoryName = "Prototype Development" },
-            new BudgetCategory { CategoryId = 4, CategoryName = "Product Testing" },
-            new BudgetCategory { CategoryId = 5, CategoryName = "Capital Equipments" },
-            new BudgetCategory { CategoryId = 6, CategoryName = "Field Validation" }
-        );
+        // 4. Define the raw JSON string
+        var defaultTemplateJson = @"[
+          { ""category"": ""Product Design"", ""items"": [""Benchmarking sample"", ""FEA Analysis"", ""CFD Analysis"", ""Design consultancy"", ""Others""] },
+          { ""category"": ""Concept development"", ""items"": [""Comp.devpt-Concept"", ""Machining components"", ""Plastic - Hand moulds"", ""Rubber moulds"", ""3D printing"", ""RPT"", ""MIM"", ""Jigs & fixtures"", ""Concept testing""] },
+          { ""category"": ""Prototype development"", ""items"": [""Machining components"", ""Plastic - Inj. moulds"", ""Aluminium - Die casting"", ""Investment casting"", ""Stamping tools"", ""Rubber moulds"", ""Jigs & fixtures"", ""Comp. mfg."", ""Testing""] },
+          { ""category"": ""Product testing"", ""items"": [""Testing instruments"", ""Testing fixtures"", ""Certification"", ""Others""] },
+          { ""category"": ""Capital equipments"", ""items"": [""Testing equipments"", ""Special machines"", ""Others""] },
+          { ""category"": ""Field validation"", ""items"": [""Product development""] }
+        ]";
 
-        // Seed Cost Items
-        modelBuilder.Entity<BudgetItem>().HasData(
-            // 1: Product design
-            new BudgetItem { ItemId = 1, CategoryId = 1, ItemName = "Benchmarking sample", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 2, CategoryId = 1, ItemName = "FEA Analysis", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 3, CategoryId = 1, ItemName = "CFD Analysis", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 4, CategoryId = 1, ItemName = "Design consultancy", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 5, CategoryId = 1, ItemName = "Others", Planned = 0, Actual = 0 },
-
-            // 2: Concept development
-            new BudgetItem { ItemId = 6, CategoryId = 2, ItemName = "Comp.devpt-Concept", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 7, CategoryId = 2, ItemName = "Machining components", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 8, CategoryId = 2, ItemName = "Plastic - Hand moulds", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 9, CategoryId = 2, ItemName = "Rubber moulds", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 10, CategoryId = 2, ItemName = "3D printing", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 11, CategoryId = 2, ItemName = "RPT", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 12, CategoryId = 2, ItemName = "MIM", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 13, CategoryId = 2, ItemName = "Jigs & fixtures", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 14, CategoryId = 2, ItemName = "Concept testing", Planned = 0, Actual = 0 },
-
-            // 3: Prototype development
-            new BudgetItem { ItemId = 15, CategoryId = 3, ItemName = "Machining components", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 16, CategoryId = 3, ItemName = "Plastic - Injection moulds", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 17, CategoryId = 3, ItemName = "Aluminium - Die casting", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 18, CategoryId = 3, ItemName = "Investment casting", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 19, CategoryId = 3, ItemName = "Stamping tools", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 20, CategoryId = 3, ItemName = "Rubber moulds", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 21, CategoryId = 3, ItemName = "Jigs & fixtures", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 22, CategoryId = 3, ItemName = "Comp. mfg.", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 23, CategoryId = 3, ItemName = "Testing", Planned = 0, Actual = 0 },
-
-            // 4: Product testing
-            new BudgetItem { ItemId = 24, CategoryId = 4, ItemName = "Testing instruments", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 25, CategoryId = 4, ItemName = "Testing fixtures", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 26, CategoryId = 4, ItemName = "Certification", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 27, CategoryId = 4, ItemName = "Others", Planned = 0, Actual = 0 },
-
-            // 5: Capital equipments
-            new BudgetItem { ItemId = 28, CategoryId = 5, ItemName = "Testing equipments", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 29, CategoryId = 5, ItemName = "Special machines", Planned = 0, Actual = 0 },
-            new BudgetItem { ItemId = 30, CategoryId = 5, ItemName = "Others", Planned = 0, Actual = 0 },
-
-            // 6: Field validation
-            new BudgetItem { ItemId = 31, CategoryId = 6, ItemName = "Product development", Planned = 0, Actual = 0 }
-        );
+        // 5. Seed the default template
+        modelBuilder.Entity<BudgetTemplateEntity>().HasData(new BudgetTemplateEntity
+        {
+            TemplateId = 1,
+            Name = "Standard Product Development Template",
+            TemplateJson = defaultTemplateJson
+        });
     }
 }

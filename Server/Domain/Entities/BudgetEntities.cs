@@ -11,6 +11,11 @@ public class Budget : BaseEntity
     public int EmployeeId { get; set; }
 
     [Required]
+    public int TemplateId { get; set; }
+
+    public BudgetTemplateEntity Template { get; set; }
+
+    [Required]
     public string ProjectCode { get; set; } = string.Empty;
 
     [Required]
@@ -24,7 +29,7 @@ public class Budget : BaseEntity
     public int IsActive { get; set; } = 1;
 }
 
-public class BudgetCategory
+public class BudgetCategory : BaseEntity
 {
     [Key]
     public int CategoryId { get; set; }
@@ -39,7 +44,7 @@ public class BudgetCategory
     public ICollection<BudgetItem> Items { get; set; } = new List<BudgetItem>();
 }
 
-public class BudgetItem
+public class BudgetItem : BaseEntity
 {
     [Key]
     public int ItemId { get; set; }

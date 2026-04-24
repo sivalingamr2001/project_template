@@ -1,76 +1,72 @@
+import { format } from "date-fns"
+import {
+  ArrowRight,
+  Calendar as CalendarIcon,
+  FileText,
+  LayoutDashboard,
+  Loader2,
+  MoreHorizontal,
+  Search,
+} from "lucide-react"
+import { useMemo, useState } from "react"
+
+import type { BudgetRecordResponse } from "@/features/budget/types"
 import { BudgetMetricCard } from "@/shared/components/dashboard/BudgetMetricCard"
 import { PlannedVsActualBarChart } from "@/shared/components/dashboard/PlannedVsActualBarChart"
 import { VarianceTrendChart } from "@/shared/components/dashboard/VarianceTrendChart"
-import { Input } from "@/shared/components/ui/input"
 import { Button } from "@/shared/components/ui/button"
+import { Calendar } from "@/shared/components/ui/calendar"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/components/ui/select"
-import { apiService } from "@/shared/lib/api-client"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/shared/components/ui/popover"
 import {
   useBudgetSummary,
   useMonthlyTrend,
   useQuarterlyTrend,
   useYearlyTrend,
 } from "@/shared/hooks/useBudget"
-import { useMemo, useState } from "react"
+import { apiService } from "@/shared/lib/api-client"
 
-function formatCurrency(value: number) {
-  return value.toLocaleString("en-IN", {
+type PeriodOption = "monthly" | "quarterly" | "yearly" | "custom"
+
+const formatCurrency = (val: number) =>
+  val.toLocaleString("en-IN", {
     style: "currency",
     currency: "INR",
     maximumFractionDigits: 0,
   })
-}
-
-type BudgetRecordDto = {
-  header: {
-    budgetId: number
-    employeeId: number
-    projectCode: string
-    productNo: string
-    projectTitle: string
-    createdOn: string
-    modifiedOn: string
-  }
-  categories: {
-    categoryId: number
-    categoryName: string
-    items: {
-      itemId: number
-      itemName: string
-      planned: number
-      actual: number
-    }[]
-  }[]
-}
-
-type PeriodOption = "monthly" | "quarterly" | "yearly" | "custom"
-
-type ReportConfig = "summary" | "trend" | "product"
 
 export default function ReportPage() {
+  // --- State ---
   const [period, setPeriod] = useState<PeriodOption>("monthly")
-  const [reportConfig, setReportConfig] = useState<ReportConfig>("summary")
-  const [fromDate, setFromDate] = useState(() => {
-    const date = new Date()
-    date.setDate(date.getDate() - 30)
-    return date.toISOString().slice(0, 10)
-  })
-  const [toDate, setToDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [productNo, setProductNo] = useState("")
-  const [productBudget, setProductBudget] = useState<BudgetRecordDto | null>(null)
-  const [productError, setProductError] = useState<string | null>(null)
-  const [productLoading, setProductLoading] = useState(false)
+  const [reportConfig, setReportConfig] = useState<"summary" | "product">(
+    "summary"
+  )
+  const [date, setDate] = useState<{ from: Date; to: Date }>({
+    from: new Date(new Date().getFullYear(), 0, 1),
+    to: new Date(),
+  })
 
-  const { summary } = useBudgetSummary(
+  const [productLoading, setProductLoading] = useState(false)
+  const [productBudget, setProductBudget] =
+    useState<BudgetRecordResponse | null>(null)
+  const [productError, setProductError] = useState<string | null>(null)
+
+  const summary = useBudgetSummary(
     period,
-    period === "custom" ? fromDate : undefined,
-    period === "custom" ? toDate : undefined
+    period === "custom" ? format(date.from, "yyyy-MM-dd") : undefined,
+    period === "custom" ? format(date.to, "yyyy-MM-dd") : undefined
   )
 
   const monthlyTrend = useMonthlyTrend()
@@ -83,302 +79,337 @@ export default function ReportPage() {
     return monthlyTrend
   }, [period, monthlyTrend, quarterlyTrend, yearlyTrend])
 
-  const variance = summary?.variance ?? 0
-  const variancePct = summary?.variancePct ?? 0
+  const productTotals = useMemo(() => {
+    if (!productBudget) {
+      return { planned: 0, actual: 0, variance: 0 }
+    }
 
-  const productTotals = productBudget
-    ? productBudget.categories.reduce(
-        (totals, category) => {
-          const categoryPlanned = category.items.reduce(
-            (sum, item) => sum + item.planned,
-            0
-          )
-          const categoryActual = category.items.reduce(
-            (sum, item) => sum + item.actual,
-            0
-          )
+    const planned = productBudget.categories.reduce(
+      (sum, category) =>
+        sum +
+        category.items.reduce(
+          (itemSum: number, item: any) => itemSum + item.planned,
+          0
+        ),
+      0
+    )
 
-          return {
-            planned: totals.planned + categoryPlanned,
-            actual: totals.actual + categoryActual,
-            variance: totals.variance + (categoryPlanned - categoryActual),
-          }
-        },
-        { planned: 0, actual: 0, variance: 0 }
-      )
-    : { planned: 0, actual: 0, variance: 0 }
+    const actual = productBudget.categories.reduce(
+      (sum, category) =>
+        sum +
+        category.items.reduce(
+          (itemSum: number, item: any) => itemSum + item.actual,
+          0
+        ),
+      0
+    )
 
-  const pageTitle =
-    reportConfig === "product"
-      ? "Product report"
-      : reportConfig === "trend"
-      ? "Trend overview"
-      : "Summary report"
+    return {
+      planned,
+      actual,
+      variance: planned - actual,
+    }
+  }, [productBudget])
 
   const loadProductBudget = async () => {
-    if (!productNo.trim()) {
-      setProductError("Enter a product number to load the report.")
-      setProductBudget(null)
-      return
-    }
+    const trimmedProductNo = productNo.trim()
+    if (!trimmedProductNo) return
 
     setProductLoading(true)
     setProductError(null)
-    setProductBudget(null)
+    setReportConfig("product")
 
     try {
-      const response = await apiService.get<BudgetRecordDto>(
-        `/budgets/by-project/${encodeURIComponent(productNo.trim())}`
+      const response = await apiService.get<BudgetRecordResponse>(
+        `/budgets/by-project/${encodeURIComponent(trimmedProductNo)}`
       )
       setProductBudget(response.data)
-    } catch {
-      setProductError(
-        "No report found for that product number or product has no plan entry."
-      )
+    } catch (error) {
+      console.error("Failed to load product budget", error)
+      setProductBudget(null)
+      setProductError("Unable to find budget for this product number.")
     } finally {
       setProductLoading(false)
     }
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="grid gap-4 lg:grid-cols-4">
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Period
-            </p>
-            <Select
-              value={period}
-              onValueChange={(value) => setPeriod(value as PeriodOption)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select period" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="quarterly">Quarterly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-                <SelectItem value="custom">Custom range</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {period === "custom" && (
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  From date
-                </p>
-                <Input
-                  type="date"
-                  value={fromDate}
-                  onChange={(event) => setFromDate(event.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  To date
-                </p>
-                <Input
-                  type="date"
-                  value={toDate}
-                  onChange={(event) => setToDate(event.target.value)}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Product number
-            </p>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter product no."
-                value={productNo}
-                onChange={(event) => setProductNo(event.target.value)}
-              />
-              <Button
-                onClick={loadProductBudget}
-                disabled={productLoading}
-                className="whitespace-nowrap"
-              >
-                {productLoading ? "Loading…" : "Load"}
-              </Button>
-            </div>
-            {productError && (
-              <p className="text-sm text-destructive">{productError}</p>
+    <div className="flex flex-col gap-6 bg-background p-0">
+      {/* 🟢 SLEEK HEADER FILTERS */}
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
+            {reportConfig === "product" ? (
+              <FileText className="h-6 w-6 text-primary" />
+            ) : (
+              <LayoutDashboard className="h-6 w-6 text-primary" />
             )}
-          </div>
+            {reportConfig === "product" ? "Product Report" : "Budget Summary"}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {reportConfig === "product"
+              ? `Detailed financial breakdown for ${productNo || "selected product"}`
+              : "Overall analytics for live projects and tracking."}
+          </p>
+          {productError && reportConfig === "product" && (
+            <p className="mt-2 text-sm text-rose-600">{productError}</p>
+          )}
         </div>
-      </div>
 
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-lg font-semibold text-foreground">{pageTitle}</p>
-            <p className="text-sm text-muted-foreground">
-              Use header filters to switch views, load a product report, or update the period.
-            </p>
+        <div className="flex flex-wrap items-center gap-3 self-end">
+          <div className="flex items-center gap-2 rounded-full border bg-card p-1.5 pl-4 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/50">
+            <Search className="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              placeholder="Product No..."
+              value={productNo}
+              onChange={(e) => setProductNo(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && loadProductBudget()}
+              className="w-24 bg-transparent text-xs outline-none md:w-32"
+            />
+            <Button
+              size="sm"
+              onClick={loadProductBudget}
+              disabled={productLoading}
+              className="h-7 rounded-full px-4 text-[11px] font-bold tracking-wider uppercase"
+            >
+              {productLoading ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                "Load"
+              )}
+            </Button>
           </div>
-          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-            <span>Selected period: {period}</span>
-            {period === "custom" ? (
-              <span>
-                {fromDate} → {toDate}
+
+          <div className="flex items-center gap-2 rounded-full border bg-card p-1.5 pl-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+              <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                {period}
               </span>
-            ) : null}
+            </div>
+
+            {period === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="h-7 rounded-full px-3 text-[10px]"
+                  >
+                    <CalendarIcon className="mr-2 h-3 w-3" />
+                    {format(date.from, "MMM dd")} - {format(date.to, "MMM dd")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="range"
+                    selected={{ from: date.from, to: date.to }}
+                    onSelect={(range: any) =>
+                      range?.from && range?.to && setDate(range)
+                    }
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-accent"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>View Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />{" "}
+                <DropdownMenuItem
+                  onClick={() => {
+                    setReportConfig("summary")
+                    setProductNo("")
+                    setProductBudget(null)
+                    setProductError(null)
+                  }}
+                >
+                  General Summary
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />{" "}
+                <DropdownMenuItem onClick={() => setPeriod("monthly")}>
+                  Monthly View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPeriod("quarterly")}>
+                  Quarterly View
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPeriod("yearly")}>
+                  Yearly View
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setPeriod("custom")}
+                  className="font-medium text-primary"
+                >
+                  Set Custom Range...
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
 
+      <hr className="opacity-10" />
+
+      {/* 📊 CONTENT SECTION */}
       {reportConfig !== "product" ? (
-        <>
-          <div className="grid gap-4 lg:grid-cols-4">
+        <div className="space-y-6">
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             <BudgetMetricCard
               title="Budgeted"
-              value={formatCurrency(summary?.totalPlanned ?? 0)}
+              value={formatCurrency(summary.summary?.totalPlanned ?? 0)}
               subtitle="Selected period"
               change="Planned"
               trend="positive"
             />
             <BudgetMetricCard
               title="Actuals"
-              value={formatCurrency(summary?.totalActual ?? 0)}
+              value={formatCurrency(summary.summary?.totalActual ?? 0)}
               subtitle="Selected period"
               change="Spent"
               trend="neutral"
             />
             <BudgetMetricCard
               title="Variance"
-              value={formatCurrency(variance)}
-              subtitle={`${variancePct.toFixed(1)}%`}
-              change={variance >= 0 ? "Under budget" : "Over budget"}
-              trend={variance >= 0 ? "positive" : "negative"}
+              value={formatCurrency(
+                (summary.summary?.totalPlanned ?? 0) -
+                  (summary.summary?.totalActual ?? 0)
+              )}
+              subtitle="vs Planned"
+              change="Difference"
+              trend="positive"
             />
             <BudgetMetricCard
               title="Active Projects"
-              value={String(summary?.activeProjects ?? 0)}
-              subtitle="Selected period"
-              change="Projects"
+              value={String(summary.summary?.activeProjects ?? 0)}
+              subtitle="Execution"
+              change="Count"
               trend="neutral"
             />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <PlannedVsActualBarChart data={trendData} />
-            <VarianceTrendChart
-              data={trendData.map((point) => ({ label: point.label, variance: point.variance }))}
-            />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-3xl border bg-card p-2 shadow-sm transition-all hover:shadow-md">
+              <PlannedVsActualBarChart data={trendData} />
+            </div>
+            <div className="rounded-3xl border bg-card p-2 shadow-sm transition-all hover:shadow-md">
+              <VarianceTrendChart
+                data={trendData.map((p: any) => ({
+                  label: p.label,
+                  variance: p.variance,
+                }))}
+              />
+            </div>
           </div>
-        </>
+        </div>
       ) : productBudget ? (
-        <div className="grid gap-4">
-          <div className="grid gap-4 xl:grid-cols-[2fr_1fr]">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+        <div className="grid gap-6">
+          {/* Product Overview Section */}
+          <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
+            <div className="rounded-3xl border bg-card p-6 shadow-sm">
+              <p className="text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
                 Product budget overview
               </p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-border bg-muted/50 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Product
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-foreground">
-                    {productBudget.header.productNo}
-                  </p>
-                </div>
-                <div className="rounded-3xl border border-border bg-muted/50 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Categories
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-foreground">
-                    {productBudget.categories.length}
-                  </p>
-                </div>
-                <div className="rounded-3xl border border-border bg-muted/50 p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Line items
-                  </p>
-                  <p className="mt-2 text-lg font-semibold text-foreground">
-                    {productBudget.categories.reduce(
-                      (sum, category) => sum + category.items.length,
-                      0
-                    )}
-                  </p>
-                </div>
-              </div>
               <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Planned total
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                  <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                    Planned
                   </p>
-                  <p className="mt-1 text-2xl font-semibold text-foreground">
+                  <p className="mt-1 text-xl font-bold">
                     {formatCurrency(productTotals.planned)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Actual total
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                  <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                    Actual
                   </p>
-                  <p className="mt-1 text-2xl font-semibold text-foreground">
+                  <p className="mt-1 text-xl font-bold">
                     {formatCurrency(productTotals.actual)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                <div className="rounded-2xl border bg-muted/30 p-4">
+                  <p className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
                     Variance
                   </p>
-                  <p className="mt-1 text-2xl font-semibold text-foreground">
+                  <p className="mt-1 text-xl font-bold text-primary">
                     {formatCurrency(productTotals.variance)}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                Product details
+            <div className="rounded-3xl border bg-card p-6 shadow-sm">
+              <p className="text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
+                Project Details
               </p>
-              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
+              <div className="mt-4 space-y-4">
                 <div>
-                  <p className="font-medium text-foreground">Project</p>
-                  <p>{productBudget.header.projectTitle}</p>
+                  <p className="text-xs text-muted-foreground">Title</p>
+                  <p className="text-sm font-semibold">
+                    {productBudget.header.projectTitle}
+                  </p>
                 </div>
-                <div>
-                  <p className="font-medium text-foreground">Project code</p>
-                  <p>{productBudget.header.projectCode}</p>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Last updated</p>
-                  <p>{new Date(productBudget.header.modifiedOn).toLocaleDateString()}</p>
+                <div className="flex justify-between border-t pt-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Code</p>
+                    <p className="text-sm font-semibold">
+                      {productBudget.header.projectCode}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Updated</p>
+                    <p className="text-sm font-semibold">
+                      {new Date(
+                        productBudget.header.modifiedOn
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          {/* Categories Section */}
+          <div className="rounded-3xl border bg-card p-6 shadow-sm">
+            <p className="mb-4 text-xs font-bold tracking-[0.2em] text-muted-foreground uppercase">
               Budget category breakdown
             </p>
-            <div className="mt-4 space-y-4">
-              {productBudget.categories.map((category) => (
-                <div key={category.categoryId} className="rounded-3xl border border-border bg-muted/50 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{category.categoryName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {category.items.length} items
-                      </p>
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p>
-                        Planned {formatCurrency(category.items.reduce((sum, item) => sum + item.planned, 0))}
-                      </p>
-                      <p>
-                        Actual {formatCurrency(category.items.reduce((sum, item) => sum + item.actual, 0))}
-                      </p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {productBudget.categories.map((category: any) => (
+                <div
+                  key={category.categoryId}
+                  className="group rounded-2xl border bg-muted/20 p-4 transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-bold text-primary">
+                      {category.categoryName}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground uppercase">
+                      {category.items.length} line items
+                    </span>
+                    <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-3">
+                      <div className="text-xs">
+                        <p className="text-muted-foreground">Spent</p>
+                        <p className="font-bold">
+                          {formatCurrency(
+                            category.items.reduce(
+                              (s: any, i: any) => s + i.actual,
+                              0
+                            )
+                          )}
+                        </p>
+                      </div>
+                      <ArrowRight className="h-3 w-3 text-muted-foreground transition-transform group-hover:translate-x-1" />
                     </div>
                   </div>
                 </div>
@@ -386,7 +417,18 @@ export default function ReportPage() {
             </div>
           </div>
         </div>
-      ) : null}
+      ) : (
+        /* Empty State */
+        <div className="flex h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed text-center">
+          <div className="rounded-full bg-muted p-4">
+            <Search className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold">No Report Loaded</h3>
+          <p className="text-sm text-muted-foreground">
+            Enter a product number above to see detailed breakdown.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

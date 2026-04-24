@@ -137,12 +137,4 @@ public sealed class DatabaseInitializer(
         var result = await command.ExecuteScalarAsync(cancellationToken);
         return Convert.ToInt32(result) > 0;
     }
-
-    private void AddParam(IDbCommand cmd, string name, string value)
-    {
-        var p = cmd.CreateParameter();
-        p.ParameterName = name;
-        p.Value = value;
-        cmd.Parameters.Add(p);
-    }
 }

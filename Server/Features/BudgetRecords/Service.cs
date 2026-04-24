@@ -24,9 +24,10 @@ public sealed class BudgetRecordsService(
             var connectionString = configuration["Database:PLMConnectionString"];
 
             const string sql = @"
-                SELECT DISTINCT 
+                SELECT 
                     PROJECTNUMBER, 
-                    PRODUCT_NO
+                    PRODUCT_NO,
+                    PROJECTNAME as ProjectName
                 FROM JAN_PLM_PROJECT_HEADER_V 
                 WHERE PRODUCT_NO LIKE :Query || '%'";
 
@@ -37,7 +38,7 @@ public sealed class BudgetRecordsService(
                 new CommandDefinition(sql, new { Query = searchTerm }, cancellationToken: cancellationToken)
             );
 
-            return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(results.ToList().AsReadOnly());
+                return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(results.ToList().AsReadOnly());
         }
         catch (OperationCanceledException)
         {
@@ -50,7 +51,6 @@ public sealed class BudgetRecordsService(
             throw;
         }
     }
-
 
     public async Task<Result<IReadOnlyList<BudgetRecordSummaryDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
