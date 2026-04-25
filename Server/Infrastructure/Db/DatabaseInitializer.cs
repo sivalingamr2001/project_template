@@ -1,5 +1,4 @@
 using System.Data;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -13,17 +12,26 @@ public sealed class DatabaseInitializer(
     AppDbContext dbContext,
     PasswordHasher passwordHasher)
 {
+    // These must match the EXACT case seen in your database tool (lowercase)
+    private readonly string[] _requiredTables =
+    {
+        "jan_employees",
+        "jan_budgets",
+        "jan_budget_templates",
+        "jan_budget_categories",
+        "jan_budget_items"
+    };
+
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        // Using an execution strategy handles transient connection failures (common in Cloud DBs)
         var strategy = dbContext.Database.CreateExecutionStrategy();
 
         await strategy.ExecuteAsync(async () =>
         {
-            // 1. Ensure Database and Tables exist
+            // 1. Check and create schema if missing
             await EnsureSchemaExistsAsync(cancellationToken);
 
-            // 2. Controlled Seeding
+            // 2. Seed initial data
             await SeedDataAsync(cancellationToken);
         });
     }
@@ -32,109 +40,144 @@ public sealed class DatabaseInitializer(
     {
         var databaseCreator = dbContext.GetService<IRelationalDatabaseCreator>();
 
-        // Check if the physical database exists (creates it if missing)
+        // Ensure physical database exists
         if (!await databaseCreator.ExistsAsync(cancellationToken))
         {
+            Console.WriteLine("Database does not exist. Creating...");
             await databaseCreator.CreateAsync(cancellationToken);
         }
 
-        // Check if our specific tables exist. If not, generate them from the Model.
-        // We use "Employees" as our "canary" table.
-        if (!await AnyTableExistsAsync(cancellationToken))
+        // Identify which tables are actually missing
+        var missingTables = await GetMissingTablesAsync(cancellationToken);
+
+        if (missingTables.Any())
         {
+            Console.WriteLine($"Missing tables detected: {string.Join(", ", missingTables)}");
+
             try
             {
-                // This reads your DbContext and generates the CREATE TABLE scripts
-                // specifically for the provider currently in use.
-                await databaseCreator.CreateTablesAsync(cancellationToken);
+                var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync(cancellationToken);
+                if (pendingMigrations.Any())
+                {
+                    Console.WriteLine("Applying migrations...");
+                    await dbContext.Database.MigrateAsync(cancellationToken);
+                }
+                else
+                {
+                    Console.WriteLine("No migrations found. Attempting direct table creation...");
+                    await databaseCreator.CreateTablesAsync(cancellationToken);
+                }
             }
-            catch (OracleException ex) when (ex.Number == 955)
+            catch (Exception ex)
             {
-                // ORA-00955 means an Oracle object already exists. When using Oracle,
-                // ignore duplicate object creation failures during startup schema creation.
+                // Handle Oracle "Object already exists" error gracefully
+                if (ex is OracleException ox && ox.Number == 955)
+                    Console.WriteLine("Note: Some objects already existed in Oracle.");
+                else
+                    throw;
             }
-            catch (SqliteException ex) when (ex.SqliteErrorCode == 1)
+
+            // Final verification check
+            var stillMissing = await GetMissingTablesAsync(cancellationToken);
+            if (stillMissing.Any())
             {
-                // SQLite Error 1: table already exists. Ignore duplicate table creation.
+                throw new InvalidOperationException($"Database initialization failed. Tables still missing: {string.Join(", ", stillMissing)}");
             }
         }
+        else
+        {
+            Console.WriteLine("✓ All required tables verified.");
+        }
+    }
+
+    private async Task<List<string>> GetMissingTablesAsync(CancellationToken ct)
+    {
+        var missing = new List<string>();
+        var connection = dbContext.Database.GetDbConnection();
+
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync(ct);
+
+        var provider = dbContext.Database.ProviderName;
+        bool isOracle = provider?.Contains("Oracle") == true;
+
+        foreach (var tableName in _requiredTables)
+        {
+            using var command = connection.CreateCommand();
+
+            // Set parameter style based on provider
+            string sqlParam = isOracle ? ":p0" : "@p0";
+            string paramName = isOracle ? "p0" : "@p0";
+
+            if (isOracle)
+            {
+                // Querying user_tables with exact case matching
+                command.CommandText = $"SELECT COUNT(*) FROM user_tables WHERE table_name = {sqlParam}";
+            }
+            else if (dbContext.Database.IsSqlite())
+            {
+                command.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name={sqlParam}";
+            }
+            else
+            {
+                command.CommandText = $"SELECT COUNT(*) FROM information_schema.tables WHERE table_name = {sqlParam}";
+            }
+
+            var p = command.CreateParameter();
+            p.ParameterName = paramName;
+            p.Value = tableName;
+            command.Parameters.Add(p);
+
+            var result = await command.ExecuteScalarAsync(ct);
+            if (Convert.ToInt32(result) == 0)
+            {
+                missing.Add(tableName);
+            }
+        }
+
+        return missing;
     }
 
     private async Task SeedDataAsync(CancellationToken cancellationToken)
     {
-        // Check if table is empty before seeding.
-        // Oracle provider may generate invalid SQL for AnyAsync(), so use CountAsync()
-        // only for Oracle and preserve AnyAsync() elsewhere.
-        var provider = dbContext.Database.ProviderName;
-        bool hasData = provider?.Contains("Oracle") == true
-            ? await dbContext.Employees.CountAsync(cancellationToken) > 0
-            : await dbContext.Employees.AnyAsync(cancellationToken);
-
-        if (!hasData)
+        try
         {
-            var (hash, salt) = passwordHasher.HashPassword("0000");
+            // Don't seed if the main table is missing
+            var missing = await GetMissingTablesAsync(cancellationToken);
+            if (missing.Contains("jan_employees")) return;
 
-            var employees = new List<EmployeeEntity>
+            // Check if data exists - use CountAsync for Oracle compatibility
+            // Oracle doesn't support True/False in SQL, so AnyAsync() generates invalid SQL
+            var provider = dbContext.Database.ProviderName;
+            bool hasData = provider?.Contains("Oracle") == true
+                ? await dbContext.Employees.CountAsync(cancellationToken) > 0
+                : await dbContext.Employees.AnyAsync(cancellationToken);
+
+            if (!hasData)
             {
-                new() {
+                Console.WriteLine("Seeding initial administrative data...");
+                var (hash, salt) = passwordHasher.HashPassword("Jan@123");
+
+                var admin = new EmployeeEntity
+                {
                     EmployeeId = 1001,
-                    Name = "Anitha",
-                    Email = "anitha@corp.local",
-                    DepartmentId = 10,
-                    DepartmentName = "Finance",
-                    Role = "User",
+                    Name = "Admin",
+                    Email = "admin@janatics.co.in",
+                    DepartmentId = 101,
+                    DepartmentName = "IT",
+                    Role = "Admin",
                     PasswordHash = hash,
                     PasswordSalt = salt
-                },
-                new() {
-                    EmployeeId = 2001,
-                    Name = "Rahul",
-                    Email = "rahul@corp.local",
-                    DepartmentId = 10,
-                    DepartmentName = "Finance",
-                    Role = "Hod",
-                    PasswordHash = hash,
-                    PasswordSalt = salt
-                },
-            };
+                };
 
-            await dbContext.Employees.AddRangeAsync(employees, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+                await dbContext.Employees.AddAsync(admin, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+                Console.WriteLine("Seeding completed.");
+            }
         }
-    }
-
-    private async Task<bool> AnyTableExistsAsync(CancellationToken cancellationToken)
-    {
-        var connection = dbContext.Database.GetDbConnection();
-
-        // Ensure connection is open
-        if (connection.State != ConnectionState.Open)
-            await connection.OpenAsync(cancellationToken);
-
-        using var command = connection.CreateCommand();
-        var provider = dbContext.Database.ProviderName;
-
-        if (dbContext.Database.IsSqlite())
+        catch (Exception ex)
         {
-            command.CommandText = "SELECT COUNT(1) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'";
+            Console.WriteLine($"Warning: Seeding failed - {ex.Message}");
         }
-        else if (provider?.Contains("Oracle") == true)
-        {
-            // Oracle metadata is case-sensitive and stored in UPPERCASE
-            command.CommandText = "SELECT COUNT(1) FROM user_tables";
-        }
-        else if (provider?.Contains("MySql") == true || provider?.Contains("Pomelo") == true)
-        {
-            // MySQL needs to check the current database schema
-            command.CommandText = "SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = DATABASE()";
-        }
-        else
-        {
-            // Standard SQL (PostgreSQL/SQL Server)
-            command.CommandText = "SELECT COUNT(1) FROM information_schema.tables";
-        }
-
-        var result = await command.ExecuteScalarAsync(cancellationToken);
-        return Convert.ToInt32(result) > 0;
     }
 }

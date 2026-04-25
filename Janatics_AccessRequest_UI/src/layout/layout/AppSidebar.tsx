@@ -61,8 +61,8 @@ export function AppSidebar({
         <nav className="space-y-1">
           {NAVIGATION_ITEMS.map((item) => {
             const isActive =
-              item.path === "/"
-                ? location.pathname === "/"
+              item.path === "/dashboard"
+                ? location.pathname === "/dashboard"
                 : location.pathname.startsWith(item.path)
 
             const linkContent = (

@@ -335,7 +335,7 @@ export default function BudgetPlanEntryPage() {
       projectHeader: {
         ...localRecord.projectHeader,
         employeeId:
-          localRecord.projectHeader.employeeId || user?.employeeId || 0,
+          user?.employeeId || 0,
       },
     }
 

@@ -8,7 +8,6 @@ import AppHeader from "./AppHeader"
 import { cn } from "@/shared/lib/utils"
 
 const pageTitles: Record<string, string> = {
-  "/": "Dashboard",
   "/dashboard": "Dashboard",
   "/projects": "Projects",
   "/plan-entry": "Plan Entry",

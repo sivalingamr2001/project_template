@@ -29,9 +29,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.ToTable("jan_budget_templates");
             entity.HasKey(e => e.TemplateId);
 
-            // Map the string property to Oracle's native JSON type
+            // Map the string property to Oracle's CLOB type (JSON stored as text)
             entity.Property(e => e.TemplateJson)
-                  .HasColumnType("JSON");
+                  .HasColumnType("CLOB");
         });
 
         // Budget Header
@@ -92,12 +92,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
           { ""category"": ""Field validation"", ""items"": [""Product development""] }
         ]";
 
-        // 5. Seed the default template
+        // 5. Seed the default template with static values
         modelBuilder.Entity<BudgetTemplateEntity>().HasData(new BudgetTemplateEntity
         {
             TemplateId = 1,
             Name = "Standard Product Development Template",
-            TemplateJson = defaultTemplateJson
+            TemplateJson = defaultTemplateJson,
+            CreatedOn = new(2026, 4, 25, 0, 0, 0, DateTimeKind.Utc),
+            ModifiedOn = new(2026, 4, 25, 0, 0, 0, DateTimeKind.Utc),
+            CreatedBy = "System",
+            ModifiedBy = "System"
         });
     }
 }

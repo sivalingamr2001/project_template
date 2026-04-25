@@ -17,10 +17,13 @@ export default function AppRoutes() {
 
   useEffect(() => {
     const user = localStorage.getItem("janatics-auth-user")
-    if (!user) return
+    if (!user) {
+      navigate("/")
+      return
+    }
     try {
       JSON.parse(user)
-      navigate("/")
+      navigate("/dashboard")
     } catch {
       localStorage.removeItem("janatics-auth-user")
     }
@@ -30,7 +33,7 @@ export default function AppRoutes() {
     <Routes>
       {/* Public */}
       <Route element={<AuthLayout />}>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<LoginPage />} />
       </Route>
 
       {/* Protected */}
@@ -41,7 +44,6 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<ProjectSearch />} />
         <Route path="/plan-entry" element={<PlanEntry />} />

@@ -1,20 +1,15 @@
 "use client"
 
-import { useState } from "react"
-import { GalleryVerticalEnd } from "lucide-react"
-import { Button } from "@/shared/components/ui/button"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/shared/components/ui/field"
-import { Input } from "@/shared/components/ui/input"
-import { Card } from "@/shared/components/ui/card"
-import { Link, useNavigate } from "react-router-dom"
-import { cn } from "../lib/utils"
-import { useAuth } from "@/providers/auth-provider"
 import type { LoginRequest } from "@/features/auth/api/authApi"
+import { useAuth } from "@/providers/auth-provider"
+import { Button } from "@/shared/components/ui/button"
+import { Card } from "@/shared/components/ui/card"
+import { Field, FieldGroup, FieldLabel } from "@/shared/components/ui/field"
+import { Input } from "@/shared/components/ui/input"
+import { GalleryVerticalEnd } from "lucide-react"
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { cn } from "../lib/utils"
 
 export function LoginForm({
   className,
@@ -31,7 +26,7 @@ export function LoginForm({
       password,
     }
     login(payload)
-    navigate("/")
+    navigate("/dashboard")
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,12 +50,12 @@ export function LoginForm({
 
               <h1 className="text-xl font-bold">Welcome to Janatics</h1>
 
-              <FieldDescription>
+              {/* <FieldDescription>
                 Don&apos;t have an account?{" "}
                 <Link to="/signup" className="underline">
                   Sign up
                 </Link>
-              </FieldDescription>
+              </FieldDescription> */}
             </div>
 
             {/* Email */}
@@ -69,7 +64,7 @@ export function LoginForm({
               <Input
                 id="username"
                 type="text"
-                placeholder="johndoe"
+                placeholder="Employee ID"
                 required
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}

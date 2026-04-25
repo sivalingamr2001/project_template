@@ -11,7 +11,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   {
     id: "dashboard",
     label: "Dashboard",
-    path: "/",
+    path: "/dashboard",
     icon: LayoutDashboard,
   },
   {

@@ -340,13 +340,16 @@ public sealed class BudgetRecordsService(
                 return new ServiceError($"Employee '{request.EmployeeId}' was not found.", ErrorCode.Validation);
             }
 
-            if (await dbContext.Budgets.CountAsync(b => b.ProjectNumber == projectNumber, cancellationToken) > 0)
+            if (await dbContext.Budgets
+                .Where(b => b.ProjectNumber == projectNumber)
+                .CountAsync(cancellationToken) > 0)
             {
                 return BudgetErrors.DuplicateProjectNumber(projectNumber);
             }
 
             var templateExists = await dbContext.BudgetTemplates
-                .AnyAsync(t => t.TemplateId == templateId, cancellationToken);
+                 .CountAsync(t => t.TemplateId == templateId, cancellationToken) > 0;
+
 
             if (!templateExists)
             {
@@ -373,10 +376,14 @@ public sealed class BudgetRecordsService(
             var provider = dbContext.Database.ProviderName;
             var isOracle = provider?.Contains("Oracle") == true;
             var nextCategoryId = isOracle
-                ? await dbContext.BudgetCategories.MaxAsync(c => (int?)c.CategoryId, cancellationToken) ?? 0
+                ? await dbContext.BudgetCategories
+                    .Select(c => (int?)c.CategoryId)
+                    .MaxAsync(cancellationToken) ?? 0
                 : 0;
             var nextItemId = isOracle
-                ? await dbContext.BudgetItems.MaxAsync(i => (int?)i.ItemId, cancellationToken) ?? 0
+                ? await dbContext.BudgetItems
+                    .Select(i => (int?)i.ItemId)
+                    .MaxAsync(cancellationToken) ?? 0
                 : 0;
 
             // 3. Handle Categories and Items
@@ -409,8 +416,8 @@ public sealed class BudgetRecordsService(
                 // Copy from Master Template
                 var masterCategories = await dbContext.BudgetCategories
                     .AsNoTracking()
-                    .Where(c => c.BudgetId == null)
                     .Include(c => c.Items)
+                    .Where(c => c.BudgetId == null)
                     .ToListAsync(cancellationToken);
 
                 foreach (var master in masterCategories)

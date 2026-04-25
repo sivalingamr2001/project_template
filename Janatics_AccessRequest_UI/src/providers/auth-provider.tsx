@@ -12,7 +12,9 @@ import {
   type LoginRequest,
   type RegisterRequest,
 } from "@/features/auth/api/authApi"
-import { setStorageItem } from "@/shared/lib/storage"
+import { getStorageItem, setStorageItem } from "@/shared/lib/storage"
+import { toast } from "sonner"
+import { useNavigate } from "react-router-dom"
 
 const STORAGE_KEY = "janatics-auth-user"
 
@@ -30,17 +32,17 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const storedUser = localStorage.getItem(STORAGE_KEY)
+    const storedUser = getStorageItem<AuthResponse>(STORAGE_KEY)
 
     if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser) as AuthResponse)
-      } catch {
-        localStorage.removeItem(STORAGE_KEY)
-      }
+      setUser(storedUser)
+    } else {
+      setUser(null)
     }
+
     setIsLoading(false)
   }, [])
 
@@ -55,12 +57,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [])
 
   const login = async (request: LoginRequest) => {
-    const auth: any = await authApi.login(request)
-    setUser(auth.session.user)
-    setStorageItem(STORAGE_KEY, auth.session.user, {
-      expiresInMinutes: 30,
-    })
-    return auth
+    try {
+      const auth: any = await authApi.login(request)
+      const userData = auth.session.user
+
+      setUser(userData)
+      setStorageItem(STORAGE_KEY, userData, {
+        expiresInMinutes: 30,
+      })
+
+      getStorageItem<AuthResponse>(STORAGE_KEY)
+
+      // Success logic
+      toast("Login successful!") // Optional: feedback
+      navigate("/dashboard")
+
+      return auth
+    } catch (error) {
+      // Error logic
+      console.error("Login failed:", error)
+      toast.error("Invalid credentials, please try again.")
+      throw error
+    }
   }
 
   const register = async (request: RegisterRequest) => {
