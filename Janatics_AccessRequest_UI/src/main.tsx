@@ -30,6 +30,5 @@ createRoot(document.getElementById("root")!).render(
         </AuthProvider>
       </AppProvider>
     </BrowserRouter>
-    `
   </StrictMode>
 )

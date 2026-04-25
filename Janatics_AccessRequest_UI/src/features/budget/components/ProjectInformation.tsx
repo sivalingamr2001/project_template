@@ -61,7 +61,9 @@ export function ProjectInformation({
       setIsSearching(true)
 
       try {
-        const res = await apiService.get(`/budgets/search?productNo=${debouncedProduct}`)
+        const res = await apiService.get(
+          `/budgets/search?productNo=${debouncedProduct}`
+        )
         const data = res.data as ProjectSearchResult[]
         setProjects(Array.isArray(data) ? data : [])
         toast.success(`${data.length} projects found.`)
@@ -129,7 +131,8 @@ export function ProjectInformation({
                   className="w-full justify-between font-normal"
                 >
                   <span className="truncate">
-                    {projectNumber || "Select Project... or enter product number to search"}
+                    {projectNumber ||
+                      "Select Project... or enter product number to search"}
                   </span>
                   {isSearching ? (
                     <Loader2 className="h-4 w-4 shrink-0 animate-spin opacity-50" />

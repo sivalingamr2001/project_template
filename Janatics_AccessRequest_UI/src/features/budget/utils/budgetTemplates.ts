@@ -60,7 +60,9 @@ export function templateToBudgetData(
   }))
 }
 
-export function mapTemplateToOption(template: TemplateResponse): TemplateOption {
+export function mapTemplateToOption(
+  template: TemplateResponse
+): TemplateOption {
   return {
     id: template.templateId.toString(),
     templateId: template.templateId,

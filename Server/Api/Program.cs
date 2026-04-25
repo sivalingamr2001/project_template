@@ -25,7 +25,11 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+app.UsePathBase("/budget-portal");
 app.UseStaticFiles();
+app.UseRouting();
+app.UseDefaultFiles();
 app.UseCors(CorsPolicyNames.ReactClient);
 
 app.MapHealthChecks("/health");

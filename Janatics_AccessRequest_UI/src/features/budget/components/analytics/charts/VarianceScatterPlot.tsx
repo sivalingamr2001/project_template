@@ -1,32 +1,46 @@
-import { Scatter, ScatterChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
+import {
+  Scatter,
+  ScatterChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts"
 
-import { ChartContainer, ChartTooltipContent } from "@/shared/components/ui/chart";
-import { formatINR } from "@/shared/utils/utils";
-import { scatterConfig, sampleBudgetData } from "../utils/constants";
+import {
+  ChartContainer,
+  ChartTooltipContent,
+} from "@/shared/components/ui/chart"
+import { formatINR } from "@/shared/utils/utils"
+import { scatterConfig, sampleBudgetData } from "../utils/constants"
 
 interface VarianceScatterCategory {
-  category: string;
-  planned: number;
-  actual: number;
-  utilization: number;
+  category: string
+  planned: number
+  actual: number
+  utilization: number
 }
 
 export function VarianceScatterPlot({
   categories,
 }: {
-  categories?: VarianceScatterCategory[];
+  categories?: VarianceScatterCategory[]
 }) {
-  const chartCategories = categories ?? sampleBudgetData.map((category) => ({
-    category: category.category,
-    planned: category.planned,
-    actual: category.actual,
-    utilization: category.planned ? (category.actual / category.planned) * 100 : 0,
-  }));
+  const chartCategories =
+    categories ??
+    sampleBudgetData.map((category) => ({
+      category: category.category,
+      planned: category.planned,
+      actual: category.actual,
+      utilization: category.planned
+        ? (category.actual / category.planned) * 100
+        : 0,
+    }))
   const data = chartCategories.map((category) => ({
     category: category.category,
     actual: category.actual,
     utilization: category.utilization,
-  }));
+  }))
 
   return (
     <div className="rounded-3xl border border-border/70 bg-background/50 p-5">
@@ -66,5 +80,5 @@ export function VarianceScatterPlot({
         should be reviewed first.
       </div>
     </div>
-  );
+  )
 }

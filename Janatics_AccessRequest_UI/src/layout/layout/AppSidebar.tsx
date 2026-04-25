@@ -50,7 +50,7 @@ export function AppSidebar({
             {!isCollapsed && (
               <div className="flex flex-col gap-2">
                 <img src={Logo} alt="Janatics" className="h-5 w-fit" />
-                <p className="text-xs text-muted-foreground tracking-widest">
+                <p className="text-xs tracking-widest text-muted-foreground">
                   Budget management portal
                 </p>
               </div>

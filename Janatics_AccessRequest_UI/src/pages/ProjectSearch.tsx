@@ -1,6 +1,6 @@
 import ProjectSearchDashboard from "@/shared/components/ProjectSearch/ProjectSearchHeader"
 
-  function ProjectSearch() {
+function ProjectSearch() {
   return (
     <div>
       <ProjectSearchDashboard />

@@ -88,8 +88,10 @@ export function ProjectHeader({
             </h1>
           </div>
           <p className="mt-1 text-sm text-foreground">
-            <span className="font-medium text-muted-foreground">Project Number:</span>{" "}
-            {projectHeader.projectNumber} | {" "}
+            <span className="font-medium text-muted-foreground">
+              Project Number:
+            </span>{" "}
+            {projectHeader.projectNumber} |{" "}
             <span className="font-medium text-muted-foreground">
               Product Number:
             </span>{" "}

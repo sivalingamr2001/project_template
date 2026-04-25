@@ -119,7 +119,10 @@ export default function ReportPage() {
     }
 
     return productBudget.categories.map((category) => {
-      const planned = category.items.reduce((sum, item) => sum + item.planned, 0)
+      const planned = category.items.reduce(
+        (sum, item) => sum + item.planned,
+        0
+      )
       const actual = category.items.reduce((sum, item) => sum + item.actual, 0)
 
       return {
@@ -216,15 +219,15 @@ export default function ReportPage() {
               )}
             </Button>
           </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleExportProductReport}
-              disabled={!productBudget?.header.budgetId || productExporting}
-              className="h-7 rounded-full px-4 text-[11px] font-bold tracking-wider uppercase"
-            >
-              {productExporting ? "Exporting..." : "Export"}
-            </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExportProductReport}
+            disabled={!productBudget?.header.budgetId || productExporting}
+            className="h-7 rounded-full px-4 text-[11px] font-bold tracking-wider uppercase"
+          >
+            {productExporting ? "Exporting..." : "Export"}
+          </Button>
 
           <div className="flex items-center gap-2 rounded-full border bg-card pl-4 shadow-sm">
             <div className="flex items-center gap-2">
@@ -308,7 +311,7 @@ export default function ReportPage() {
       {/* 📊 CONTENT SECTION */}
       {reportConfig !== "product" ? (
         <div className="space-y-2">
-          <div className="grid gap-6 mb-6 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mb-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
             <BudgetMetricCard
               title="Budgeted"
               value={formatCurrency(summary.summary?.totalPlanned ?? 0)}
@@ -400,12 +403,15 @@ export default function ReportPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Product Name</p>
                   <p className="text-sm font-semibold">
-                    {productBudget.header.productName ?? productBudget.header.projectTitle}
+                    {productBudget.header.productName ??
+                      productBudget.header.projectTitle}
                   </p>
                 </div>
                 <div className="flex justify-between border-t pt-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Project Number</p>
+                    <p className="text-xs text-muted-foreground">
+                      Project Number
+                    </p>
                     <p className="text-sm font-semibold">
                       {productBudget.header.projectNumber}
                     </p>
@@ -470,11 +476,15 @@ export default function ReportPage() {
                         <div className="flex items-center justify-between gap-3">
                           <div>
                             <p className="text-muted-foreground">Planned</p>
-                            <p className="font-bold">{formatCurrency(planned)}</p>
+                            <p className="font-bold">
+                              {formatCurrency(planned)}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="text-muted-foreground">Actual</p>
-                            <p className="font-bold">{formatCurrency(actual)}</p>
+                            <p className="font-bold">
+                              {formatCurrency(actual)}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center justify-between gap-3">

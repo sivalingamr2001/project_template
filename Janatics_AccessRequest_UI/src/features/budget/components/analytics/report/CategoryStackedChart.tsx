@@ -22,7 +22,9 @@ interface CategoryStackedChartProps {
   }[]
 }
 
-export function CategoryStackedChart({ categories }: CategoryStackedChartProps) {
+export function CategoryStackedChart({
+  categories,
+}: CategoryStackedChartProps) {
   const categoryData = categories
 
   return (

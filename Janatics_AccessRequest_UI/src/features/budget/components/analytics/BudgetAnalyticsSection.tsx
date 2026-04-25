@@ -90,7 +90,7 @@ export function BudgetAnalyticsSection({ record }: { record: BudgetRecord }) {
   const { categories, totals } = getAnalyticsData(record)
 
   return (
-    <div className="grid gap-6 mb-2 xl:grid-cols-2">
+    <div className="mb-2 grid gap-6 xl:grid-cols-2">
       <div className="xl:col-span-2">
         <PerformanceReportSection totals={totals} categories={categories} />
       </div>

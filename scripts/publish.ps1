@@ -2,8 +2,8 @@ $ErrorActionPreference = "Stop"
 
 $RootDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 
-Write-Host "Building client (Vite) -> Artifact/client ..."
-Push-Location (Join-Path $RootDir "client")
+Write-Host "Building client (Vite) -> Artifact/Janatics_AccessRequest_UI ..."
+Push-Location (Join-Path $RootDir "Janatics_AccessRequest_UI")
 npm run build
 Pop-Location
 

@@ -10,7 +10,7 @@ interface BudgetSummaryItem {
 
 function mapBudgetToProjectData(item: any): ProjectData {
   return {
-    product_no: item.product_No  || item.productNo,
+    product_no: item.product_No || item.productNo,
     projectnumber: item.projectNumber || item.projectNumber,
     projectname: item.projectTitle || item.projectName,
     budgetId: item.budgetId,
@@ -22,8 +22,12 @@ export function useProjectSearch() {
   const [projectNo, setProjectNo] = useState("")
   const [filteredData, setFilteredData] = useState<ProjectData[]>([])
 
-  const [productSuggestions, setProductSuggestions] = useState<ProjectData[]>([])
-  const [projectSuggestions, setProjectSuggestions] = useState<ProjectData[]>([])
+  const [productSuggestions, setProductSuggestions] = useState<ProjectData[]>(
+    []
+  )
+  const [projectSuggestions, setProjectSuggestions] = useState<ProjectData[]>(
+    []
+  )
   const [showProductSuggestions, setShowProductSuggestions] = useState(false)
   const [showProjectSuggestions, setShowProjectSuggestions] = useState(false)
   const [isLoading, setIsLoading] = useState(true)

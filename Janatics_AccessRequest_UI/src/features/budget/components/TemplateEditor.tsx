@@ -42,9 +42,8 @@ export function TemplateEditor({
   const [categoryName, setCategoryName] = useState("")
   const [subCategoryName, setSubCategoryName] = useState("")
   const [pendingItems, setPendingItems] = useState<string[]>([])
-  const [categories, setCategories] = useState<TemplateCategory[]>(
-    initialCategories
-  )
+  const [categories, setCategories] =
+    useState<TemplateCategory[]>(initialCategories)
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
 

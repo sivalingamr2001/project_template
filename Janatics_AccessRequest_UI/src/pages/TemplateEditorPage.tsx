@@ -21,9 +21,9 @@ export default function TemplateEditorPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(isEditMode)
   const [initialName, setInitialName] = useState("")
-  const [initialCategories, setInitialCategories] = useState<TemplateCategory[]>(
-    []
-  )
+  const [initialCategories, setInitialCategories] = useState<
+    TemplateCategory[]
+  >([])
 
   useEffect(() => {
     let isMounted = true

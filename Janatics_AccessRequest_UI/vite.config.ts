@@ -5,13 +5,14 @@ import { defineConfig } from "vite"
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "/budget-portal/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  server:{
+  server: {
     port: 3000,
   },
   build: {
@@ -19,5 +20,3 @@ export default defineConfig({
     emptyOutDir: true,
   },
 })
-
-

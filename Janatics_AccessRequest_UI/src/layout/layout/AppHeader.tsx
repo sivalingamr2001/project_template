@@ -39,10 +39,12 @@ export function AppHeader({
               )}
             </Button>
 
-            <div className="w-px h-10 bg-foreground/20"></div>
+            <div className="h-10 w-px bg-foreground/20"></div>
 
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-foreground">{title}</p>
+              <p className="truncate text-base font-semibold text-foreground">
+                {title}
+              </p>
               <p className="hidden text-xs text-muted-foreground sm:block">
                 Budget portal workspace
               </p>
@@ -51,12 +53,21 @@ export function AppHeader({
 
           <div className="flex items-center gap-1.5 md:gap-2">
             <div className="ml-1 flex items-center gap-2 border-r border-border pr-4">
-              <div className="hidden text-xs sm:block text-right">
-                <p className="font-semibold text-foreground">{user?.name ?? "Portal User"}</p>
-                <p className="text-muted-foreground">{user?.email ?? "finance@company.com"}</p>
+              <div className="hidden text-right text-xs sm:block">
+                <p className="font-semibold text-foreground">
+                  {user?.name ?? "Portal User"}
+                </p>
+                <p className="text-muted-foreground">
+                  {user?.email ?? "finance@company.com"}
+                </p>
               </div>
             </div>
-            <Button variant="destructive" size="icon" className="h-9 w-9" onClick={logout}>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="h-9 w-9"
+              onClick={logout}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>

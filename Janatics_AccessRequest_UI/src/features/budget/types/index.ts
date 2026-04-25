@@ -262,7 +262,10 @@ export interface ActualAmountsResponse {
   lastUpdated: string
 }
 
-export async function getActualAmounts(projectNumber: string, productNo: string) {
+export async function getActualAmounts(
+  projectNumber: string,
+  productNo: string
+) {
   const response = await api.post<ActualAmountsResponse>(
     "/budgets/actual-amounts",
     {

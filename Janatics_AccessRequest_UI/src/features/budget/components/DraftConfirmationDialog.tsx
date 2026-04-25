@@ -35,7 +35,8 @@ export function DraftConfirmationDialog({
             <br />
             <strong>Product Name:</strong> {record.projectHeader.productName}
             <br />
-            <strong>Project Number:</strong> {record.projectHeader.projectNumber}
+            <strong>Project Number:</strong>{" "}
+            {record.projectHeader.projectNumber}
             <br />
             <strong>Product Number:</strong> {record.projectHeader.productNo}
             <br />

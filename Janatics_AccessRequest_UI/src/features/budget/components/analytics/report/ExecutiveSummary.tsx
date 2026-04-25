@@ -12,7 +12,10 @@ interface ExecutiveSummaryProps {
   }[]
 }
 
-export function ExecutiveSummary({ totals, categories }: ExecutiveSummaryProps) {
+export function ExecutiveSummary({
+  totals,
+  categories,
+}: ExecutiveSummaryProps) {
   const topVariance = categories.reduce(
     (prev, next) =>
       Math.abs(next.variance) > Math.abs(prev.variance) ? next : prev,

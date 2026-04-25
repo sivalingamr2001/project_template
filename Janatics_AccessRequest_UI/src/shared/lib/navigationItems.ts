@@ -1,4 +1,11 @@
-import { type LucideIcon, LayoutDashboard, FolderSearch, Settings, BarChart3, FileText } from "lucide-react"
+import {
+  type LucideIcon,
+  LayoutDashboard,
+  FolderSearch,
+  Settings,
+  BarChart3,
+  FileText,
+} from "lucide-react"
 
 export type NavigationItem = {
   id: string

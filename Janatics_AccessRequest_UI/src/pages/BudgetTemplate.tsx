@@ -139,7 +139,10 @@ export default function BudgetTemplate() {
               </CardTitle>
             </div>
 
-            <Button size="sm" onClick={() => navigate("/budget-template/editor")}>
+            <Button
+              size="sm"
+              onClick={() => navigate("/budget-template/editor")}
+            >
               + Create Template
             </Button>
           </div>

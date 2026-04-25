@@ -334,8 +334,7 @@ export default function BudgetPlanEntryPage() {
       ...localRecord,
       projectHeader: {
         ...localRecord.projectHeader,
-        employeeId:
-          user?.employeeId || 0,
+        employeeId: user?.employeeId || 0,
       },
     }
 
@@ -344,9 +343,7 @@ export default function BudgetPlanEntryPage() {
         await createBudgetRecord({
           projectHeader: recordToSave.projectHeader,
           templateId:
-            Number(selectedTemplateId) ||
-            templateOptions[0]?.templateId ||
-            1,
+            Number(selectedTemplateId) || templateOptions[0]?.templateId || 1,
           budgetData: recordToSave.budgetData,
         })
         toast.success("Record created! Redirecting...")

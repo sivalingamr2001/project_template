@@ -1,6 +1,9 @@
 import { api } from "@/shared/lib/api-client"
 
-function resolveFileName(contentDisposition?: string, fallback = "budget-report.xlsx") {
+function resolveFileName(
+  contentDisposition?: string,
+  fallback = "budget-report.xlsx"
+) {
   if (!contentDisposition) {
     return fallback
   }

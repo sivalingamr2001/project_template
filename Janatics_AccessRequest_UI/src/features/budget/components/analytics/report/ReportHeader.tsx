@@ -2,7 +2,13 @@ import { formatINR, formatPercent } from "@/shared/utils/utils"
 import type { BudgetTotals } from "@/features/budget/types"
 import { SummaryCard } from "./SummaryCard"
 
-export function ReportHeader({ totals, lastUpdated }: { totals: BudgetTotals; lastUpdated: string }) {
+export function ReportHeader({
+  totals,
+  lastUpdated,
+}: {
+  totals: BudgetTotals
+  lastUpdated: string
+}) {
   const varianceRate = totals.totalPlanned
     ? ((totals.totalActual - totals.totalPlanned) / totals.totalPlanned) * 100
     : 0
