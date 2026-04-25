@@ -26,19 +26,12 @@ public static class ServiceCollectionExtensions
         {
             var isOracle = string.Equals(databaseOptions.Provider, "Oracle", StringComparison.OrdinalIgnoreCase);
             var isMySql = string.Equals(databaseOptions.Provider, "MySql", StringComparison.OrdinalIgnoreCase);
+            var isSqlite = string.Equals(databaseOptions.Provider, "Sqlite", StringComparison.OrdinalIgnoreCase);
 
-            if (isOracle)
+            if (isSqlite)
             {
-                var connectionString = string.IsNullOrWhiteSpace(databaseOptions.OracleConnectionString)
-                    ? new Class1().oracon_prod_new.ConnectionString
-                    : databaseOptions.OracleConnectionString;
+                options.UseSqlite(databaseOptions.SqliteConnectionString);
 
-                if (string.IsNullOrWhiteSpace(connectionString))
-                {
-                    throw new InvalidOperationException("Oracle provider is configured but the connection string from ConnectionDll is missing.");
-                }
-
-                options.UseOracle(connectionString);
                 return;
             }
 
@@ -51,7 +44,17 @@ public static class ServiceCollectionExtensions
                 return;
             }
 
-            options.UseSqlite(databaseOptions.SqliteConnectionString);
+            var connectionString = string.IsNullOrWhiteSpace(databaseOptions.OracleConnectionString)
+                    ? new Class1().oracon_prod_new.ConnectionString
+                    : databaseOptions.OracleConnectionString;
+
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                throw new InvalidOperationException("Oracle provider is configured but the connection string from ConnectionDll is missing.");
+            }
+
+            options.UseOracle(connectionString);
+            return;
         });
 
         services.AddEndpointsApiExplorer();
