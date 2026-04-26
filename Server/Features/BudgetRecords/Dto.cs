@@ -71,10 +71,10 @@ public sealed record BudgetRecordSummaryDto(
 
 public class BudgetRecordProductNoDto
 {
-    public string ProjectNumber { get; set; }
-    public string Product_No { get; set; }
+    public string? ProjectNumber { get; set; }
+    public string? Product_No { get; set; }
 
-    public string ProjectName { get; set; }
+    public string? ProjectName { get; set; }
 }
 
 public sealed record BudgetRecordDto(BudgetRecordHeaderDto Header, IReadOnlyList<BudgetCategoryDto> Categories);

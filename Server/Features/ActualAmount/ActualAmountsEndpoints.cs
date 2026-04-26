@@ -17,7 +17,7 @@ public static class ActualAmountsEndpoints
             .Produces<ApiResult<string>>(StatusCodes.Status400BadRequest);
     }
 
-    private static async Task<IResult> HandleGetActualAmountsAsync(
+    private static Task<IResult> HandleGetActualAmountsAsync(
         ActualAmountsRequest request,
         AppDbContext db,
         CancellationToken ct)
@@ -25,8 +25,8 @@ public static class ActualAmountsEndpoints
         // Validate input
         if (string.IsNullOrWhiteSpace(request.projectNumber) || string.IsNullOrWhiteSpace(request.ProductNo))
         {
-            return Results.BadRequest(
-                ApiResult<string>.Fail("projectNumber and ProductNo are required"));
+            return Task.FromResult(Results.BadRequest(
+                ApiResult<string>.Fail("projectNumber and ProductNo are required")));
         }
 
         try
@@ -37,12 +37,12 @@ public static class ActualAmountsEndpoints
             // For future database integration, uncomment below:
             // var result = await ActualAmountsService.GetActualAmountsFromDbAsync(db, request.projectNumber, request.ProductNo, ct);
 
-            return Results.Ok(ApiResult<ActualAmountsResponse>.Ok(result));
+            return Task.FromResult(Results.Ok(ApiResult<ActualAmountsResponse>.Ok(result)));
         }
         catch (Exception ex)
         {
-            return Results.BadRequest(
-                ApiResult<string>.Fail($"Error fetching actual amounts: {ex.Message}"));
+            return Task.FromResult(Results.BadRequest(
+                ApiResult<string>.Fail($"Error fetching actual amounts: {ex.Message}")));
         }
     }
 }

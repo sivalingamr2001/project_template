@@ -45,7 +45,7 @@ public sealed class BudgetRecordsService(
             // Return an empty list or a specific "Cancelled" result
             return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(new List<BudgetRecordProductNoDto>().AsReadOnly());
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Handle actual database errors here
             throw;
