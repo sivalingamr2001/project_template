@@ -14,6 +14,7 @@ using Server.Features.Departments.Create;
 using Server.Features.Departments.GetList;
 using Server.Features.Departments.Update;
 using Server.Features.Employees;
+using Server.Features.HOD;
 using Server.Features.Notifications.GetList;
 using Server.Features.Notifications.MarkRead;
 
@@ -57,6 +58,9 @@ public static class EndpointMappingExtensions
 
         var auditLogsGroup = app.MapGroup("/api/audit-logs").WithTags("Audit Logs");
         GetAuditLogsEndpoint.Map(auditLogsGroup);
+
+        var hodDetailsGroup = app.MapGroup("/api/hod-details").WithTags("HOD Details");
+        GetHodDetailsEndpoint.Map(hodDetailsGroup);
 
         app.MapHub<NotificationHub>("/hubs/notifications");
 

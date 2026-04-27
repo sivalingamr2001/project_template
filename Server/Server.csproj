@@ -31,7 +31,6 @@
 
     <ItemGroup>
       <Folder Include="Features\AccessRequests\GetList\" />
-      <Folder Include="Features\NewFolder\" />
     </ItemGroup>
 
     <Target Name="CopyReactBuild" AfterTargets="Publish">

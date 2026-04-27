@@ -22,8 +22,9 @@ import { useAuth } from "@/context/AuthContext"
 
 import { useDepartments } from "../hooks/useDepartments"
 import { getDepartmentName } from "../utils/departments"
-import { updateUserProfile } from "../utils/requestApi"
+import { fetchAllHod, updateUserProfile } from "../utils/requestApi"
 import { IconAlertCircle } from "@tabler/icons-react"
+import { toast } from "sonner"
 
 function splitName(fullName: string) {
   const trimmed = fullName.trim()

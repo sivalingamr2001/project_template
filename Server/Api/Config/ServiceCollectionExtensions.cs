@@ -13,6 +13,7 @@ using Server.Infrastructure.Db;
 using Server.Shared.Camunda;
 using Server.Shared.Constants;
 using Server.Features.AccessRequests.GetList;
+using Server.Features.HOD;
 
 namespace Server.Api.Config;
 
@@ -64,6 +65,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<GetDepartmentsService>();
         services.AddScoped<CreateDepartmentService>();
         services.AddScoped<UpdateDepartmentService>();
+        services.AddScoped<HODService>();
         //services.AddScoped<GetDepartmentHodService>();
         services.AddScoped<GetDashboardService>();
         services.AddScoped<GetAuditLogsService>();
