@@ -1,6 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
+    <Compile Remove="External Sources\**" />
+    <Content Remove="External Sources\**" />
+    <EmbeddedResource Remove="External Sources\**" />
+    <None Remove="External Sources\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ClosedXML" />
     <PackageReference Include="Dapper" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
@@ -16,10 +23,6 @@
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="System.Data.OracleClient" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="External Sources\" />
   </ItemGroup>
 
   <ItemGroup>
