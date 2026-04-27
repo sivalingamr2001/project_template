@@ -87,6 +87,18 @@ export type EmployeeRecord = {
   name: string
   role: AppRole
 }
+
+export interface HodResponse
+{
+    EmployeeId: string;
+    FirstName: string;
+    LastName: string;
+    Email: string;
+    PhoneNumber: string;
+    DepartmentId: number;
+}
+
+
 export type AuditLogItem = {
   actor: string
   auditId: number

@@ -8,6 +8,7 @@ import type {
   AuditLogItem,
   Department,
   EmployeeRecord,
+  HodResponse,
   NotificationItem,
   PaginatedResponse,
   RequestStatus,
@@ -519,6 +520,27 @@ export async function searchUsers(
     pageSize: payload.pageSize,
     totalCount: payload.totalCount,
   }
+}
+
+export async function fetchAllHod(
+  page = 1,
+  pageSize = 10
+): Promise<HodResponse> {
+  const response = await fetch(
+    `${API_URL}/hod-details?Page=${page}&PageSize=${pageSize}`
+  )
+
+  if (!response.ok) throw new Error("Unable to search users.")
+
+  const payload = await response.json()
+
+  return payload.map((item: any) => ({
+    EmployeeId: item.employeeId,
+    FirstName: item.firstName,
+    LastName: item.lastName,
+    Email: item.email,
+    PhoneNumber: item.phoneNumber,
+  }))
 }
 
 export async function searchAuditLogs(

@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react"
-
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,7 +20,25 @@ import {
 import { useDepartments } from "../hooks/useDepartments"
 import type { AppRole, EmployeeRecord } from "../types"
 import { getDepartmentName } from "../utils/departments"
-import { createUser, type CreateUserPayload } from "../utils/requestApi"
+import {
+  createUser,
+  fetchAllHod,
+  type CreateUserPayload,
+} from "../utils/requestApi"
+import { toast } from "sonner"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { IconChevronCompactDown, IconSearch } from "@tabler/icons-react"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command"
 
 type CreateEmployeeModalProps = {
   employees: EmployeeRecord[]
@@ -31,7 +48,6 @@ type CreateEmployeeModalProps = {
 }
 
 export default function CreateEmployeeModal({
-  employees,
   open,
   onClose,
   onCreated,
@@ -40,7 +56,9 @@ export default function CreateEmployeeModal({
 
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [openSearch, setOpenSearch] = useState(false)
 
+  // Form States
   const [employeeId, setEmployeeId] = useState("")
   const [userName, setUserName] = useState("")
   const [firstName, setFirstName] = useState("")
@@ -50,6 +68,9 @@ export default function CreateEmployeeModal({
   const [departmentId, setDepartmentId] = useState("")
   const [role, setRole] = useState<AppRole>("User")
   const [password, setPassword] = useState("")
+
+  // HOD Data State
+  const [hods, setHods] = useState<any[]>([])
 
   const departmentName = useMemo(
     () =>
@@ -65,6 +86,33 @@ export default function CreateEmployeeModal({
     userName.trim() &&
     password.trim() &&
     departmentId
+
+  useEffect(() => {
+    if (open) {
+      const getHodsDetails = async () => {
+        try {
+          // Note: Passing larger pageSize to get more searchable options
+          const res: any = await fetchAllHod()
+          setHods(res)
+        } catch (e: any) {
+          toast.error("Failed to fetch HOD details")
+        }
+      }
+      getHodsDetails()
+    }
+  }, [open])
+
+  const handleSelectHod = (hod: any) => {
+    setEmployeeId(String(hod.EmployeeId))
+    setFirstName(hod.FirstName || "")
+    setLastName(hod.LastName || "")
+    setEmail(hod.Email || "")
+    setPhone(hod.PhoneNumber || "")
+    setUserName(
+      `${hod.FirstName}.${hod.LastName}`.toLowerCase().replace(/\s/g, "")
+    )
+    setOpenSearch(false)
+  }
 
   const reset = () => {
     setEmployeeId("")
@@ -101,6 +149,7 @@ export default function CreateEmployeeModal({
       onCreated()
       reset()
       onClose()
+      toast.success("User created successfully")
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unable to create user.")
     } finally {
@@ -123,27 +172,72 @@ export default function CreateEmployeeModal({
           <DialogTitle>Create User</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-6 py-4">
+          {/* SEARCHABLE HOD DROPDOWN */}
+          <div className="space-y-2">
+            <Label className="text-blue-600">Quick Search HOD</Label>
+            <Popover open={openSearch} onOpenChange={setOpenSearch}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openSearch}
+                  className="w-full justify-between font-normal"
+                >
+                  <div className="flex items-center">
+                    <IconSearch className="mr-2 h-4 w-4 opacity-50" />
+                  </div>
+
+                  <IconChevronCompactDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
+                <Command>
+                  <CommandInput placeholder="Type HOD name..." />
+                  <CommandEmpty>No HOD found.</CommandEmpty>
+                  <CommandGroup className="max-h-98 overflow-y-auto">
+                    {hods.map((hod) => (
+                      <CommandItem
+                        key={hod.EmployeeId}
+                        value={`${hod.FirstName} ${hod.LastName} ${hod.EmployeeId}`}
+                        onSelect={() => handleSelectHod(hod)}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {hod.FirstName} {hod.LastName}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            ID: {hod.EmployeeId} | {hod.Email}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <hr className="border-t" />
+
           {/* Row 1: Employee ID & User Name */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="createEmployeeId">EmployeeId</Label>
               <Input
                 id="createEmployeeId"
                 value={employeeId}
                 onChange={(e) => setEmployeeId(e.target.value)}
                 inputMode="numeric"
-                className="w-full"
                 required
               />
             </div>
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="createUserName">User Name</Label>
               <Input
                 id="createUserName"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                className="w-full"
                 required
               />
             </div>
@@ -151,55 +245,51 @@ export default function CreateEmployeeModal({
 
           {/* Row 2: First Name & Last Name */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="createFirstName">First name</Label>
               <Input
                 id="createFirstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full"
               />
             </div>
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="createLastName">Last name</Label>
               <Input
                 id="createLastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full"
               />
             </div>
           </div>
 
           {/* Row 3: Email & Phone */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="createEmail">Email</Label>
               <Input
                 id="createEmail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 type="email"
-                className="w-full"
               />
             </div>
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="createPhone">Phone</Label>
               <Input
                 id="createPhone"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full"
               />
             </div>
           </div>
 
           {/* Row 4: Department & Role */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label>Department</Label>
               <Select value={departmentId} onValueChange={setDepartmentId}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger>
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -211,10 +301,10 @@ export default function CreateEmployeeModal({
                 </SelectContent>
               </Select>
             </div>
-            <div className="min-w-0 space-y-2">
+            <div className="space-y-2">
               <Label>Role</Label>
               <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -224,8 +314,25 @@ export default function CreateEmployeeModal({
               </Select>
             </div>
           </div>
+
+          {/* Password Field (Added because it is in your logic) */}
+          <div className="space-y-2">
+            <Label htmlFor="createPassword">Password</Label>
+            <Input
+              id="createPassword"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm font-medium text-destructive">{error}</p>
+          )}
         </div>
-        <DialogFooter className="gap-2 sm:gap-0">
+
+        <DialogFooter className="gap-2">
           <Button variant="outline" type="button" onClick={onClose}>
             Cancel
           </Button>
