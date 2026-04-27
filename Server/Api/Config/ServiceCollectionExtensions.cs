@@ -14,6 +14,7 @@ using Server.Shared.Camunda;
 using Server.Shared.Constants;
 using Server.Features.AccessRequests.GetList;
 using Server.Features.HOD;
+using Server.Shared.Helpers;
 
 namespace Server.Api.Config;
 
@@ -66,9 +67,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CreateDepartmentService>();
         services.AddScoped<UpdateDepartmentService>();
         services.AddScoped<HODService>();
-        //services.AddScoped<GetDepartmentHodService>();
         services.AddScoped<GetDashboardService>();
         services.AddScoped<GetAuditLogsService>();
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IAccessRequestEmailNotificationService, AccessRequestEmailNotificationService>();
+        services.AddScoped<IAccessRequestExpirationService, AccessRequestExpirationService>();
         services.Configure<CamundaOptions>(configuration.GetSection("Zeebe"));
         services.AddSingleton<CamundaService>();
 
