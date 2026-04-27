@@ -364,7 +364,11 @@ export async function createDepartment(
   const response = await fetch(`${API_URL}/departments/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(department),
+    body: JSON.stringify({
+      deptId: department.deptId,
+      name: department.name,
+      hodId: department.hodId,
+    }),
   })
 
   if (!response.ok) {
@@ -384,7 +388,10 @@ export async function updateDepartment(
   const response = await fetch(`${API_URL}/departments/${department.deptId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: department.name }),
+    body: JSON.stringify({
+      name: department.name,
+      hodId: department.hodId,
+    }),
   })
 
   if (!response.ok) {

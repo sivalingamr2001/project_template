@@ -35,19 +35,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(e => e.UserName).IsUnique();
             entity.HasIndex(e => e.Email).IsUnique();
+
+            entity.HasOne(e => e.Department)
+                .WithMany(d => d.Employees)
+                .HasForeignKey(e => e.DeptId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Department Configuration
         modelBuilder.Entity<DepartmentEntity>(entity =>
         {
             entity.ToTable("jan_department");
-            entity.HasKey(d => d.Id);
+            entity.HasKey(d => d.DepartmentId);
 
-            // Relationship 2: Department has one Head of Department (HOD)
-            entity.HasOne(d => d.HeadOfDepartment)
-                  .WithMany() // HOD doesn't necessarily need a collection on the Employee side
-                  .HasForeignKey(d => d.DeptHodId)
-                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(d => d.Hod)
+                .WithMany()
+                .HasForeignKey(d => d.HodId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Access Request Configurations

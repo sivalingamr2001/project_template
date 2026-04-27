@@ -58,6 +58,17 @@ public sealed class DatabaseInitializer(
                     Email = "jane@example.com",
                     UserRole = "Hod",
                     IsActive = true
+                },
+                new()
+                {
+                    EmployeeId = 3,
+                    FirstName = "Admin",
+                    LastName = "IT",
+                    UserName = "ItAdmin",
+                    Password = "password",
+                    Email = "admin@example.com",
+                    UserRole = "Admin",
+                    IsActive = true
                 }
             };
 

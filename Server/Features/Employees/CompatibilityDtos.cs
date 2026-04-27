@@ -1,11 +1,16 @@
-﻿namespace Server.Features.Auth.User;
-
-using Server.Features.Common;
 using Server.Shared.Helpers;
+
+namespace Server.Features.Employees;
 
 public sealed class GetUsersQuery : PagedRequest;
 
-public record UserProfileDto(
+public sealed record LegacyDepartmentHodDto(
+    int EmployeeId,
+    string Name,
+    string Email,
+    string Phone);
+
+public sealed record LegacyUserProfileDto(
     int UserId,
     int EmployeeId,
     string UserName,
@@ -15,9 +20,9 @@ public record UserProfileDto(
     int DepartmentId,
     string DepartmentName,
     string Role,
-    DepartmentDto DepartmentHod);
+    LegacyDepartmentHodDto? DepartmentHod);
 
-public record UserListItemDto(
+public sealed record LegacyUserListItemDto(
     int UserId,
     int EmployeeId,
     string Name,
@@ -25,7 +30,7 @@ public record UserListItemDto(
     string DepartmentName,
     string Role);
 
-public sealed record UpdateUserRequest(
+public sealed record LegacyUpdateUserRequest(
     int? EmployeeId,
     string? UserName,
     string? FirstName,
@@ -37,7 +42,7 @@ public sealed record UpdateUserRequest(
     string? DepartmentName,
     string? Role);
 
-public sealed record CreateUserRequest(
+public sealed record LegacyCreateUserRequest(
     int EmployeeId,
     string UserName,
     string? FirstName,
@@ -45,7 +50,7 @@ public sealed record CreateUserRequest(
     string? Email,
     string? Phone,
     int? DepartmentId,
-    DepartmentDto DepartmentHodDto,
+    string? DepartmentName,
     string? Role,
     string Password);
 
