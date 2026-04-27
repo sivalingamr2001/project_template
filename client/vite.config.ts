@@ -5,13 +5,15 @@ import { defineConfig } from "vite"
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
-    outDir: path.resolve(__dirname, "../Artifact/client"),
+   build: {
+    outDir: path.resolve(__dirname, "../Artifact/Server/wwwroot"),
+    emptyOutDir: true,
   },
 })

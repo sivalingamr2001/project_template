@@ -42,7 +42,7 @@ type LoginResponse = {
 }
 
 const STORAGE_KEY = "auth_session"
-const API_URL = import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001/api"
+const API_URL = import.meta.env.VITE_API_URL ?? "/api"
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {

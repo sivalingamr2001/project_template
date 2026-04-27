@@ -47,7 +47,6 @@ type EditEmployeeModalProps = {
 export default function EditEmployeeModal({
   employeeId,
   userId,
-  employees,
   open,
   onClose,
   onSaved,

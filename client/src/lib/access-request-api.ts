@@ -1,5 +1,5 @@
 const API_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001/api"
+  import.meta.env.VITE_API_URL ?? "/api"
 
 export type AccessRequestItemPayload = {
   accessType: number
