@@ -16,7 +16,7 @@ import { IconEditFilled } from "@tabler/icons-react"
 function EmployeePage() {
   const { user, setSessionUser } = useAuth()
   const [page, setPage] = useState(1)
-  const [pageSize] = useState()
+  const [pageSize, setPageSize] = useState(5)
   const [totalCount, setTotalCount] = useState(0)
   const [employees, setEmployees] = useState<EmployeeRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -76,6 +76,7 @@ function EmployeePage() {
         setEmployees(response.data)
         setTotalCount(response.totalCount)
         setError(null)
+        setPageSize(response.pageSize)
       } catch (e) {
         setEmployees([])
         setTotalCount(0)
@@ -95,12 +96,17 @@ function EmployeePage() {
       <CommonTable
         columns={columns}
         getRowId={(row) => row.employeeId}
+        isLoading={isLoading}
         onRefresh={() => setReloadKey((value) => value + 1)}
         pagination={{
           page,
           pageSize,
           totalCount,
           onPageChange: setPage,
+          onPageSizeChange: (newSize) => {
+            setPageSize(newSize)
+            setPage(1)
+          },
         }}
         rows={isLoading ? [] : employees}
         emptyMessage={

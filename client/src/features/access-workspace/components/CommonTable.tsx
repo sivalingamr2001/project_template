@@ -7,6 +7,7 @@ import {
   IconPlus,
   IconRefresh,
   IconSearch,
+  IconLoader,
 } from "@tabler/icons-react"
 
 import CommonTablePagination from "./CommonTablePagination"
@@ -15,6 +16,7 @@ import type { TableColumn } from "../types"
 
 type ServerPagination = {
   onPageChange: (page: number) => void
+  onPageSizeChange?: (pageSize: number) => void
   page: number
   pageSize: number | undefined
   totalCount: number
@@ -24,6 +26,7 @@ type CommonTableProps<T> = {
   columns: TableColumn<T>[]
   emptyMessage: string
   getRowId?: (row: T, index: number) => string | number
+  isLoading?: boolean
   onRefresh?: () => void
   pageSize?: number
   pagination?: ServerPagination
@@ -37,8 +40,9 @@ function CommonTable<T>({
   columns,
   emptyMessage,
   getRowId,
+  isLoading = false,
   onRefresh,
-  pageSize = 5,
+  pageSize = 10,
   pagination,
   searchPlaceholder = "Search",
   toolbarActions,
@@ -132,7 +136,15 @@ function CommonTable<T>({
           {toolbarActions}
         </div>
       </div>
-      <div className="md:hidden space-y-4">
+      <div className="md:hidden space-y-4 relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-[0.6rem]">
+            <div className="flex flex-col items-center gap-2">
+              <IconLoader className="size-6 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        )}
         {hasRows ? (
           visibleRows.map((row, index) => {
             const rowId = getRowId?.(row, index) ?? index
@@ -187,7 +199,15 @@ function CommonTable<T>({
         )}
       </div>
 
-      <div className="hidden md:block overflow-hidden rounded-[0.4rem] border border-border">
+      <div className="hidden md:block overflow-hidden rounded-[0.4rem] border border-border relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-[0.4rem]">
+            <div className="flex flex-col items-center gap-2">
+              <IconLoader className="size-6 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-border text-sm">
             <thead className="bg-muted text-left text-xs tracking-[0.18em] text-muted-foreground uppercase">
@@ -238,7 +258,10 @@ function CommonTable<T>({
         <CommonTablePagination
           currentPage={currentPage}
           onPageChange={handlePageChange}
-          totalPages={totalPages}
+          onPageSizeChange={pagination?.onPageSizeChange}
+          pageSize={resolvedPageSize}
+          totalCount={pagination?.totalCount}
+          totalPages={isServerPaginated ? Math.ceil((pagination?.totalCount ?? 0) / (resolvedPageSize ?? 10)) : totalPages}
         />
       ) : null}
     </div>

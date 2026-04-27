@@ -8,7 +8,7 @@ import type { AuditLogItem } from "./types"
 
 function AuditLogPage() {
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(25)
+  const [pageSize, setPageSize] = useState(5)
   const [totalCount, setTotalCount] = useState(0)
   const [rows, setRows] = useState<AuditLogItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -42,12 +42,17 @@ function AuditLogPage() {
       <CommonTable
         columns={auditColumns}
         getRowId={(row) => row.auditId}
+        isLoading={isLoading}
         onRefresh={() => setReloadKey((value) => value + 1)}
         pagination={{
           page,
           pageSize,
           totalCount,
           onPageChange: setPage,
+          onPageSizeChange: (newSize) => {
+            setPageSize(newSize)
+            setPage(1)
+          },
         }}
         rows={isLoading ? [] : rows}
         emptyMessage={isLoading ? "Loading..." : "No audit entries are available."}
