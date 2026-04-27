@@ -23,6 +23,7 @@ import { useAuth } from "@/context/AuthContext"
 import { useDepartments } from "../hooks/useDepartments"
 import { getDepartmentName } from "../utils/departments"
 import { updateUserProfile } from "../utils/requestApi"
+import { IconAlertCircle } from "@tabler/icons-react"
 
 function splitName(fullName: string) {
   const trimmed = fullName.trim()
@@ -45,7 +46,9 @@ export default function UserProfileCompletionModal() {
   const { departments } = useDepartments()
 
   const initialName = useMemo(() => splitName(user?.name ?? ""), [user?.name])
-  const [employeeId, setEmployeeId] = useState<number | undefined>(user?.employeeId)
+  const [employeeId, setEmployeeId] = useState<number | undefined>(
+    user?.employeeId
+  )
   const [firstName, setFirstName] = useState(initialName.firstName)
   const [lastName, setLastName] = useState(initialName.lastName)
   const [userName, setUserName] = useState(user?.userName ?? "")
@@ -113,6 +116,14 @@ export default function UserProfileCompletionModal() {
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-800">
+          <IconAlertCircle className="h-4 w-4 shrink-0" />
+          <p className="text-sm font-medium">
+            Warning: This is a one-time update. Please validate your data
+            carefully before saving.
+          </p>
+        </div>
+
         <div className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
@@ -121,7 +132,9 @@ export default function UserProfileCompletionModal() {
                 id="employeeId"
                 value={String(employeeId ?? "")}
                 onChange={(e) =>
-                  setEmployeeId(e.target.value ? Number(e.target.value) : undefined)
+                  setEmployeeId(
+                    e.target.value ? Number(e.target.value) : undefined
+                  )
                 }
                 inputMode="numeric"
                 required

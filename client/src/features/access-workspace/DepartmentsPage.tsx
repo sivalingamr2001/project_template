@@ -56,7 +56,7 @@ export default function DepartmentsPage() {
         columns={columns}
         getRowId={(row) => row.deptId}
         onRefresh={refetch}
-        pageSize={8}
+        pageSize={5}
         rows={isLoading ? [] : rows}
         emptyMessage={isLoading ? "Loading..." : "No departments are available."}
         toolbarActions={

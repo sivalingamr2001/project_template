@@ -189,7 +189,7 @@ export async function fetchAccessRequestDetails(
 export async function fetchNotifications(
   employeeId: number,
   page = 1,
-  pageSize = 50
+  pageSize = 10
 ): Promise<PaginatedResponse<NotificationItem>> {
   const response = await fetch(
     `${API_URL}/notifications/${employeeId}?Page=${page}&PageSize=${pageSize}`
@@ -230,7 +230,7 @@ export async function markNotificationRead(
 
 export async function fetchAuditLogs(
   page = 1,
-  pageSize = 50
+  pageSize = 10
 ): Promise<PaginatedResponse<AuditLogItem>> {
   const response = await fetch(
     `${API_URL}/audit-logs?Page=${page}&PageSize=${pageSize}`
@@ -493,4 +493,59 @@ export async function revokeAccessRequest(
   )
 
   if (!response.ok) throw new Error("Unable to revoke access request.")
+}
+
+export async function searchUsers(
+  searchTerm: string,
+  page = 1,
+  pageSize = 10
+): Promise<PaginatedResponse<EmployeeRecord>> {
+  const response = await fetch(
+    `${API_URL}/User/Search?searchTerm=${encodeURIComponent(searchTerm)}&Page=${page}&PageSize=${pageSize}`
+  )
+  if (!response.ok) throw new Error("Unable to search users.")
+
+  const payload = await response.json()
+  return {
+    data: payload.data.map((item: any) => ({
+      userId: item.userId,
+      employeeId: item.employeeId,
+      name: item.name,
+      departmentName: item.departmentName,
+      role: item.role as AppRole,
+      email: item.email,
+    })),
+    page: payload.page,
+    pageSize: payload.pageSize,
+    totalCount: payload.totalCount,
+  }
+}
+
+export async function searchAuditLogs(
+  searchTerm: string,
+  page = 1,
+  pageSize = 10
+): Promise<PaginatedResponse<AuditLogItem>> {
+  const response = await fetch(
+    `${API_URL}/audit-logs/search?searchTerm=${encodeURIComponent(searchTerm)}&Page=${page}&PageSize=${pageSize}`
+  )
+  if (!response.ok) throw new Error("Unable to search audit logs.")
+
+  const payload = await response.json()
+  return {
+    data: payload.data.map((item: any) => ({
+      auditId: item.auditId,
+      actor: item.actor,
+      eventType: item.eventType,
+      requestId: item.requestId,
+      createdOn:
+        typeof item.createdOn === "string"
+          ? item.createdOn
+          : new Date(item.createdOn).toLocaleString(),
+      details: item.details,
+    })),
+    page: payload.page,
+    pageSize: payload.pageSize,
+    totalCount: payload.totalCount,
+  }
 }
