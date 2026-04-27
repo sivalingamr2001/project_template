@@ -39,13 +39,18 @@ export default function EditDepartmentModal({
     if (!open) return
     setId(department ? String(department.deptId) : "")
     setName(department?.name ?? "")
+    setDepartmentHodEmployeeId(
+      department?.hodId ? String(department.hodId) : ""
+    )
     setError(null)
   }, [department, open])
 
   const canSubmit =
     !isSaving &&
     (mode === "edit" || (Number.isFinite(Number(id)) && Number(id) > 0)) &&
-    name.trim()
+    name.trim() &&
+    Number.isFinite(Number(departmentHodEmployeeId)) &&
+    Number(departmentHodEmployeeId) > 0
 
   const onSubmit = async () => {
     if (!canSubmit) return
@@ -54,10 +59,11 @@ export default function EditDepartmentModal({
 
     const numericId = Number(id)
 
-    const departmentData: any = {
-      id: numericId,
-      name: name,
-      hodEmployeeId: departmentHodEmployeeId ?? department?.hodId,
+    const departmentData: Department = {
+      deptId: numericId,
+      name: name.trim(),
+      hodId: Number(departmentHodEmployeeId),
+      hodName: department?.hodName ?? "",
     }
 
     try {
@@ -107,10 +113,10 @@ export default function EditDepartmentModal({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="deptHodEmployeeId">HOD Name</Label>
+              <Label htmlFor="deptHodEmployeeId">HOD Employee ID</Label>
               <Input
                 id="deptHodEmployeeId"
-                value={String(department?.hodName ?? "")}
+                value={departmentHodEmployeeId}
                 onChange={(e) => {
                   const value = e.target.value
                   if (

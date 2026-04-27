@@ -11,23 +11,20 @@ public sealed class DepartmentEntity
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     [Column("id")]
-    public int Id { get; set; }
+    public int DepartmentId { get; set; }
 
-    [Required]
-    [Column("dept_id")]
-    public int DeptId { get; set; } // Business Dept ID
-                                                                                                                                                
     [Required]
     [Column("dept_name")]
-    public string DeptName { get; set; } = null!;
+    public string DepartmentName { get; set; } = string.Empty;
 
     [Required]
-    [Column("dept_hod_id")]
-    public int DeptHodId { get; set; }
+    [Column("hod_id")]
+    public int HodId { get; set; }
 
-    // Navigation Property: Link to the Employee who is the HOD
-    [ForeignKey("DeptHodId")]
-    public EmployeeEntity? HeadOfDepartment { get; set; }
+    [ForeignKey(nameof(HodId))]
+    public EmployeeEntity? Hod { get; set; }
+
+    public ICollection<EmployeeEntity> Employees { get; set; } = new List<EmployeeEntity>();
 
     [Column("IsActive")]
     public bool IsActive { get; set; } = true;
@@ -43,4 +40,39 @@ public sealed class DepartmentEntity
 
     [Column("ModifiedBy")]
     public string? ModifiedBy { get; set; }
+
+    [NotMapped]
+    public int Id
+    {
+        get => DepartmentId;
+        set => DepartmentId = value;
+    }
+
+    [NotMapped]
+    public int DeptId
+    {
+        get => DepartmentId;
+        set => DepartmentId = value;
+    }
+
+    [NotMapped]
+    public string DeptName
+    {
+        get => DepartmentName;
+        set => DepartmentName = value;
+    }
+
+    [NotMapped]
+    public int DeptHodId
+    {
+        get => HodId;
+        set => HodId = value;
+    }
+
+    [NotMapped]
+    public EmployeeEntity? HeadOfDepartment
+    {
+        get => Hod;
+        set => Hod = value;
+    }
 }

@@ -30,7 +30,7 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
 
         var alreadyExists = await dbContext.Departments
             .AsNoTracking()
-            .AnyAsync(d => d.DeptId == request.DeptId, cancellationToken);
+            .AnyAsync(d => d.DepartmentId == request.DeptId, cancellationToken);
 
         if (alreadyExists)
         {
@@ -39,18 +39,20 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
 
         var hodExists = await dbContext.Employees
             .AsNoTracking()
-            .AnyAsync(e => e.EmployeeId == request.HodId && e.UserRole == RoleNames.Hod, cancellationToken);
+            .Where(e => e.EmployeeId == request.HodId && e.UserRole == RoleNames.Hod)
+            .Select(e => new { e.UserId, e.EmployeeId })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!hodExists)
+        if (hodExists is null)
         {
             throw new InvalidOperationException($"HOD with Id '{request.HodId}' does not exist or is not a HOD.");
         }
 
         var entity = new DepartmentEntity
         {
-            DeptId = request.DeptId,
-            DeptName = request.Name.Trim(),
-            DeptHodId = request.HodId,
+            DepartmentId = request.DeptId,
+            DepartmentName = request.Name.Trim(),
+            HodId = hodExists.UserId,
             IsActive = true,
             CreatedOn = DateTime.UtcNow,
             CreatedBy = "0",
@@ -61,18 +63,18 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
         await dbContext.Departments.AddAsync(entity, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        var hodName = await dbContext.Employees
+        var hod = await dbContext.Employees
             .AsNoTracking()
             .Where(e => e.EmployeeId == request.HodId)
-            .Select(e => GetDisplayName(e.FirstName, e.LastName, e.UserName))
-            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
+            .Select(e => new { e.FirstName, e.LastName, e.UserName })
+            .FirstOrDefaultAsync(cancellationToken);
 
         return new DepartmentDto(
-            entity.Id,
-            entity.DeptId,
-            entity.DeptName,
-            entity.DeptHodId,
-            hodName,
+            entity.DepartmentId,
+            entity.DepartmentId,
+            entity.DepartmentName,
+            hodExists.EmployeeId,
+            hod is null ? string.Empty : GetDisplayName(hod.FirstName, hod.LastName, hod.UserName),
             string.Empty,
             string.Empty);
     }

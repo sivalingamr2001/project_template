@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Server.Domain.Entities;
 using Server.Features.Common;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
@@ -30,44 +29,58 @@ public sealed class UpdateDepartmentService(AppDbContext dbContext)
         }
 
         var department = await dbContext.Departments
-            .FirstOrDefaultAsync(d => d.DeptId == deptId, cancellationToken);
+            .FirstOrDefaultAsync(d => d.DepartmentId == deptId, cancellationToken);
 
         if (department is null)
         {
             return null;
         }
 
-        if (department.DeptHodId != request.HodId)
-        {
-            var hodExists = await dbContext.Employees
-                .AsNoTracking()
-                .AnyAsync(e => e.EmployeeId == request.HodId && e.UserRole == RoleNames.Hod, cancellationToken);
+        var currentHodEmployeeId = await dbContext.Employees
+            .AsNoTracking()
+            .Where(e => e.UserId == department.HodId)
+            .Select(e => (int?)e.EmployeeId)
+            .FirstOrDefaultAsync(cancellationToken);
 
-            if (!hodExists)
+        if (currentHodEmployeeId != request.HodId)
+        {
+            var hodEmployee = await dbContext.Employees
+                .AsNoTracking()
+                .Where(e => e.EmployeeId == request.HodId && e.UserRole == RoleNames.Hod)
+                .Select(e => new { e.UserId, e.EmployeeId })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (hodEmployee is null)
             {
                 throw new InvalidOperationException($"HOD with Id '{request.HodId}' does not exist or is not a HOD.");
             }
 
-            department.DeptHodId = request.HodId;
+            department.HodId = hodEmployee.UserId;
         }
 
-        department.DeptName = request.Name.Trim();
+        department.DepartmentName = request.Name.Trim();
         department.UpdatedOn = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
         var hodName = await dbContext.Employees
             .AsNoTracking()
-            .Where(e => e.EmployeeId == department.DeptHodId)
-            .Select(e => GetDisplayName(e.FirstName, e.LastName, e.UserName))
-            .FirstOrDefaultAsync(cancellationToken) ?? string.Empty;
+            .Where(e => e.UserId == department.HodId)
+            .Select(e => new
+            {
+                e.EmployeeId,
+                e.FirstName,
+                e.LastName,
+                e.UserName
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
         return new DepartmentDto(
-            department.Id,
-            department.DeptId,
-            department.DeptName,
-            department.DeptHodId,
-            hodName,
+            department.DepartmentId,
+            department.DepartmentId,
+            department.DepartmentName,
+            hodName?.EmployeeId ?? 0,
+            hodName is null ? string.Empty : GetDisplayName(hodName.FirstName, hodName.LastName, hodName.UserName),
             string.Empty,
             string.Empty);
     }

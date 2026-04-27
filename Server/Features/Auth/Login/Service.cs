@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Server.Features.Auth.User;
-using Server.Features.Common;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
 
@@ -39,24 +37,31 @@ public sealed class LoginService(
                     e.UserName,
                     e.Email,
                     e.Mobile,
+                    e.Location,
+                    e.IsActive,
+                    e.CreatedOn,
+                    e.UpdatedOn,
                     e.DeptId,
                     e.UserRole,
                     e.Password,
-                    // Project Department and HOD Details in one go
-                    DeptInfo = e.Department != null ? new DepartmentDto(
-                        e.Department.Id,
-                        e.Department.DeptId,
-                        e.Department.DeptName,
-                        e.Department.DeptHodId,
-                        // If current user is HOD, return "Self", else get HOD name
-                        e.UserRole == RoleNames.Hod
-                            ? "Self"
-                            : (e.Department.HeadOfDepartment != null
-                                ? BuildDisplayName(e.Department.HeadOfDepartment.FirstName, e.Department.HeadOfDepartment.LastName, e.Department.HeadOfDepartment.UserName)
-                                : "N/A"),
-                        e.Department.HeadOfDepartment != null ? e.Department.HeadOfDepartment.Email : string.Empty,
-                        e.Department.HeadOfDepartment != null && e.Department.HeadOfDepartment.Mobile != null ? e.Department.HeadOfDepartment.Mobile : string.Empty
-                    ) : null
+                    Department = e.Department == null
+                        ? null
+                        : new
+                        {
+                            e.Department.DepartmentId,
+                            e.Department.DepartmentName,
+                            Hod = e.Department.Hod == null
+                                ? null
+                                : new
+                                {
+                                    e.Department.Hod.EmployeeId,
+                                    e.Department.Hod.FirstName,
+                                    e.Department.Hod.LastName,
+                                    e.Department.Hod.UserName,
+                                    e.Department.Hod.Email,
+                                    e.Department.Hod.Mobile
+                                }
+                        }
                 })
                 .SingleOrDefaultAsync(cancellationToken);
 
@@ -69,33 +74,48 @@ public sealed class LoginService(
             var displayName = BuildDisplayName(user.FirstName, user.LastName, user.UserName);
             var role = string.IsNullOrWhiteSpace(user.UserRole) ? "User" : user.UserRole;
 
-            // 2. Prepare HOD Specific DTO for the Session
-            // If user is HOD, we still provide their own dept info but flag HodName as Self
-            var sessionHodDto = user.DeptInfo != null
-                ? new DepartmentDto(
-                    user.DeptInfo.Id,
-                    user.DeptInfo.DeptId,
-                    user.DeptInfo.Name,
-                    user.DeptInfo.HodId,
-                    user.DeptInfo.HodName,
-                    user.DeptInfo.Email,
-                    user.DeptInfo.Phone)
-                : null;
+            var sessionHodDto = user.Department?.Hod == null
+                ? null
+                : new HODDetailsDto(
+                    user.Department.Hod.EmployeeId,
+                    string.Equals(user.UserRole, RoleNames.Hod, StringComparison.OrdinalIgnoreCase)
+                        && user.Department.Hod.EmployeeId == user.EmployeeId
+                        ? "Self"
+                        : BuildDisplayName(
+                            user.Department.Hod.FirstName,
+                            user.Department.Hod.LastName,
+                            user.Department.Hod.UserName),
+                    user.Department.Hod.Email ?? string.Empty,
+                    user.Department.Hod.Mobile ?? string.Empty);
 
-            // 3. Construct Response
+            var sessionDepartment = user.Department == null
+                ? null
+                : new SessionDepartmentDto(
+                    user.Department.DepartmentId,
+                    user.Department.DepartmentName,
+                    sessionHodDto);
+
             return new LoginResponse(
                 new SessionDto(
                     new LoggedInUserDto(
                         user.UserId,
                         user.EmployeeId,
                         user.UserName,
+                        user.FirstName ?? string.Empty,
+                        user.LastName ?? string.Empty,
                         displayName,
                         user.Email ?? string.Empty,
                         user.Mobile ?? string.Empty,
+                        user.Mobile ?? string.Empty,
+                        user.Location ?? string.Empty,
+                        user.IsActive,
+                        user.CreatedOn,
+                        user.UpdatedOn,
                         user.DeptId ?? 0,
-                        user.DeptInfo?.Name ?? "N/A",
+                        user.Department?.DepartmentName ?? "N/A",
                         role,
-                        sessionHodDto
+                        sessionHodDto,
+                        sessionDepartment
                     )
                 )
             );
@@ -121,8 +141,5 @@ public sealed class LoginService(
         return userName;
     }
 }
-
-
-
 
 

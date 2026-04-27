@@ -196,11 +196,6 @@ public sealed class AccessRequestWorkflowService(
             throw new AppValidationException("Comments are required when IT rejects a request.");
         }
 
-        if (request.Approved && string.IsNullOrWhiteSpace(request.ItsrNo))
-        {
-            throw new AppValidationException("ITSR number is required when IT approves access.");
-        }
-
         // 2. Fetch dependencies
         var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Admin, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
@@ -248,7 +243,7 @@ public sealed class AccessRequestWorkflowService(
         });
 
         // 7. Update Request Header
-        if (request.Approved)
+        if (!string.IsNullOrWhiteSpace(request.ItsrNo))
         {
             accessRequest.ItsrNo = request.ItsrNo!.Trim();
         }
@@ -602,7 +597,7 @@ public sealed class AccessRequestWorkflowService(
             accessRequest.EmpId,
             requester.UserName,
             requester.DeptId ?? 0,
-            requester.Department?.DeptName ?? string.Empty,
+            requester.Department?.DepartmentName ?? string.Empty,
             accessRequest.ReqTo,
             currentApprover?.UserName ?? string.Empty,
             string.IsNullOrWhiteSpace(currentApprover?.UserRole) ? "User" : currentApprover!.UserRole!,
@@ -706,6 +701,8 @@ public sealed class AccessRequestWorkflowService(
     private async Task<EmployeeEntity> GetEmployeeOrThrowAsync(int employeeId, CancellationToken cancellationToken)
     {
         return await dbContext.Employees
+            .Include(employee => employee.Department)
+            .ThenInclude(department => department!.Hod)
             .FirstOrDefaultAsync(employee => employee.EmployeeId == employeeId, cancellationToken)
             ?? throw new AppValidationException($"Employee {employeeId} was not found.");
     }
@@ -759,23 +756,23 @@ public sealed class AccessRequestWorkflowService(
             return new List<EmployeeEntity>();
         }
 
-        var hodId = await dbContext.Departments
+        var hod = await dbContext.Departments
             .AsNoTracking()
-            .Where(department => department.DeptId == deptId.Value)
-            .Select(department => department.DeptHodId)
+            .Where(department => department.DepartmentId == deptId.Value)
+            .Select(department => department.Hod)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (hodId <= 0)
+        if (hod is null)
         {
             return new List<EmployeeEntity>();
         }
 
-        var hod = await dbContext.Employees
-            .Where(employee => employee.EmployeeId == hodId && employee.UserRole == RoleNames.Hod)
-            .OrderBy(employee => employee.EmployeeId)
-            .ToListAsync(cancellationToken);
+        if (!string.Equals(hod.UserRole, RoleNames.Hod, StringComparison.OrdinalIgnoreCase))
+        {
+            return new List<EmployeeEntity>();
+        }
 
-        return hod;
+        return new List<EmployeeEntity> { hod };
     }
 
     private async Task<EmployeeEntity> ResolveItApproverAsync(CancellationToken cancellationToken)
