@@ -20,7 +20,8 @@ namespace Server.Features.AccessRequests.Common;
 
 public sealed class AccessRequestWorkflowService(
     AppDbContext dbContext,
-    IHubContext<NotificationHub> hubContext)
+    IHubContext<NotificationHub> hubContext,
+    IAccessRequestEmailNotificationService emailNotificationService)
 {
     public async Task<CreateAccessRequestResponse> CreateOrUpdateAsync(CreateAccessRequest request, CancellationToken cancellationToken)
     {
@@ -117,6 +118,7 @@ public sealed class AccessRequestWorkflowService(
                     item.ConfirmAccessType,
                     item.Reason))
                 .ToList());
+
     }
 
     public async Task<ReviewAccessRequestResponse> ReviewByHodAsync(int accessReqId, int accessItemId, ReviewByHodRequest request, CancellationToken cancellationToken)
