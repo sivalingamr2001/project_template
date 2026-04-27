@@ -20,11 +20,10 @@ import {
 } from "@/components/ui/select"
 import { useAuth } from "@/context/AuthContext"
 
+import { IconAlertCircle } from "@tabler/icons-react"
 import { useDepartments } from "../hooks/useDepartments"
 import { getDepartmentName } from "../utils/departments"
-import { fetchAllHod, updateUserProfile } from "../utils/requestApi"
-import { IconAlertCircle } from "@tabler/icons-react"
-import { toast } from "sonner"
+import { updateUserProfile } from "../utils/requestApi"
 
 function splitName(fullName: string) {
   const trimmed = fullName.trim()

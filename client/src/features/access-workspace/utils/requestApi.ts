@@ -16,7 +16,7 @@ import type {
 import type { AuthUser } from "@/context/AuthContext"
 
 const API_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001/api"
+  import.meta.env.VITE_API_URL ?? "/api"
 const ACCESS_TYPE_MAP = ["Not Applicable", "Read Only", "Read & Write"] as const
 const AGGREGATE_STATUS_MAP = [
   "Pending",

@@ -11,7 +11,7 @@ import { UserInfoSection } from "./UserInfoSection"
 import { createDefaultPayload } from "./utils/accessRequestForm"
 
 const API_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "https://localhost:5001/api"
+  import.meta.env.VITE_API_URL ?? "/api"
 
 export function NewRequestForm({
   initialData,
