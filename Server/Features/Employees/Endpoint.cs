@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Janatics.Application.Features.Employees.Dtos;
 
 namespace Server.Features.Employees;
@@ -92,6 +91,19 @@ public static class EmployeesEndpoint
                 : Results.NotFound(new { Message = $"Employee with ID {employeeId} not found." });
         })
         .WithName("DeleteEmployee")
+        .WithOpenApi();
+
+        group.MapGet("/Search", async (
+        string searchTerm,
+        EmployeeService service,
+        CancellationToken ct, // Added comma here
+        int page = 1,         // Moved inside the parentheses
+        int pageSize = 10) => // Moved inside the parentheses
+            {
+                var result = await service.SearchEmployeesAsync(searchTerm ?? "", ct);
+                return Results.Ok(result);
+            })
+        .WithName("SearchEmployees")
         .WithOpenApi();
     }
 

@@ -28,6 +28,7 @@ type CommonTableProps<T> = {
   getRowId?: (row: T, index: number) => string | number
   isLoading?: boolean
   onRefresh?: () => void
+  onSearchChange?: (searchTerm: string) => void
   pageSize?: number
   pagination?: ServerPagination
   searchPlaceholder?: string
@@ -42,6 +43,7 @@ function CommonTable<T>({
   getRowId,
   isLoading = false,
   onRefresh,
+  onSearchChange,
   pageSize = 10,
   pagination,
   searchPlaceholder = "Search",
@@ -114,8 +116,12 @@ function CommonTable<T>({
             aria-label="Search table"
             className="rounded-2xl border-input/80 bg-background pr-4 pl-10 text-sm shadow-sm placeholder:text-muted-foreground/80"
             onChange={(event) => {
-              setSearchTerm(event.target.value)
+              const value = event.target.value
+              setSearchTerm(value)
               setCurrentPage(1)
+              if (onSearchChange) {
+                onSearchChange(value)
+              }
             }}
             placeholder={searchPlaceholder}
             value={searchTerm}

@@ -36,6 +36,37 @@ public sealed class EmployeeService(AppDbContext dbContext)
             query.NormalizedPageSize);
     }
 
+    public async Task<List<EmployeeDto>> SearchEmployeesAsync(
+       string term,
+       CancellationToken ct)
+    {
+        var baseQuery = dbContext.Employees
+            .AsNoTracking()
+            .Include(x => x.Department)
+            .ThenInclude(x => x!.Hod)
+            .AsQueryable();
+
+        // Apply Filter
+        if (!string.IsNullOrWhiteSpace(term))
+        {
+            string likeTerm = $"%{term}%";
+            baseQuery = baseQuery.Where(e =>
+                EF.Functions.Like(e.UserName, likeTerm) ||
+                EF.Functions.Like(e.Email, likeTerm) ||
+                EF.Functions.Like(e.EmployeeId.ToString(), likeTerm) ||
+                EF.Functions.Like(e.Mobile, likeTerm) ||
+                EF.Functions.Like(e.Location, likeTerm));
+        }
+
+        // Retrieve everything without Skip/Take
+        var employees = await baseQuery
+            .OrderBy(x => x.UserName)
+            .ToListAsync(ct);
+
+        // Map to your DTO
+        return employees.Select(MapToDto).ToList();
+    }
+
     public async Task<PaginatedResponse<EmployeeDto>> GetEmployeesAsync(
         GetEmployeesQuery query,
         CancellationToken cancellationToken)
