@@ -282,6 +282,33 @@ export async function fetchAllUsers(
   }
 }
 
+export async function searchEmployees(
+  searchTerm: string,
+  page = 1,
+  pageSize = 10
+): Promise<EmployeeRecord> {
+  const response = await fetch(
+    `${API_URL}/employees/Search?searchTerm=${encodeURIComponent(searchTerm)}&page=${page}&pageSize=${pageSize}`
+  )
+  if (!response.ok) throw new Error("Unable to search employees.")
+
+  const payload = await response.json()
+  return payload.map((item: any) => ({
+    userId: item.userId,
+    employeeId: item.employeeId,
+    name: item.name,
+    departmentName: item.departmentName,
+    role: item.role as AppRole,
+    email: item.email,
+    userName: item.userName,
+    firstName: item.firstName,
+    lastName: item.lastName,
+    phone: item.phone,
+    location: item.location,
+    departmentId: item.departmentId,
+  }))
+}
+
 export async function fetchUserProfile(employeeId: number): Promise<AuthUser> {
   const response = await fetch(`${API_URL}/User/${employeeId}`)
   if (!response.ok) throw new Error("Unable to load user profile.")

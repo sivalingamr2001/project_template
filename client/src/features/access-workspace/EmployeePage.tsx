@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
+import { useDebounce } from "@/lib/utils"
 
 import CommonTable from "./components/CommonTable"
 import CreateEmployeeModal from "./components/CreateEmployeeModal"
@@ -9,7 +10,7 @@ import EditEmployeeModal from "./components/EditEmployeeModal"
 import ResetPasswordModal from "./components/ResetPasswordModal"
 import PageSection from "./components/PageSection"
 import { employeeColumns } from "./utils/tableColumns"
-import { fetchAllUsers } from "./utils/requestApi"
+import { fetchAllUsers, searchEmployees } from "./utils/requestApi"
 import type { EmployeeRecord, TableColumn } from "./types"
 import { IconEditFilled } from "@tabler/icons-react"
 
@@ -29,6 +30,8 @@ function EmployeePage() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isPasswordOpen, setIsPasswordOpen] = useState(false)
+  const [searchInput, setSearchInput] = useState("")
+  const debouncedSearch = useDebounce(searchInput, 500)
 
   const columns = useMemo<TableColumn<EmployeeRecord>[]>(() => {
     return [
@@ -72,11 +75,19 @@ function EmployeePage() {
     setIsLoading(true)
     void (async () => {
       try {
-        const response = await fetchAllUsers(page, pageSize)
-        setEmployees(response.data)
-        setTotalCount(response.totalCount)
-        setError(null)
-        setPageSize(response.pageSize)
+        const response: any = debouncedSearch
+          ? await searchEmployees(debouncedSearch, page, pageSize)
+          : await fetchAllUsers(page, pageSize)
+        if (!debouncedSearch) {
+          setEmployees(response.data)
+          setTotalCount(response.totalCount)
+          setError(null)
+          setPageSize(response.pageSize)
+        } else {
+          setEmployees(response)
+          setError(null)
+          setPageSize(5)
+        }
       } catch (e) {
         setEmployees([])
         setTotalCount(0)
@@ -85,7 +96,7 @@ function EmployeePage() {
         setIsLoading(false)
       }
     })()
-  }, [page, pageSize, reloadKey])
+  }, [page, pageSize, debouncedSearch, reloadKey])
 
   return (
     <PageSection
@@ -98,6 +109,10 @@ function EmployeePage() {
         getRowId={(row) => row.employeeId}
         isLoading={isLoading}
         onRefresh={() => setReloadKey((value) => value + 1)}
+        onSearchChange={(term) => {
+          setSearchInput(term)
+          setPage(1)
+        }}
         pagination={{
           page,
           pageSize,
