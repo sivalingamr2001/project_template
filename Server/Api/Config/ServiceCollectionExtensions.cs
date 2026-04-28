@@ -10,6 +10,7 @@ using Server.Features.Departments.GetList;
 using Server.Features.Departments.Update;
 using Server.Features.Employees;
 using Server.Infrastructure.Db;
+using Server.Infrastructure.Oracle;
 using Server.Shared.Camunda;
 using Server.Shared.Constants;
 using Server.Features.AccessRequests.GetList;
@@ -69,6 +70,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<HODService>();
         services.AddScoped<GetDashboardService>();
         services.AddScoped<GetAuditLogsService>();
+        services.AddScoped<IOracleService, OracleService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IAccessRequestEmailNotificationService, AccessRequestEmailNotificationService>();
         services.AddScoped<IAccessRequestExpirationService, AccessRequestExpirationService>();

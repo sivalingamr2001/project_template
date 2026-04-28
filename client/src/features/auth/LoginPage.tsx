@@ -44,7 +44,7 @@ function LoginPage() {
           Sign in to continue
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Use your employee ID and password from the server login API.
+          Use your employee ID/Username and password from the ITSR Portal.
         </p>
         <div className="mt-6 grid gap-4">
           <input
