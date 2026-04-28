@@ -1,19 +1,25 @@
+using System.Net;
 using Server.Domain.Entities;
 using Server.Features.Notifications;
 using Server.Shared.Helpers;
 
 namespace Server.Features.AccessRequests.Common;
 
-/// <summary>
-/// Service to handle email notifications for access request approval stages
-/// </summary>
+public sealed record AccessRequestEmailNotification(
+    string MailProgramSuffix,
+    string Subject,
+    string Heading,
+    string Summary,
+    AccessRequestEntity Request,
+    EmployeeEntity Requester,
+    IReadOnlyCollection<EmployeeEntity> Recipients,
+    AccessItemEntity? Item = null,
+    string? Comments = null,
+    DateTime? ExpirationDateUtc = null);
+
 public interface IAccessRequestEmailNotificationService
 {
-    Task SendRequestSubmittedEmailAsync(AccessRequestEntity request, EmployeeEntity requester, EmployeeEntity hodApprover, CancellationToken cancellationToken);
-    Task SendHodApprovalEmailAsync(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester, string comments, CancellationToken cancellationToken);
-    Task SendHodRejectionEmailAsync(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester, string comments, CancellationToken cancellationToken);
-    Task SendItApprovalEmailAsync(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester, CancellationToken cancellationToken);
-    Task SendItRejectionEmailAsync(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester, string comments, CancellationToken cancellationToken);
+    Task SendStageNotificationAsync(AccessRequestEmailNotification notification, CancellationToken cancellationToken);
 }
 
 public class AccessRequestEmailNotificationService : IAccessRequestEmailNotificationService
@@ -23,400 +29,173 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
     private const string FromEmail = "feedback@janatics.co.in";
     private const string ProgramName = "AccessRequestApproval";
 
-    public AccessRequestEmailNotificationService(IEmailService emailService, ILogger<AccessRequestEmailNotificationService> logger)
+    public AccessRequestEmailNotificationService(
+        IEmailService emailService,
+        ILogger<AccessRequestEmailNotificationService> logger)
     {
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task SendRequestSubmittedEmailAsync(
-        AccessRequestEntity request,
-        EmployeeEntity requester,
-        EmployeeEntity hodApprover,
+    public async Task SendStageNotificationAsync(
+        AccessRequestEmailNotification notification,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(notification);
+
         try
         {
-            var subject = $"New Access Request #{request.AccessReqId} - Awaiting HOD Approval";
-            var body = BuildRequestSubmittedEmailBody(request, requester, hodApprover);
+            var recipientEmails = notification.Recipients
+                .Select(employee => employee.Email?.Trim())
+                .Where(email => !string.IsNullOrWhiteSpace(email))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (recipientEmails.Length == 0)
+            {
+                _logger.LogWarning(
+                    "Skipped access request email for Request ID {RequestId} because no recipient email addresses were found.",
+                    notification.Request.AccessReqId);
+                return;
+            }
+
+            var requesterEmail = notification.Requester.Email?.Trim();
+            var toRecipients = !string.IsNullOrWhiteSpace(requesterEmail)
+                ? new[] { requesterEmail }
+                : new[] { recipientEmails[0] };
+
+            var ccRecipients = recipientEmails
+                .Except(toRecipients, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
             var emailRequest = new EmailNotificationRequest
             {
                 MailFrom = FromEmail,
-                MailTo = hodApprover.Email,
-                MailCc = requester.Email,
-                MailSubject = subject,
-                MailBody = body,
-                MailProgram = $"{ProgramName}_RequestSubmitted"
+                MailTo = string.Join(",", toRecipients),
+                MailCc = ccRecipients.Length == 0 ? string.Empty : string.Join(",", ccRecipients),
+                MailSubject = notification.Subject,
+                MailBody = BuildEmailBody(notification),
+                MailProgram = $"{ProgramName}_{notification.MailProgramSuffix}"
             };
 
             var response = await _emailService.SendEmailAsync(emailRequest, cancellationToken);
 
             if (response.IsSuccessful)
-                _logger.LogInformation("Request submitted email sent for Request ID: {RequestId} to HOD: {HodEmail}", request.AccessReqId, hodApprover.Email);
-            else
-                _logger.LogWarning("Failed to send request submitted email. Error: {Error}", response.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending request submitted email for Request ID: {RequestId}", request.AccessReqId);
-        }
-    }
-
-    public async Task SendHodApprovalEmailAsync(
-        AccessRequestEntity request,
-        AccessItemEntity item,
-        EmployeeEntity approver,
-        EmployeeEntity requester,
-        string comments,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var subject = $"Access Request #{request.AccessReqId} - Approved by HOD";
-            var body = BuildHodApprovalEmailBody(request, item, approver, requester, comments);
-
-            var emailRequest = new EmailNotificationRequest
             {
-                MailFrom = FromEmail,
-                MailTo = requester.Email,
-                MailCc = approver.Email,
-                MailSubject = subject,
-                MailBody = body,
-                MailProgram = $"{ProgramName}_HodApproved"
-            };
-
-            var response = await _emailService.SendEmailAsync(emailRequest, cancellationToken);
-
-            if (response.IsSuccessful)
-                _logger.LogInformation("HOD approval email sent for Request ID: {RequestId}, Item ID: {ItemId}", request.AccessReqId, item.AccessItemId);
+                _logger.LogInformation(
+                    "Access request email sent. RequestId={RequestId}, ItemId={ItemId}, Program={Program}, To={To}, Cc={Cc}",
+                    notification.Request.AccessReqId,
+                    notification.Item?.AccessItemId,
+                    emailRequest.MailProgram,
+                    emailRequest.MailTo,
+                    emailRequest.MailCc);
+            }
             else
-                _logger.LogWarning("Failed to send HOD approval email. Error: {Error}", response.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending HOD approval email for Request ID: {RequestId}", request.AccessReqId);
-        }
-    }
-
-    public async Task SendHodRejectionEmailAsync(
-        AccessRequestEntity request,
-        AccessItemEntity item,
-        EmployeeEntity approver,
-        EmployeeEntity requester,
-        string comments,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var subject = $"Access Request #{request.AccessReqId} - Rejected by HOD";
-            var body = BuildHodRejectionEmailBody(request, item, approver, requester, comments);
-
-            var emailRequest = new EmailNotificationRequest
             {
-                MailFrom = FromEmail,
-                MailTo = requester.Email,
-                MailCc = approver.Email,
-                MailSubject = subject,
-                MailBody = body,
-                MailProgram = $"{ProgramName}_HodRejected"
-            };
-
-            var response = await _emailService.SendEmailAsync(emailRequest, cancellationToken);
-
-            if (response.IsSuccessful)
-                _logger.LogInformation("HOD rejection email sent for Request ID: {RequestId}, Item ID: {ItemId}", request.AccessReqId, item.AccessItemId);
-            else
-                _logger.LogWarning("Failed to send HOD rejection email. Error: {Error}", response.Message);
+                _logger.LogWarning(
+                    "Failed to send access request email. RequestId={RequestId}, Program={Program}, Error={Error}",
+                    notification.Request.AccessReqId,
+                    emailRequest.MailProgram,
+                    response.Message);
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending HOD rejection email for Request ID: {RequestId}", request.AccessReqId);
+            _logger.LogError(
+                ex,
+                "Error sending access request email. RequestId={RequestId}, ItemId={ItemId}",
+                notification.Request.AccessReqId,
+                notification.Item?.AccessItemId);
         }
     }
 
-    public async Task SendItApprovalEmailAsync(
-        AccessRequestEntity request,
-        AccessItemEntity item,
-        EmployeeEntity approver,
-        EmployeeEntity requester,
-        CancellationToken cancellationToken)
+    private static string BuildEmailBody(AccessRequestEmailNotification notification)
     {
-        try
-        {
-            var subject = $"Access Request #{request.AccessReqId} - Approved by IT";
-            var body = BuildItApprovalEmailBody(request, item, approver, requester);
+        var requesterName = BuildDisplayName(notification.Requester);
+        var recipients = notification.Recipients
+            .DistinctBy(employee => employee.EmployeeId)
+            .Select(BuildRecipientLabel)
+            .ToArray();
 
-            var emailRequest = new EmailNotificationRequest
-            {
-                MailFrom = FromEmail,
-                MailTo = requester.Email,
-                MailCc = approver.Email,
-                MailSubject = subject,
-                MailBody = body,
-                MailProgram = $"{ProgramName}_ItApproved"
-            };
+        var itemSection = notification.Item is null
+            ? string.Empty
+            : $@"
+        <tr>
+            <td><strong>Access Item ID</strong></td>
+            <td>{notification.Item.AccessItemId}</td>
+        </tr>
+        <tr>
+            <td><strong>Folder Path</strong></td>
+            <td>{Html(notification.Item.FolderPath)}</td>
+        </tr>
+        <tr>
+            <td><strong>Access Type</strong></td>
+            <td>{notification.Item.AccessType}</td>
+        </tr>
+        <tr>
+            <td><strong>Status</strong></td>
+            <td>{notification.Item.Status}</td>
+        </tr>";
 
-            var response = await _emailService.SendEmailAsync(emailRequest, cancellationToken);
+        var commentsSection = string.IsNullOrWhiteSpace(notification.Comments)
+            ? string.Empty
+            : $@"
+    <p><strong>Comments:</strong> {Html(notification.Comments)}</p>";
 
-            if (response.IsSuccessful)
-                _logger.LogInformation("IT approval email sent for Request ID: {RequestId}, Item ID: {ItemId}", request.AccessReqId, item.AccessItemId);
-            else
-                _logger.LogWarning("Failed to send IT approval email. Error: {Error}", response.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending IT approval email for Request ID: {RequestId}", request.AccessReqId);
-        }
-    }
+        var expirationSection = notification.ExpirationDateUtc is null
+            ? string.Empty
+            : $@"
+        <tr>
+            <td><strong>Expiration Date</strong></td>
+            <td>{notification.ExpirationDateUtc.Value:dd-MMM-yyyy HH:mm:ss} UTC</td>
+        </tr>";
 
-    public async Task SendItRejectionEmailAsync(
-        AccessRequestEntity request,
-        AccessItemEntity item,
-        EmployeeEntity approver,
-        EmployeeEntity requester,
-        string comments,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var subject = $"Access Request #{request.AccessReqId} - Rejected by IT";
-            var body = BuildItRejectionEmailBody(request, item, approver, requester, comments);
-
-            var emailRequest = new EmailNotificationRequest
-            {
-                MailFrom = FromEmail,
-                MailTo = requester.Email,
-                MailCc = approver.Email,
-                MailSubject = subject,
-                MailBody = body,
-                MailProgram = $"{ProgramName}_ItRejected"
-            };
-
-            var response = await _emailService.SendEmailAsync(emailRequest, cancellationToken);
-
-            if (response.IsSuccessful)
-                _logger.LogInformation("IT rejection email sent for Request ID: {RequestId}, Item ID: {ItemId}", request.AccessReqId, item.AccessItemId);
-            else
-                _logger.LogWarning("Failed to send IT rejection email. Error: {Error}", response.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending IT rejection email for Request ID: {RequestId}", request.AccessReqId);
-        }
-    }
-
-    private string BuildRequestSubmittedEmailBody(AccessRequestEntity request, EmployeeEntity requester, EmployeeEntity hodApprover)
-    {
         return $@"
 <!DOCTYPE html>
 <html>
-<body>
-    <h3>Access Request Submitted</h3>
-    <p>Dear {hodApprover.FirstName},</p>
-    <p>A new access request has been submitted for your approval.</p>
-    
-    <table border='1' cellpadding='10'>
+<body style='font-family: Arial, sans-serif; color: #222;'>
+    <h3>{Html(notification.Heading)}</h3>
+    <p>{Html(notification.Summary)}</p>
+
+    <table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse;'>
         <tr>
-            <td><strong>Request ID:</strong></td>
-            <td>#{request.AccessReqId}</td>
+            <td><strong>Request ID</strong></td>
+            <td>#{notification.Request.AccessReqId}</td>
         </tr>
         <tr>
-            <td><strong>Requester:</strong></td>
-            <td>{requester.FirstName} {requester.LastName} ({requester.UserName})</td>
+            <td><strong>Requester</strong></td>
+            <td>{Html(requesterName)} ({Html(notification.Requester.UserName)})</td>
         </tr>
         <tr>
-            <td><strong>Employee ID:</strong></td>
-            <td>{requester.EmployeeId}</td>
+            <td><strong>Employee ID</strong></td>
+            <td>{notification.Requester.EmployeeId}</td>
         </tr>
         <tr>
-            <td><strong>Department:</strong></td>
-            <td>{requester.Department?.DepartmentName}</td>
+            <td><strong>ITSR Number</strong></td>
+            <td>{Html(notification.Request.ItsrNo ?? string.Empty)}</td>
         </tr>
         <tr>
-            <td><strong>ITSR Number:</strong></td>
-            <td>{request.ItsrNo}</td>
-        </tr>
-        <tr>
-            <td><strong>Submitted On:</strong></td>
-            <td>{request.CreatedOn:dd-MM-yyyy HH:mm:ss}</td>
-        </tr>
-    </table>
-    
-    <p>Please review the request and take appropriate action.</p>
+            <td><strong>Recipients</strong></td>
+            <td>{Html(string.Join(", ", recipients))}</td>
+        </tr>{itemSection}{expirationSection}
+    </table>{commentsSection}
+
     <p>Regards,<br>Access Management System</p>
 </body>
 </html>";
     }
 
-    private string BuildHodApprovalEmailBody(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester, string comments)
+    private static string BuildDisplayName(EmployeeEntity employee)
     {
-        return $@"
-<!DOCTYPE html>
-<html>
-<body>
-    <h3>Access Request Approved by HOD</h3>
-    <p>Dear {requester.FirstName},</p>
-    <p>Your access request has been approved by HOD.</p>
-    
-    <table border='1' cellpadding='10'>
-        <tr>
-            <td><strong>Request ID:</strong></td>
-            <td>#{request.AccessReqId}</td>
-        </tr>
-        <tr>
-            <td><strong>Item ID:</strong></td>
-            <td>{item.AccessItemId}</td>
-        </tr>
-        <tr>
-            <td><strong>Folder Path:</strong></td>
-            <td>{item.FolderPath}</td>
-        </tr>
-        <tr>
-            <td><strong>Access Type:</strong></td>
-            <td>{item.ConfirmAccessType}</td>
-        </tr>
-        <tr>
-            <td><strong>Reason:</strong></td>
-            <td>{item.Reason}</td>
-        </tr>
-        <tr>
-            <td><strong>Approved By:</strong></td>
-            <td>{approver.FirstName} {approver.LastName}</td>
-        </tr>
-        <tr>
-            <td><strong>HOD Comments:</strong></td>
-            <td>{comments}</td>
-        </tr>
-        <tr>
-            <td><strong>Status:</strong></td>
-            <td>Now awaiting IT approval</td>
-        </tr>
-    </table>
-    
-    <p>Regards,<br>Access Management System</p>
-</body>
-</html>";
+        var fullName = $"{employee.FirstName} {employee.LastName}".Trim();
+        return string.IsNullOrWhiteSpace(fullName) ? employee.UserName : fullName;
     }
 
-    private string BuildHodRejectionEmailBody(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester, string comments)
+    private static string BuildRecipientLabel(EmployeeEntity employee)
     {
-        return $@"
-<!DOCTYPE html>
-<html>
-<body>
-    <h3>Access Request Rejected by HOD</h3>
-    <p>Dear {requester.FirstName},</p>
-    <p>Unfortunately, your access request has been rejected.</p>
-    
-    <table border='1' cellpadding='10'>
-        <tr>
-            <td><strong>Request ID:</strong></td>
-            <td>#{request.AccessReqId}</td>
-        </tr>
-        <tr>
-            <td><strong>Item ID:</strong></td>
-            <td>{item.AccessItemId}</td>
-        </tr>
-        <tr>
-            <td><strong>Folder Path:</strong></td>
-            <td>{item.FolderPath}</td>
-        </tr>
-        <tr>
-            <td><strong>Rejected By:</strong></td>
-            <td>{approver.FirstName} {approver.LastName}</td>
-        </tr>
-        <tr>
-            <td><strong>Reason for Rejection:</strong></td>
-            <td>{comments}</td>
-        </tr>
-    </table>
-    
-    <p>If you believe this is incorrect, please contact your HOD or the IT support team.</p>
-    <p>Regards,<br>Access Management System</p>
-</body>
-</html>";
+        var role = string.IsNullOrWhiteSpace(employee.UserRole) ? "User" : employee.UserRole;
+        return $"{BuildDisplayName(employee)} ({role})";
     }
 
-    private string BuildItApprovalEmailBody(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester)
-    {
-        return $@"
-<!DOCTYPE html>
-<html>
-<body>
-    <h3>Access Request Approved by IT - Access Granted</h3>
-    <p>Dear {requester.FirstName},</p>
-    <p>Your access request has been approved and access has been granted.</p>
-    
-    <table border='1' cellpadding='10'>
-        <tr>
-            <td><strong>Request ID:</strong></td>
-            <td>#{request.AccessReqId}</td>
-        </tr>
-        <tr>
-            <td><strong>Item ID:</strong></td>
-            <td>{item.AccessItemId}</td>
-        </tr>
-        <tr>
-            <td><strong>Folder Path:</strong></td>
-            <td>{item.FolderPath}</td>
-        </tr>
-        <tr>
-            <td><strong>Access Type Granted:</strong></td>
-            <td>{item.AccessType}</td>
-        </tr>
-        <tr>
-            <td><strong>Approved By:</strong></td>
-            <td>{approver.FirstName} {approver.LastName}</td>
-        </tr>
-        <tr>
-            <td><strong>Status:</strong></td>
-            <td>Access Granted</td>
-        </tr>
-    </table>
-    
-    <p>You should now have access to the requested resource. If you don't, please contact IT support.</p>
-    <p>Regards,<br>Access Management System</p>
-</body>
-</html>";
-    }
-
-    private string BuildItRejectionEmailBody(AccessRequestEntity request, AccessItemEntity item, EmployeeEntity approver, EmployeeEntity requester, string comments)
-    {
-        return $@"
-<!DOCTYPE html>
-<html>
-<body>
-    <h3>Access Request Rejected by IT</h3>
-    <p>Dear {requester.FirstName},</p>
-    <p>Your access request has been rejected by the IT team.</p>
-    
-    <table border='1' cellpadding='10'>
-        <tr>
-            <td><strong>Request ID:</strong></td>
-            <td>#{request.AccessReqId}</td>
-        </tr>
-        <tr>
-            <td><strong>Item ID:</strong></td>
-            <td>{item.AccessItemId}</td>
-        </tr>
-        <tr>
-            <td><strong>Folder Path:</strong></td>
-            <td>{item.FolderPath}</td>
-        </tr>
-        <tr>
-            <td><strong>Rejected By:</strong></td>
-            <td>{approver.FirstName} {approver.LastName}</td>
-        </tr>
-        <tr>
-            <td><strong>Reason for Rejection:</strong></td>
-            <td>{comments}</td>
-        </tr>
-    </table>
-    
-    <p>If you believe this is incorrect, please contact IT support.</p>
-    <p>Regards,<br>Access Management System</p>
-</body>
-</html>";
-    }
+    private static string Html(string value) => WebUtility.HtmlEncode(value);
 }

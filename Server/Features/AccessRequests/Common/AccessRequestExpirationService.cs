@@ -1,394 +1,237 @@
+using System.Net;
 using Server.Domain.Entities;
 using Server.Features.Notifications;
 using Server.Shared.Helpers;
 
 namespace Server.Features.AccessRequests.Common;
 
-/// <summary>
-/// Service for managing access request expiration notifications.
-/// Calculates expiration dates (365 days from granting) and logs notifications
-/// 7 days before expiration to both employee and manager.
-/// </summary>
 public interface IAccessRequestExpirationService
 {
-    /// <summary>
-    /// Create expiration tracking record when access is granted.
-    /// Uses the approval entity's ModifiedOn (if available) or CreatedOn timestamp.
-    /// </summary>
-    Task<int> CreateExpirationTrackingAsync(
-        int accessItemId,
-        int accessReqId,
-        AccessApprovalEntity approval,
+    Task SendExpiringSoonEmailAsync(
+        AccessRequestEntity request,
+        AccessItemEntity item,
+        EmployeeEntity requester,
+        IReadOnlyCollection<EmployeeEntity> recipients,
+        DateTime expirationDateUtc,
         CancellationToken cancellationToken);
 
-    /// <summary>
-    /// Log expiration notification emails 7 days before expiration
-    /// </summary>
-    Task<bool> LogExpirationNotificationAsync(
-        int expirationId,
-        string employeeEmail,
-        string employeeName,
-        string managerEmail,
-        string managerName,
-        string folderPath,
-        DateTime expirationDate,
+    Task SendExpiredEmailAsync(
+        AccessRequestEntity request,
+        AccessItemEntity item,
+        EmployeeEntity requester,
+        IReadOnlyCollection<EmployeeEntity> recipients,
+        DateTime expirationDateUtc,
         CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Check for pending notifications and process them
-    /// </summary>
-    Task ProcessPendingExpirationNotificationsAsync(CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Mark notification as sent
-    /// </summary>
-    Task<bool> MarkNotificationAsSentAsync(int expirationId, CancellationToken cancellationToken);
 }
 
 public class AccessRequestExpirationService : IAccessRequestExpirationService
 {
     private readonly IEmailService _emailService;
     private readonly ILogger<AccessRequestExpirationService> _logger;
-    private const int ExpirationDays = 365;
-    private const int NotificationAdvanceDays = 7;
-    private const string MailProgram = "AccessRequest_ExpirationNotification";
     private const string FromEmail = "feedback@janatics.co.in";
+    private const string MailProgram = "AccessRequestExpiration";
 
-    public AccessRequestExpirationService(IEmailService emailService, ILogger<AccessRequestExpirationService> logger)
+    public AccessRequestExpirationService(
+        IEmailService emailService,
+        ILogger<AccessRequestExpirationService> logger)
     {
         _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    /// <summary>
-    /// Create expiration tracking record when access is granted (IT approval).
-    /// Uses the approval's ModifiedOn timestamp if available, otherwise CreatedOn.
-    /// Expiration = GrantedDate + 365 days
-    /// NotificationDate = ExpirationDate - 7 days
-    /// </summary>
-    public async Task<int> CreateExpirationTrackingAsync(
-        int accessItemId,
-        int accessReqId,
-        AccessApprovalEntity approval,
+    public async Task SendExpiringSoonEmailAsync(
+        AccessRequestEntity request,
+        AccessItemEntity item,
+        EmployeeEntity requester,
+        IReadOnlyCollection<EmployeeEntity> recipients,
+        DateTime expirationDateUtc,
         CancellationToken cancellationToken)
     {
-        if (approval == null)
-            throw new ArgumentNullException(nameof(approval), "Access approval entity is required");
+        var subject = $"Access Request #{request.AccessReqId} - Item #{item.AccessItemId} Expiring Soon";
+        var summary = $"Access for item #{item.AccessItemId} will expire on {expirationDateUtc:dd-MMM-yyyy}.";
 
-        try
-        {
-            // Use ModifiedOn if available (most recent update), otherwise use CreatedOn
-            var grantedDate = approval.ModifiedOn ?? approval.CreatedOn;
-            var expirationDate = grantedDate.AddDays(ExpirationDays);
-            var notificationDate = expirationDate.AddDays(-NotificationAdvanceDays);
-
-            _logger.LogInformation(
-                "Creating expiration tracking: AccessItemId={AccessItemId}, ApprovalId={ApprovalId}, GrantedDate={GrantedDate}, ExpirationDate={ExpirationDate}, NotificationDate={NotificationDate}",
-                accessItemId,
-                approval.AccessApproveId,
-                grantedDate,
-                expirationDate,
-                notificationDate);
-
-            // TODO: Insert into AccessRequestExpiration table via EF Core or Dapper
-            // For now, return a placeholder
-            var expirationId = 0; // This would be returned from database insert
-            return expirationId;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating expiration tracking for AccessItemId: {AccessItemId}", accessItemId);
-            throw;
-        }
+        await SendExpirationEmailAsync(
+            request,
+            item,
+            requester,
+            recipients,
+            subject,
+            "Access expiring soon",
+            summary,
+            expirationDateUtc,
+            "ExpiringSoon",
+            cancellationToken);
     }
 
-    /// <summary>
-    /// Log expiration notification emails to be sent 7 days before access expires.
-    /// Sends to both employee and their manager.
-    /// </summary>
-    public async Task<bool> LogExpirationNotificationAsync(
-        int expirationId,
-        string employeeEmail,
-        string employeeName,
-        string managerEmail,
-        string managerName,
-        string folderPath,
-        DateTime expirationDate,
+    public async Task SendExpiredEmailAsync(
+        AccessRequestEntity request,
+        AccessItemEntity item,
+        EmployeeEntity requester,
+        IReadOnlyCollection<EmployeeEntity> recipients,
+        DateTime expirationDateUtc,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(employeeEmail))
-            throw new ArgumentException("Employee email is required", nameof(employeeEmail));
+        var subject = $"Access Request #{request.AccessReqId} - Item #{item.AccessItemId} Expired";
+        var summary = $"Access for item #{item.AccessItemId} expired on {expirationDateUtc:dd-MMM-yyyy}.";
 
-        if (string.IsNullOrWhiteSpace(managerEmail))
-            throw new ArgumentException("Manager email is required", nameof(managerEmail));
+        await SendExpirationEmailAsync(
+            request,
+            item,
+            requester,
+            recipients,
+            subject,
+            "Access expired",
+            summary,
+            expirationDateUtc,
+            "Expired",
+            cancellationToken);
+    }
 
+    private async Task SendExpirationEmailAsync(
+        AccessRequestEntity request,
+        AccessItemEntity item,
+        EmployeeEntity requester,
+        IReadOnlyCollection<EmployeeEntity> recipients,
+        string subject,
+        string heading,
+        string summary,
+        DateTime expirationDateUtc,
+        string mailProgramSuffix,
+        CancellationToken cancellationToken)
+    {
         try
         {
-            var notificationBody = BuildExpirationNotificationBody(employeeName, managerName, folderPath, expirationDate);
-            var subject = $"Access Expiration Notice - {folderPath} expires on {expirationDate:dd-MMM-yyyy}";
+            var recipientEmails = recipients
+                .Select(employee => employee.Email?.Trim())
+                .Where(email => !string.IsNullOrWhiteSpace(email))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
-            // Send to employee
-            var employeeEmailRequest = new EmailNotificationRequest
+            if (recipientEmails.Length == 0)
+            {
+                _logger.LogWarning(
+                    "Skipped expiration email for RequestId={RequestId}, ItemId={ItemId} because no email addresses were found.",
+                    request.AccessReqId,
+                    item.AccessItemId);
+                return;
+            }
+
+            var toAddress = !string.IsNullOrWhiteSpace(requester.Email)
+                ? requester.Email.Trim()
+                : recipientEmails[0];
+
+            var ccAddresses = recipientEmails
+                .Where(email => !string.Equals(email, toAddress, StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            var emailRequest = new EmailNotificationRequest
             {
                 MailFrom = FromEmail,
-                MailTo = employeeEmail,
-                MailCc = managerEmail,
+                MailTo = toAddress,
+                MailCc = ccAddresses.Length == 0 ? string.Empty : string.Join(",", ccAddresses),
                 MailSubject = subject,
-                MailBody = notificationBody,
-                MailProgram = MailProgram
+                MailBody = BuildEmailBody(request, item, requester, recipients, heading, summary, expirationDateUtc),
+                MailProgram = $"{MailProgram}_{mailProgramSuffix}"
             };
 
-            var employeeResponse = await _emailService.SendEmailAsync(employeeEmailRequest, cancellationToken);
+            var response = await _emailService.SendEmailAsync(emailRequest, cancellationToken);
 
-            if (!employeeResponse.IsSuccessful)
+            if (response.IsSuccessful)
             {
-                _logger.LogWarning("Failed to log expiration notification for employee {EmployeeEmail}. Error: {Error}",
-                    employeeEmail, employeeResponse.Message);
-                return false;
+                _logger.LogInformation(
+                    "Expiration email queued successfully. RequestId={RequestId}, ItemId={ItemId}, Program={Program}",
+                    request.AccessReqId,
+                    item.AccessItemId,
+                    emailRequest.MailProgram);
             }
-
-            // Send copy to manager
-            var managerEmailRequest = new EmailNotificationRequest
+            else
             {
-                MailFrom = FromEmail,
-                MailTo = managerEmail,
-                MailCc = employeeEmail,
-                MailSubject = $"[Manager] {subject}",
-                MailBody = BuildExpirationNotificationBodyForManager(employeeName, managerName, folderPath, expirationDate),
-                MailProgram = MailProgram
-            };
-
-            var managerResponse = await _emailService.SendEmailAsync(managerEmailRequest, cancellationToken);
-
-            if (!managerResponse.IsSuccessful)
-            {
-                _logger.LogWarning("Failed to log expiration notification for manager {ManagerEmail}. Error: {Error}",
-                    managerEmail, managerResponse.Message);
-                return false;
+                _logger.LogWarning(
+                    "Failed to queue expiration email. RequestId={RequestId}, ItemId={ItemId}, Error={Error}",
+                    request.AccessReqId,
+                    item.AccessItemId,
+                    response.Message);
             }
-
-            _logger.LogInformation("Expiration notification logged for ExpirationId: {ExpirationId}, Employee: {EmployeeEmail}, Manager: {ManagerEmail}",
-                expirationId, employeeEmail, managerEmail);
-
-            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error logging expiration notification for ExpirationId: {ExpirationId}", expirationId);
-            throw;
+            _logger.LogError(
+                ex,
+                "Error sending expiration email. RequestId={RequestId}, ItemId={ItemId}",
+                request.AccessReqId,
+                item.AccessItemId);
         }
     }
 
-    /// <summary>
-    /// Check for pending notifications and log them to the database.
-    /// This would typically be called by a background job/scheduler.
-    /// </summary>
-    public async Task ProcessPendingExpirationNotificationsAsync(CancellationToken cancellationToken)
+    private static string BuildEmailBody(
+        AccessRequestEntity request,
+        AccessItemEntity item,
+        EmployeeEntity requester,
+        IReadOnlyCollection<EmployeeEntity> recipients,
+        string heading,
+        string summary,
+        DateTime expirationDateUtc)
     {
-        try
-        {
-            _logger.LogInformation("Starting to process pending expiration notifications");
-
-            // TODO: Query AccessRequestExpiration table for records where:
-            // - NotificationSent = 0
-            // - NotificationDate <= NOW()
-            // - ExpirationDate > NOW() (not yet expired)
-            // - IsRenewed = 0 (not renewed)
-            // 
-            // For each record:
-            // 1. Load employee and manager info
-            // 2. Call LogExpirationNotificationAsync
-            // 3. Call MarkNotificationAsSentAsync
-
-            _logger.LogInformation("Completed processing pending expiration notifications");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing pending expiration notifications");
-        }
-    }
-
-    /// <summary>
-    /// Mark expiration notification as sent in the database.
-    /// </summary>
-    public async Task<bool> MarkNotificationAsSentAsync(int expirationId, CancellationToken cancellationToken)
-    {
-        try
-        {
-            _logger.LogInformation("Marking notification as sent for ExpirationId: {ExpirationId}", expirationId);
-
-            // TODO: Update AccessRequestExpiration table:
-            // SET NotificationSent = 1, NotificationSentDate = NOW()
-            // WHERE ExpirationId = @ExpirationId
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error marking notification as sent for ExpirationId: {ExpirationId}", expirationId);
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Build HTML email body for employee expiration notification
-    /// </summary>
-    private string BuildExpirationNotificationBody(
-        string employeeName,
-        string managerName,
-        string folderPath,
-        DateTime expirationDate)
-    {
-        var daysUntilExpiration = (expirationDate - DateTime.Now).Days;
+        var requesterName = BuildDisplayName(requester);
+        var recipientSummary = string.Join(", ", recipients
+            .DistinctBy(employee => employee.EmployeeId)
+            .Select(employee => $"{BuildDisplayName(employee)} ({NormalizeRole(employee.UserRole)})"));
 
         return $@"
 <!DOCTYPE html>
 <html>
-<head>
-    <style>
-        body {{ font-family: Arial, sans-serif; color: #333; }}
-        .header {{ background-color: #ff9800; color: white; padding: 20px; text-align: center; }}
-        .content {{ padding: 20px; background-color: #f5f5f5; }}
-        .alert {{ background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-        td {{ padding: 10px; border: 1px solid #ddd; }}
-        th {{ background-color: #f0f0f0; padding: 10px; border: 1px solid #ddd; text-align: left; }}
-        .footer {{ text-align: center; font-size: 12px; color: #999; margin-top: 20px; }}
-    </style>
-</head>
-<body>
-    <div class='header'>
-        <h2>Access Expiration Notice</h2>
-    </div>
-    
-    <div class='content'>
-        <p>Dear {employeeName},</p>
-        
-        <div class='alert'>
-            <strong>⚠️ Your access to the following resource will expire in {daysUntilExpiration} days:</strong>
-        </div>
-        
-        <table>
-            <tr>
-                <th>Resource Details</th>
-                <th>Information</th>
-            </tr>
-            <tr>
-                <td><strong>Folder/Resource:</strong></td>
-                <td>{folderPath}</td>
-            </tr>
-            <tr>
-                <td><strong>Expiration Date:</strong></td>
-                <td>{expirationDate:dd-MMM-yyyy HH:mm:ss}</td>
-            </tr>
-            <tr>
-                <td><strong>Days Remaining:</strong></td>
-                <td>{daysUntilExpiration} days</td>
-            </tr>
-            <tr>
-                <td><strong>Your Manager:</strong></td>
-                <td>{managerName}</td>
-            </tr>
-        </table>
-        
-        <h3>Action Required</h3>
-        <p>If you need to continue accessing this resource beyond {expirationDate:dd-MMM-yyyy}, please:</p>
-        <ol>
-            <li>Contact your manager ({managerName}) to request renewal</li>
-            <li>Submit a new access request through the portal</li>
-            <li>Submit the renewal request before {expirationDate:dd-MMM-yyyy}</li>
-        </ol>
-        
-        <p>If you no longer need access to this resource, no action is required and your access will automatically expire on {expirationDate:dd-MMM-yyyy}.</p>
-        
-        <div class='footer'>
-            <p>This is an automated notification from the Access Management System.</p>
-            <p>For questions, contact your manager or IT Support.</p>
-        </div>
-    </div>
+<body style='font-family: Arial, sans-serif; color: #222;'>
+    <h3>{Html(heading)}</h3>
+    <p>{Html(summary)}</p>
+
+    <table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse;'>
+        <tr>
+            <td><strong>Request ID</strong></td>
+            <td>#{request.AccessReqId}</td>
+        </tr>
+        <tr>
+            <td><strong>Access Item ID</strong></td>
+            <td>{item.AccessItemId}</td>
+        </tr>
+        <tr>
+            <td><strong>Requester</strong></td>
+            <td>{Html(requesterName)} ({Html(requester.UserName)})</td>
+        </tr>
+        <tr>
+            <td><strong>Folder Path</strong></td>
+            <td>{Html(item.FolderPath)}</td>
+        </tr>
+        <tr>
+            <td><strong>Access Type</strong></td>
+            <td>{item.AccessType}</td>
+        </tr>
+        <tr>
+            <td><strong>Current Status</strong></td>
+            <td>{item.Status}</td>
+        </tr>
+        <tr>
+            <td><strong>Expiration Date</strong></td>
+            <td>{expirationDateUtc:dd-MMM-yyyy HH:mm:ss} UTC</td>
+        </tr>
+        <tr>
+            <td><strong>Recipients</strong></td>
+            <td>{Html(recipientSummary)}</td>
+        </tr>
+    </table>
+
+    <p>Regards,<br>Access Management System</p>
 </body>
 </html>";
     }
 
-    /// <summary>
-    /// Build HTML email body for manager expiration notification
-    /// </summary>
-    private string BuildExpirationNotificationBodyForManager(
-        string employeeName,
-        string managerName,
-        string folderPath,
-        DateTime expirationDate)
+    private static string BuildDisplayName(EmployeeEntity employee)
     {
-        var daysUntilExpiration = (expirationDate - DateTime.Now).Days;
-
-        return $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{ font-family: Arial, sans-serif; color: #333; }}
-        .header {{ background-color: #ff9800; color: white; padding: 20px; text-align: center; }}
-        .content {{ padding: 20px; background-color: #f5f5f5; }}
-        .alert {{ background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-        td {{ padding: 10px; border: 1px solid #ddd; }}
-        th {{ background-color: #f0f0f0; padding: 10px; border: 1px solid #ddd; text-align: left; }}
-        .footer {{ text-align: center; font-size: 12px; color: #999; margin-top: 20px; }}
-    </style>
-</head>
-<body>
-    <div class='header'>
-        <h2>Access Expiration Notice - Manager Review</h2>
-    </div>
-    
-    <div class='content'>
-        <p>Dear {managerName},</p>
-        
-        <div class='alert'>
-            <strong>⚠️ Access expiration notification for your team member:</strong>
-        </div>
-        
-        <p>The following employee's access to a resource will expire in {daysUntilExpiration} days:</p>
-        
-        <table>
-            <tr>
-                <th>Access Details</th>
-                <th>Information</th>
-            </tr>
-            <tr>
-                <td><strong>Employee Name:</strong></td>
-                <td>{employeeName}</td>
-            </tr>
-            <tr>
-                <td><strong>Folder/Resource:</strong></td>
-                <td>{folderPath}</td>
-            </tr>
-            <tr>
-                <td><strong>Expiration Date:</strong></td>
-                <td>{expirationDate:dd-MMM-yyyy HH:mm:ss}</td>
-            </tr>
-            <tr>
-                <td><strong>Days Remaining:</strong></td>
-                <td>{daysUntilExpiration} days</td>
-            </tr>
-        </table>
-        
-        <h3>Manager Action Items</h3>
-        <p>Please review and take appropriate action:</p>
-        <ul>
-            <li><strong>If renewal is needed:</strong> Ensure {employeeName} submits a renewal request before expiration</li>
-            <li><strong>If access should be revoked:</strong> Notify IT to proceed with access removal after expiration</li>
-            <li><strong>If access details need updating:</strong> Coordinate with {employeeName} on new access requirements</li>
-        </ul>
-        
-        <p>The employee has also been notified of this impending expiration.</p>
-        
-        <div class='footer'>
-            <p>This is an automated notification from the Access Management System.</p>
-            <p>For questions or to process renewals, contact IT Support.</p>
-        </div>
-    </div>
-</body>
-</html>";
+        var fullName = $"{employee.FirstName} {employee.LastName}".Trim();
+        return string.IsNullOrWhiteSpace(fullName) ? employee.UserName : fullName;
     }
+
+    private static string NormalizeRole(string? role) =>
+        string.IsNullOrWhiteSpace(role) ? "User" : role;
+
+    private static string Html(string value) => WebUtility.HtmlEncode(value);
 }

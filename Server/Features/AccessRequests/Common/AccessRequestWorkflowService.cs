@@ -21,14 +21,20 @@ namespace Server.Features.AccessRequests.Common;
 public sealed class AccessRequestWorkflowService(
     AppDbContext dbContext,
     IHubContext<NotificationHub> hubContext,
-    IAccessRequestEmailNotificationService emailNotificationService)
+    IAccessRequestEmailNotificationService emailNotificationService,
+    IAccessRequestExpirationService expirationService)
 {
+    private const int AccessExpirationDays = 365;
+    private const int ExpirationReminderDays = 7;
+
     public async Task<CreateAccessRequestResponse> CreateOrUpdateAsync(CreateAccessRequest request, CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         ValidateCreateRequest(request);
 
         var requester = await GetEmployeeOrThrowAsync(request.EmpId, cancellationToken);
         var hodApprover = await ResolveHodApproverAsync(requester.DeptId, request.ReqTo, cancellationToken);
+        var itRecipients = await GetItApproversAsync(cancellationToken);
         var utcNow = DateTime.UtcNow;
 
         await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
@@ -92,7 +98,7 @@ public sealed class AccessRequestWorkflowService(
         // 6. Audit and Finalize
         var actionKey = isUpdate ? "request.updated" : "request.submitted";
         var message = $"{requester.UserName} {(isUpdate ? "updated" : "submitted")} access request #{accessRequest.AccessReqId}.";
-        var recipients = new List<EmployeeEntity> { requester, hodApprover };
+        var recipients = BuildStageRecipients(requester, new[] { hodApprover }, itRecipients);
 
         await AddAuditEntriesAsync(accessRequest.AccessReqId, null, null, actionKey, message, recipients, requester.EmployeeId.ToString(), utcNow, cancellationToken);
 
@@ -100,6 +106,19 @@ public sealed class AccessRequestWorkflowService(
         await transaction.CommitAsync(cancellationToken);
 
         await PushNotificationsAsync(recipients, accessRequest.AccessReqId, actionKey, message, utcNow, cancellationToken);
+        await SendStageEmailAsync(
+            actionKey,
+            isUpdate ? $"Access Request #{accessRequest.AccessReqId} Updated" : $"Access Request #{accessRequest.AccessReqId} Submitted",
+            isUpdate
+                ? $"Access request #{accessRequest.AccessReqId} has been updated and is awaiting review."
+                : $"Access request #{accessRequest.AccessReqId} has been submitted and is awaiting review.",
+            accessRequest,
+            requester,
+            recipients,
+            null,
+            null,
+            null,
+            cancellationToken);
 
         return new CreateAccessRequestResponse(
             accessRequest.AccessReqId,
@@ -123,6 +142,7 @@ public sealed class AccessRequestWorkflowService(
 
     public async Task<ReviewAccessRequestResponse> ReviewByHodAsync(int accessReqId, int accessItemId, ReviewByHodRequest request, CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         // 1. Basic Validations
         if (request.ReviewerEmployeeId <= 0)
             throw new AppValidationException("Reviewer employee id must be greater than zero.");
@@ -133,6 +153,8 @@ public sealed class AccessRequestWorkflowService(
         var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Hod, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
+        var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
+        var itRecipients = await GetItApproversAsync(cancellationToken);
 
         // 2. Fetch the specific single item
         var accessItem = await dbContext.AccessItems
@@ -170,23 +192,32 @@ public sealed class AccessRequestWorkflowService(
             ? $"HOD approved item {accessItemId} in request #{accessReqId}."
             : $"HOD rejected item {accessItemId} in request #{accessReqId}.";
 
-        var itApprover = await ResolveItApproverAsync(cancellationToken);
-        var recipients = new List<EmployeeEntity> { requester, reviewer };
-        if (request.Approved)
-        {
-            recipients.Add(itApprover);
-        }
+        var recipients = BuildStageRecipients(requester, hodRecipients.Append(reviewer), itRecipients);
 
         // 6. Persistence
         await AddAuditEntriesAsync(accessReqId, accessItemId, null, eventType, message, recipients, reviewer.EmployeeId.ToString(), utcNow, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushNotificationsAsync(recipients, accessReqId, eventType, message, utcNow, cancellationToken);
+        await SendStageEmailAsync(
+            eventType,
+            request.Approved
+                ? $"Access Request #{accessReqId} - HOD Approved Item #{accessItemId}"
+                : $"Access Request #{accessReqId} - HOD Rejected Item #{accessItemId}",
+            message,
+            accessRequest,
+            requester,
+            recipients,
+            accessItem,
+            request.Comments,
+            null,
+            cancellationToken);
 
         return new ReviewAccessRequestResponse(accessReqId, actionStatus, message);
     }
 
     public async Task<ReviewAccessRequestResponse> ReviewByItAsync(int accessReqId, int accessItemId, ReviewByItRequest request, CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         // 1. Validation
         if (request.ReviewerEmployeeId <= 0)
         {
@@ -203,6 +234,7 @@ public sealed class AccessRequestWorkflowService(
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
+        var itRecipients = await GetItApproversAsync(cancellationToken);
 
         // 3. Load items and find the specific target
         var accessItems = await dbContext.AccessItems
@@ -234,6 +266,7 @@ public sealed class AccessRequestWorkflowService(
         dbContext.AccessApprovals.Add(new AccessApprovalEntity
         {
             AccessReqId = accessRequest.AccessReqId,
+            AccessItemId = accessItemId,
             ApproverId = reviewer.EmployeeId,
             ApprovalStatus = approvalStatus,
             Comments = request.Comments?.Trim() ?? string.Empty,
@@ -261,13 +294,11 @@ public sealed class AccessRequestWorkflowService(
             : $"IT rejected access for item #{accessItemId}. Comments: {request.Comments!.Trim()}";
 
         // 9. Audit and Notifications
-        var recipients = new List<EmployeeEntity> { requester, reviewer };
-        recipients.AddRange(hodRecipients);
-        var distinctRecipients = recipients.DistinctBy(employee => employee.EmployeeId).ToArray();
+        var distinctRecipients = BuildStageRecipients(requester, hodRecipients, itRecipients.Append(reviewer));
 
         await AddAuditEntriesAsync(
             accessRequest.AccessReqId,
-            null,
+            accessItemId,
             null,
             eventType,
             message,
@@ -278,12 +309,26 @@ public sealed class AccessRequestWorkflowService(
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushNotificationsAsync(distinctRecipients, accessRequest.AccessReqId, eventType, message, utcNow, cancellationToken);
+        await SendStageEmailAsync(
+            eventType,
+            request.Approved
+                ? $"Access Request #{accessReqId} - IT Approved Item #{accessItemId}"
+                : $"Access Request #{accessReqId} - IT Rejected Item #{accessItemId}",
+            message,
+            accessRequest,
+            requester,
+            distinctRecipients,
+            currentAccessItem,
+            request.Comments,
+            request.Approved ? GetExpirationDateUtc(utcNow) : null,
+            cancellationToken);
 
         return new ReviewAccessRequestResponse(accessRequest.AccessReqId, currentAccessItem.Status, message);
     }
 
     public async Task<ReviewAccessRequestResponse> RevokeAsync(int accessReqId, int accessItemId, RevokeAccessRequest request, CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         if (request.ReviewerEmployeeId <= 0)
         {
             throw new AppValidationException("Reviewer employee id must be greater than zero.");
@@ -298,6 +343,7 @@ public sealed class AccessRequestWorkflowService(
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
+        var itRecipients = await GetItApproversAsync(cancellationToken);
 
         var accessItems = await dbContext.AccessItems
             .Where(x => x.AccessReqId == accessReqId)
@@ -324,6 +370,7 @@ public sealed class AccessRequestWorkflowService(
         dbContext.AccessApprovals.Add(new AccessApprovalEntity
         {
             AccessReqId = accessRequest.AccessReqId,
+            AccessItemId = accessItemId,
             ApproverId = reviewer.EmployeeId,
             ApprovalStatus = RequestStatus.Revoked,
             Comments = request.Comments.Trim(),
@@ -339,16 +386,14 @@ public sealed class AccessRequestWorkflowService(
         currentAccessItem.ModifiedBy = reviewer.EmployeeId.ToString();
         currentAccessItem.ModifiedOn = utcNow;
 
-        var recipients = new List<EmployeeEntity> { requester, reviewer };
-        recipients.AddRange(hodRecipients);
-        var distinctRecipients = recipients.DistinctBy(employee => employee.EmployeeId).ToArray();
+        var distinctRecipients = BuildStageRecipients(requester, hodRecipients, itRecipients.Append(reviewer));
 
         // Updated message to specify which item was revoked
         var message = $"IT revoked access for item #{accessItemId} in request #{accessRequest.AccessReqId}. Comments: {request.Comments.Trim()}";
 
         await AddAuditEntriesAsync(
             accessRequest.AccessReqId,
-            null,
+            accessItemId,
             null,
             "it.revoked",
             message,
@@ -359,12 +404,24 @@ public sealed class AccessRequestWorkflowService(
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushNotificationsAsync(distinctRecipients, accessRequest.AccessReqId, "it.revoked", message, utcNow, cancellationToken);
+        await SendStageEmailAsync(
+            "it.revoked",
+            $"Access Request #{accessReqId} - Access Revoked for Item #{accessItemId}",
+            message,
+            accessRequest,
+            requester,
+            distinctRecipients,
+            currentAccessItem,
+            request.Comments,
+            null,
+            cancellationToken);
 
         return new ReviewAccessRequestResponse(accessRequest.AccessReqId, RequestStatus.Revoked, message);
     }
 
     public async Task<ResubmitAccessItemResponse> ResubmitAsync(int accessReqId, int accessItemId, ResubmitAccessItemRequest request, CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         if (request.ReviewerEmployeeId <= 0)
         {
             throw new AppValidationException("Reviewer employee id must be greater than zero.");
@@ -397,15 +454,14 @@ public sealed class AccessRequestWorkflowService(
         }
 
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
+        var itRecipients = await GetItApproversAsync(cancellationToken);
         var utcNow = DateTime.UtcNow;
 
         accessItem.Status = RequestStatus.PendingHOD;
         accessItem.ModifiedBy = requester.EmployeeId.ToString();
         accessItem.ModifiedOn = utcNow;
 
-        var recipients = new List<EmployeeEntity> { requester };
-        recipients.AddRange(hodRecipients);
-        var distinctRecipients = recipients.DistinctBy(employee => employee.EmployeeId).ToArray();
+        var distinctRecipients = BuildStageRecipients(requester, hodRecipients, itRecipients);
         var message = $"Access item #{accessItemId} in request #{accessReqId} was resubmitted.";
 
         await AddAuditEntriesAsync(
@@ -421,12 +477,24 @@ public sealed class AccessRequestWorkflowService(
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushNotificationsAsync(distinctRecipients, accessReqId, "request.resubmitted", message, utcNow, cancellationToken);
+        await SendStageEmailAsync(
+            "request.resubmitted",
+            $"Access Request #{accessReqId} - Item #{accessItemId} Resubmitted",
+            message,
+            accessRequest,
+            requester,
+            distinctRecipients,
+            accessItem,
+            request.Comments,
+            null,
+            cancellationToken);
 
         return new ResubmitAccessItemResponse(accessReqId, accessItemId, accessItem.Status, message);
     }
 
     public async Task<RenewAccessRequestResponse> RenewAsync(int accessReqId, RenewAccessRequest request, CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         if (request.RequestedByEmployeeId <= 0)
         {
             throw new AppValidationException("Requested by employee id must be greater than zero.");
@@ -458,6 +526,7 @@ public sealed class AccessRequestWorkflowService(
         }
 
         var hodApprover = await ResolveHodApproverAsync(requester.DeptId, null, cancellationToken);
+        var itRecipients = await GetItApproversAsync(cancellationToken);
 
         if (sourceItems.Count == 0)
         {
@@ -498,7 +567,7 @@ public sealed class AccessRequestWorkflowService(
 
         dbContext.AccessItems.AddRange(renewalItems);
 
-        var recipients = new List<EmployeeEntity> { requester, hodApprover };
+        var recipients = BuildStageRecipients(requester, new[] { hodApprover }, itRecipients);
         var message = $"Access request #{sourceRequest.AccessReqId} was renewed as request #{renewalRequest.AccessReqId}.";
 
         await AddAuditEntriesAsync(
@@ -516,12 +585,24 @@ public sealed class AccessRequestWorkflowService(
         await transaction.CommitAsync(cancellationToken);
 
         await PushNotificationsAsync(recipients, renewalRequest.AccessReqId, "request.renewed", message, utcNow, cancellationToken);
+        await SendStageEmailAsync(
+            "request.renewed",
+            $"Access Request #{renewalRequest.AccessReqId} Created from Renewal",
+            message,
+            renewalRequest,
+            requester,
+            recipients,
+            null,
+            null,
+            null,
+            cancellationToken);
 
         return new RenewAccessRequestResponse(renewalRequest.AccessReqId, RequestStatus.PendingHOD, message);
     }
 
     public async Task<AccessRequestDetailsDto> GetDetailsAsync(int accessReqId, int viewerEmployeeId, CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         var viewer = await GetEmployeeOrThrowAsync(viewerEmployeeId, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
@@ -616,6 +697,7 @@ public sealed class AccessRequestWorkflowService(
         GetNotificationsQuery query,
         CancellationToken cancellationToken)
     {
+        await SyncExpirationsAsync(cancellationToken);
         _ = await GetEmployeeOrThrowAsync(employeeId, cancellationToken);
 
         var baseQuery = dbContext.AccessReqAudits
@@ -665,6 +747,198 @@ public sealed class AccessRequestWorkflowService(
         audit.ModifiedOn = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task SyncExpirationsAsync(CancellationToken cancellationToken)
+    {
+        var utcNow = DateTime.UtcNow;
+        var grantedItems = await dbContext.AccessItems
+            .Where(item => item.Status == RequestStatus.AccessGranted)
+            .OrderBy(item => item.AccessItemId)
+            .ToListAsync(cancellationToken);
+
+        if (grantedItems.Count == 0)
+        {
+            return;
+        }
+
+        var itemIds = grantedItems.Select(item => item.AccessItemId).ToArray();
+        var requestIds = grantedItems.Select(item => item.AccessReqId).Distinct().ToArray();
+
+        var approvals = await dbContext.AccessApprovals
+            .AsNoTracking()
+            .Where(approval => itemIds.Contains(approval.AccessItemId) && approval.ApprovalStatus == RequestStatus.ApprovedIT)
+            .ToListAsync(cancellationToken);
+
+        if (approvals.Count == 0)
+        {
+            return;
+        }
+
+        var approvalByItemId = approvals
+            .GroupBy(approval => approval.AccessItemId)
+            .ToDictionary(
+                grouping => grouping.Key,
+                grouping => grouping
+                    .OrderByDescending(approval => approval.ModifiedOn ?? approval.CreatedOn)
+                    .First());
+
+        var requests = await dbContext.AccessRequests
+            .Where(request => requestIds.Contains(request.AccessReqId))
+            .ToDictionaryAsync(request => request.AccessReqId, cancellationToken);
+
+        var requesterIds = requests.Values
+            .Select(request => request.EmpId)
+            .Distinct()
+            .ToArray();
+
+        var requesters = await dbContext.Employees
+            .Include(employee => employee.Department)
+            .Where(employee => requesterIds.Contains(employee.EmployeeId))
+            .ToDictionaryAsync(employee => employee.EmployeeId, cancellationToken);
+
+        var existingEvents = await dbContext.AccessReqAudits
+            .AsNoTracking()
+            .Where(audit =>
+                audit.AccessItemId.HasValue &&
+                itemIds.Contains(audit.AccessItemId.Value) &&
+                (audit.EventType == "request.expiring_soon" || audit.EventType == "request.expired"))
+            .Select(audit => new { audit.AccessItemId, audit.EventType })
+            .ToListAsync(cancellationToken);
+
+        var reminderKeys = existingEvents
+            .Where(x => x.EventType == "request.expiring_soon")
+            .Select(x => x.AccessItemId!.Value)
+            .ToHashSet();
+
+        var expiredKeys = existingEvents
+            .Where(x => x.EventType == "request.expired")
+            .Select(x => x.AccessItemId!.Value)
+            .ToHashSet();
+
+        var itRecipients = await GetItApproversAsync(cancellationToken);
+        var pendingExpirationNotifications = new List<(string EventType, AccessRequestEntity Request, AccessItemEntity Item, EmployeeEntity Requester, EmployeeEntity[] Recipients, DateTime ExpirationDateUtc, string Message)>();
+        var hasStatusChanges = false;
+
+        foreach (var item in grantedItems)
+        {
+            if (!approvalByItemId.TryGetValue(item.AccessItemId, out var approval))
+            {
+                continue;
+            }
+
+            if (!requests.TryGetValue(item.AccessReqId, out var accessRequest))
+            {
+                continue;
+            }
+
+            if (!requesters.TryGetValue(accessRequest.EmpId, out var requester))
+            {
+                continue;
+            }
+
+            var expirationDateUtc = GetExpirationDateUtc(approval.ModifiedOn ?? approval.CreatedOn);
+            var reminderDateUtc = expirationDateUtc.AddDays(-ExpirationReminderDays);
+            var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
+            var recipients = BuildStageRecipients(requester, hodRecipients, itRecipients);
+
+            if (utcNow >= expirationDateUtc && !expiredKeys.Contains(item.AccessItemId))
+            {
+                item.Status = RequestStatus.Expired;
+                item.ModifiedBy = requester.EmployeeId.ToString();
+                item.ModifiedOn = utcNow;
+                hasStatusChanges = true;
+
+                var message = $"Access for item #{item.AccessItemId} in request #{item.AccessReqId} expired on {expirationDateUtc:dd-MMM-yyyy}.";
+                await AddAuditEntriesAsync(
+                    item.AccessReqId,
+                    item.AccessItemId,
+                    null,
+                    "request.expired",
+                    message,
+                    recipients,
+                    requester.EmployeeId.ToString(),
+                    utcNow,
+                    cancellationToken);
+
+                pendingExpirationNotifications.Add((
+                    "request.expired",
+                    accessRequest,
+                    item,
+                    requester,
+                    recipients,
+                    expirationDateUtc,
+                    message));
+
+                expiredKeys.Add(item.AccessItemId);
+                continue;
+            }
+
+            if (utcNow >= reminderDateUtc && !reminderKeys.Contains(item.AccessItemId))
+            {
+                var message = $"Access for item #{item.AccessItemId} in request #{item.AccessReqId} will expire on {expirationDateUtc:dd-MMM-yyyy}.";
+                await AddAuditEntriesAsync(
+                    item.AccessReqId,
+                    item.AccessItemId,
+                    null,
+                    "request.expiring_soon",
+                    message,
+                    recipients,
+                    requester.EmployeeId.ToString(),
+                    utcNow,
+                    cancellationToken);
+
+                pendingExpirationNotifications.Add((
+                    "request.expiring_soon",
+                    accessRequest,
+                    item,
+                    requester,
+                    recipients,
+                    expirationDateUtc,
+                    message));
+
+                reminderKeys.Add(item.AccessItemId);
+            }
+        }
+
+        if (!hasStatusChanges && pendingExpirationNotifications.Count == 0)
+        {
+            return;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        foreach (var notification in pendingExpirationNotifications)
+        {
+            await PushNotificationsAsync(
+                notification.Recipients,
+                notification.Request.AccessReqId,
+                notification.EventType,
+                notification.Message,
+                utcNow,
+                cancellationToken);
+
+            if (notification.EventType == "request.expired")
+            {
+                await expirationService.SendExpiredEmailAsync(
+                    notification.Request,
+                    notification.Item,
+                    notification.Requester,
+                    notification.Recipients,
+                    notification.ExpirationDateUtc,
+                    cancellationToken);
+            }
+            else
+            {
+                await expirationService.SendExpiringSoonEmailAsync(
+                    notification.Request,
+                    notification.Item,
+                    notification.Requester,
+                    notification.Recipients,
+                    notification.ExpirationDateUtc,
+                    cancellationToken);
+            }
+        }
     }
 
     private static void ValidateCreateRequest(CreateAccessRequest request)
@@ -784,6 +1058,21 @@ public sealed class AccessRequestWorkflowService(
             .OrderBy(employee => employee.EmployeeId)
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new AppValidationException("No IT approver is configured.");
+    }
+
+    private async Task<List<EmployeeEntity>> GetItApproversAsync(CancellationToken cancellationToken)
+    {
+        var admins = await dbContext.Employees
+            .Where(employee => employee.UserRole == RoleNames.Admin)
+            .OrderBy(employee => employee.EmployeeId)
+            .ToListAsync(cancellationToken);
+
+        if (admins.Count == 0)
+        {
+            throw new AppValidationException("No IT approver is configured.");
+        }
+
+        return admins;
     }
 
     private static void EnsureCanView(EmployeeEntity viewer, EmployeeEntity requester, AccessRequestEntity accessRequest)
@@ -914,4 +1203,49 @@ public sealed class AccessRequestWorkflowService(
                     cancellationToken);
         }
     }
+
+    private async Task SendStageEmailAsync(
+        string eventType,
+        string subject,
+        string summary,
+        AccessRequestEntity accessRequest,
+        EmployeeEntity requester,
+        IReadOnlyCollection<EmployeeEntity> recipients,
+        AccessItemEntity? item,
+        string? comments,
+        DateTime? expirationDateUtc,
+        CancellationToken cancellationToken)
+    {
+        await emailNotificationService.SendStageNotificationAsync(
+            new AccessRequestEmailNotification(
+                BuildMailProgramSuffix(eventType),
+                subject,
+                subject,
+                summary,
+                accessRequest,
+                requester,
+                recipients,
+                item,
+                comments,
+                expirationDateUtc),
+            cancellationToken);
+    }
+
+    private static EmployeeEntity[] BuildStageRecipients(
+        EmployeeEntity requester,
+        IEnumerable<EmployeeEntity> hodRecipients,
+        IEnumerable<EmployeeEntity> itRecipients)
+    {
+        return new[] { requester }
+            .Concat(hodRecipients)
+            .Concat(itRecipients)
+            .DistinctBy(employee => employee.EmployeeId)
+            .ToArray();
+    }
+
+    private static string BuildMailProgramSuffix(string eventType) =>
+        eventType.Replace(".", "_", StringComparison.Ordinal);
+
+    private static DateTime GetExpirationDateUtc(DateTime grantedOnUtc) =>
+        grantedOnUtc.AddDays(AccessExpirationDays);
 }
