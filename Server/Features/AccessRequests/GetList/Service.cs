@@ -1,15 +1,20 @@
 using Microsoft.EntityFrameworkCore;
+using Server.Features.AccessRequests.Common;
 using Server.Infrastructure.Db;
 using Server.Shared.Helpers;
 
 namespace Server.Features.AccessRequests.GetList;
 
-public sealed class GetAccessRequestsService(AppDbContext dbContext)
+public sealed class GetAccessRequestsService(
+    AppDbContext dbContext,
+    AccessRequestWorkflowService workflowService)
 {
     public async Task<PaginatedResponse<AccessRequestListItemDto>> GetAsync(
         GetAccessRequestsQuery query,
         CancellationToken cancellationToken)
     {
+        await workflowService.SyncExpirationsAsync(cancellationToken);
+
         var baseQuery =
             from request in dbContext.AccessRequests.AsNoTracking()
             join item in dbContext.AccessItems.AsNoTracking() on request.AccessReqId equals item.AccessReqId
