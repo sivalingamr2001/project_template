@@ -1,8 +1,6 @@
 using Dapper;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using MySqlConnector;
 using Server.Features.Notifications;
+using Server.Infrastructure.Oracle;
 
 namespace Server.Shared.Helpers;
 
@@ -21,20 +19,14 @@ public interface IEmailService
 
 public class EmailService : IEmailService
 {
-    private readonly IConfiguration _configuration;
+    private readonly IOracleService _oracleService;
     private readonly ILogger<EmailService> _logger;
-    private readonly string _connectionString;
     private const string MailTableName = "jan_mail_system";
 
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+    public EmailService(IOracleService oracleService, ILogger<EmailService> logger)
     {
-        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _oracleService = oracleService ?? throw new ArgumentNullException(nameof(oracleService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        // Get the email connection string from appsettings, fallback to main database connection
-        _connectionString = _configuration.GetConnectionString("EmailConnectionString")
-            ?? _configuration["Database:MySqlConnectionString"]
-            ?? throw new InvalidOperationException("EmailConnectionString or Database:MySqlConnectionString not found in appsettings.");
     }
 
     /// <summary>
@@ -77,7 +69,7 @@ public class EmailService : IEmailService
         {
             // Insert email record into database for background mail system to process
             var mailNo = await InsertMailRecordAsync(mailFrom, mailTo, mailSubject, mailBody, mailProgram, mailCc, cancellationToken);
-            response.MailNo = mailNo;
+            response.MailNo = (int)mailNo;
             response.IsSuccessful = true;
             response.Message = $"Email record logged successfully to jan_mail_system. Mail No: {mailNo}. Background system will send to {mailTo}.";
             _logger.LogInformation("Email record logged to database. MailNo: {MailNo}, To: {MailTo}, Program: {Program}", mailNo, mailTo, mailProgram);
@@ -92,37 +84,46 @@ public class EmailService : IEmailService
         return response;
     }
 
-    private async Task<int> InsertMailRecordAsync(
-        string mailFrom,
-        string mailTo,
-        string mailSubject,
-        string mailBody,
-        string mailProgram,
-        string? mailCc = null,
-        CancellationToken cancellationToken = default)
+    private async Task<long> InsertMailRecordAsync(
+    string mailFrom, string mailTo, string mailSubject, string mailBody,
+    string mailProgram, string? mailCc = null, CancellationToken cancellationToken = default)
     {
-        using var connection = new MySqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken);
+        const string insertSql = @"
+        INSERT INTO jan_mail_system (
+            mail_no, mail_date, mail_program, mail_from, 
+            mail_to, mail_subject, mail_sent, mail_body, mail_cc
+        )
+        VALUES (
+            jan_test_seq.nextval, :MailDate, :MailProgram, :MailFrom, 
+            :MailTo, :MailSubject, :MailSent, :MailBody, :MailCc
+        )
+        RETURNING mail_no INTO :newId";
 
-        const string insertSql = $@"
-            INSERT INTO {MailTableName} (mail_date, mail_program, mail_from, mail_to, mail_subject, mail_sent, mail_body, mail_cc)
-            VALUES (@MailDate, @MailProgram, @MailFrom, @MailTo, @MailSubject, @MailSent, @MailBody, @MailCc);
-            SELECT LAST_INSERT_ID();";
+        var parameters = new DynamicParameters();
+        parameters.Add("MailDate", DateTime.Now);
+        parameters.Add("MailProgram", mailProgram);
+        parameters.Add("MailFrom", mailFrom);
+        parameters.Add("MailTo", mailTo);
+        parameters.Add("MailSubject", mailSubject);
+        parameters.Add("MailSent", 0);
+        parameters.Add("MailBody", mailBody);
+        parameters.Add("MailCc", mailCc ?? string.Empty);
 
-        var parameters = new
+        // FIX: Use DbType.Decimal to stop the OverflowException from the Oracle Driver
+        parameters.Add("newId", dbType: System.Data.DbType.Decimal, direction: System.Data.ParameterDirection.Output, size: 38);
+
+        try
         {
-            MailDate = DateTime.Now,
-            MailProgram = mailProgram,
-            MailFrom = mailFrom,
-            MailTo = mailTo,
-            MailSubject = mailSubject,
-            MailSent = 0, // Not sent yet
-            MailBody = mailBody,
-            MailCc = mailCc ?? string.Empty
-        };
+            await _oracleService.ExecuteAsync(insertSql, parameters, cancellationToken);
 
-        var mailNo = await connection.ExecuteScalarAsync<int>(insertSql, parameters);
-        return mailNo;
+            // FIX: Retrieve as decimal first, then convert to long
+            return Convert.ToInt64(parameters.Get<decimal>("newId"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Database error during mail insert.");
+            throw;
+        }
     }
 
     private void ValidateEmailParameters(string mailFrom, string mailTo, string mailSubject, string mailBody, string mailProgram)

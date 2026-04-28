@@ -17,6 +17,25 @@ import type { AuthUser } from "@/context/AuthContext"
 
 const API_URL =
   import.meta.env.VITE_API_URL ?? "/api"
+
+/**
+ * Safely parse a JSON response, handling cases where the server
+ * returns HTML error pages instead of JSON
+ */
+async function safeParseJson<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type")
+  
+  // If it's not JSON content, throw an error instead of trying to parse
+  if (contentType && !contentType.includes("application/json")) {
+    throw new Error("Server returned non-JSON response")
+  }
+  
+  try {
+    return await response.json()
+  } catch (error) {
+    throw new Error("Failed to parse server response")
+  }
+}
 const ACCESS_TYPE_MAP = ["Not Applicable", "Read Only", "Read & Write"] as const
 const AGGREGATE_STATUS_MAP = [
   "Pending",
@@ -150,7 +169,7 @@ export async function fetchAccessRequests(
   )
   if (!response.ok) throw new Error("Unable to load access requests.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
 
   return payload.data.map((request: any) => ({
     ...request,
@@ -183,7 +202,7 @@ export async function fetchAccessRequestDetails(
     `${API_URL}/access-requests/${accessReqId}?viewerEmployeeId=${viewerEmployeeId}`
   )
   if (!response.ok) throw new Error("Unable to load request details.")
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return mapAccessRequestDetails(payload)
 }
 
@@ -197,7 +216,7 @@ export async function fetchNotifications(
   )
   if (!response.ok) throw new Error("Unable to load notifications.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return {
     data: payload.data.map((item: any) => ({
       auditId: item.auditId,
@@ -238,7 +257,7 @@ export async function fetchAuditLogs(
   )
   if (!response.ok) throw new Error("Unable to load audit logs.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return {
     data: payload.data.map((item: any) => ({
       auditId: item.auditId,
@@ -266,7 +285,7 @@ export async function fetchAllUsers(
   )
   if (!response.ok) throw new Error("Unable to load employees.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return {
     data: payload.data.map((item: any) => ({
       userId: item.userId,
@@ -292,7 +311,7 @@ export async function searchEmployees(
   )
   if (!response.ok) throw new Error("Unable to search employees.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return payload.map((item: any) => ({
     userId: item.userId,
     employeeId: item.employeeId,
@@ -312,7 +331,7 @@ export async function searchEmployees(
 export async function fetchUserProfile(employeeId: number): Promise<AuthUser> {
   const response = await fetch(`${API_URL}/User/${employeeId}`)
   if (!response.ok) throw new Error("Unable to load user profile.")
-  return response.json()
+  return safeParseJson(response)
 }
 
 export type UpdateUserPayload = {
@@ -338,7 +357,7 @@ export async function updateUserProfile(
     body: JSON.stringify(payload),
   })
   if (!response.ok) throw new Error("Unable to update user profile.")
-  return response.json()
+  return safeParseJson(response)
 }
 
 export type CreateUserPayload = {
@@ -364,14 +383,13 @@ export async function createUser(
   })
 
   if (!response.ok) {
-    const message = await response
-      .json()
+    const message = await safeParseJson<{ message?: string }>(response)
       .then((data) => data?.message as string)
       .catch(() => null)
     throw new Error(message || "Unable to create user.")
   }
 
-  return response.json()
+  return safeParseJson(response)
 }
 
 export async function fetchDepartments(
@@ -382,7 +400,7 @@ export async function fetchDepartments(
     `${API_URL}/departments?Page=${page}&PageSize=${pageSize}`
   )
   if (!response.ok) throw new Error("Unable to load departments.")
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return (payload.data ?? []) as Department[]
 }
 
@@ -400,14 +418,13 @@ export async function createDepartment(
   })
 
   if (!response.ok) {
-    const message = await response
-      .json()
+    const message = await safeParseJson<{ message?: string }>(response)
       .then((data) => data?.message as string)
       .catch(() => null)
     throw new Error(message || "Unable to create department.")
   }
 
-  return response.json()
+  return safeParseJson(response)
 }
 
 export async function updateDepartment(
@@ -423,14 +440,13 @@ export async function updateDepartment(
   })
 
   if (!response.ok) {
-    const message = await response
-      .json()
+    const message = await safeParseJson<{ message?: string }>(response)
       .then((data) => data?.message as string)
       .catch(() => null)
     throw new Error(message || "Unable to update department.")
   }
 
-  return response.json()
+  return safeParseJson(response)
 }
 
 export async function updateUserPassword(
@@ -444,8 +460,7 @@ export async function updateUserPassword(
   })
 
   if (!response.ok) {
-    const message = await response
-      .json()
+    const message = await safeParseJson<{ message?: string }>(response)
       .then((data) => data?.message as string)
       .catch(() => null)
     throw new Error(message || "Unable to update password.")
@@ -533,7 +548,7 @@ export async function searchUsers(
   )
   if (!response.ok) throw new Error("Unable to search users.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return {
     data: payload.data.map((item: any) => ({
       userId: item.userId,
@@ -559,7 +574,7 @@ export async function fetchAllHod(
 
   if (!response.ok) throw new Error("Unable to search users.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
 
   return payload.map((item: any) => ({
     EmployeeId: item.employeeId,
@@ -580,7 +595,7 @@ export async function searchAuditLogs(
   )
   if (!response.ok) throw new Error("Unable to search audit logs.")
 
-  const payload = await response.json()
+  const payload = await safeParseJson(response)
   return {
     data: payload.data.map((item: any) => ({
       auditId: item.auditId,

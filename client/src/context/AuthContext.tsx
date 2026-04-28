@@ -43,6 +43,26 @@ type LoginResponse = {
 
 const STORAGE_KEY = "auth_session"
 const API_URL = import.meta.env.VITE_API_URL ?? "/api"
+
+/**
+ * Safely parse a JSON response, handling cases where the server
+ * returns HTML error pages instead of JSON
+ */
+async function safeParseJson<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type")
+  
+  // If it's not JSON content, throw an error instead of trying to parse
+  if (contentType && !contentType.includes("application/json")) {
+    throw new Error("Server returned non-JSON response")
+  }
+  
+  try {
+    return await response.json()
+  } catch (error) {
+    throw new Error("Failed to parse server response")
+  }
+}
+
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -75,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         )
       }
 
-      const payload = (await response.json()) as LoginResponse
+      const payload = (await safeParseJson<LoginResponse>(response)) as LoginResponse
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload.session.user))
       setUser(payload.session.user)
     } finally {
