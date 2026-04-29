@@ -119,4 +119,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-])
+], {
+  basename: "/access-portal",
+})

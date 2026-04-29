@@ -41,8 +41,8 @@ type LoginResponse = {
   }
 }
 
-const STORAGE_KEY = "auth_session"
-const API_URL = import.meta.env.VITE_API_URL ?? "/api"
+export const STORAGE_KEY = "auth_session"
+const API_URL = import.meta.env.VITE_API_URL ?? "/access-portal/api"
 
 /**
  * Safely parse a JSON response, handling cases where the server

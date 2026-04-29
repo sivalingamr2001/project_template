@@ -1,5 +1,4 @@
-const API_URL =
-  import.meta.env.VITE_API_URL ?? "/api"
+const API_URL = import.meta.env.VITE_API_URL ?? "/access-portal/api"
 
 /**
  * Safely parse a JSON response, handling cases where the server
@@ -7,12 +6,12 @@ const API_URL =
  */
 async function safeParseJson<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type")
-  
+
   // If it's not JSON content, throw an error instead of trying to parse
   if (contentType && !contentType.includes("application/json")) {
     throw new Error("Server returned non-JSON response")
   }
-  
+
   try {
     return await response.json()
   } catch (error) {
