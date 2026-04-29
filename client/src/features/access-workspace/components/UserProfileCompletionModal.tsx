@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useAuth } from "@/context/AuthContext"
+import { STORAGE_KEY, useAuth } from "@/context/AuthContext"
 
 import { IconAlertCircle } from "@tabler/icons-react"
 import { useDepartments } from "../hooks/useDepartments"
@@ -225,6 +225,14 @@ export default function UserProfileCompletionModal() {
             }
           >
             {isSaving ? "Saving..." : "Save"}
+          </Button>
+          <Button variant="outline"
+            onClick={() => {
+              localStorage.removeItem(STORAGE_KEY)
+              window.location.reload()
+            }}
+          >
+            Logout
           </Button>
         </DialogFooter>
       </DialogContent>

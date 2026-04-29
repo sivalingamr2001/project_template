@@ -16,7 +16,7 @@ import type {
 import type { AuthUser } from "@/context/AuthContext"
 
 const API_URL =
-  import.meta.env.VITE_API_URL ?? "/api"
+  import.meta.env.VITE_API_URL ?? "/access-portal/api"
 
 /**
  * Safely parse a JSON response, handling cases where the server
