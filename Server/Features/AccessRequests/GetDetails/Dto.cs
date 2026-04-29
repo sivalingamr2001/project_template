@@ -44,3 +44,9 @@ public sealed record AccessRequestTimelineDto(
     string RecipientRole,
     bool IsRead,
     DateTime CreatedOn);
+
+public class AccessExpirationResponse
+{
+    public DateTime ApprovedOn { get; set; }
+    public DateTime ExpiresOn { get; set; }
+}

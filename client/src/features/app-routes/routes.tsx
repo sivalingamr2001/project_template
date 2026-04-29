@@ -18,9 +18,11 @@ import {
   RoleRoute,
 } from "@/features/auth"
 import { AppLayout } from "@/layouts"
+import RegisterPage from "../auth/RegisterPage"
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
+  { path: "/register", element: <RegisterPage /> },
   {
     path: "/",
     element: <ProtectedRoute />,
