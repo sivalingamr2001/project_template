@@ -43,11 +43,7 @@ export function UserInfoSection({
       <div className="space-y-2">
         <Label>Employee Name</Label>
         <Input
-          value={
-            displayUser
-              ? `${displayUser.name}`
-              : "User not found"
-          }
+          value={displayUser ? `${displayUser.name}` : "User not found"}
           className="bg-muted"
         />
       </div>

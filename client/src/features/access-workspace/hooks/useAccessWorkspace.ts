@@ -2,11 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useAuth } from "@/context/AuthContext"
 
-import type {
-  AccessRequest,
-  NotificationItem,
-  QueueMode,
-} from "../types"
+import type { AccessRequest, NotificationItem, QueueMode } from "../types"
 import {
   getDefaultRoute,
   getRequestsByMode,

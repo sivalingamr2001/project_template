@@ -7,7 +7,8 @@ type StageFlowProps = {
 }
 
 const TONE_CLASS = {
-  active: "border-primary text-primary shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)]",
+  active:
+    "border-primary text-primary shadow-[0_0_15px_-3px_rgba(59,130,246,0.3)]",
   complete:
     "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   failed: "border-destructive bg-destructive/10 text-destructive",
@@ -36,7 +37,7 @@ function StageFlow({ details, selectedItem }: StageFlowProps) {
               <span className="ml-2 text-sm font-semibold">{card.label}</span>
             </div>
           </div>
-          <div className="pointer-events-none absolute left-1/2 top-full z-10 hidden w-64 -translate-x-1/2 rounded border border-border bg-background p-3 text-xs text-muted-foreground shadow-lg ring-1 ring-border/50 group-hover:block">
+          <div className="pointer-events-none absolute top-full left-1/2 z-10 hidden w-64 -translate-x-1/2 rounded border border-border bg-background p-3 text-xs text-muted-foreground shadow-lg ring-1 ring-border/50 group-hover:block">
             {card.description}
           </div>
         </article>

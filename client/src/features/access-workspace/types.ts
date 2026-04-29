@@ -1,4 +1,4 @@
- export type AppRole = "User" | "Hod" | "Admin"
+export type AppRole = "User" | "Hod" | "Admin"
 export type QueueMode =
   | "dashboard"
   | "hodPending"
@@ -88,16 +88,14 @@ export type EmployeeRecord = {
   role: AppRole
 }
 
-export interface HodResponse
-{
-    EmployeeId: string;
-    FirstName: string;
-    LastName: string;
-    Email: string;
-    PhoneNumber: string;
-    DepartmentId: number;
+export interface HodResponse {
+  EmployeeId: string
+  FirstName: string
+  LastName: string
+  Email: string
+  PhoneNumber: string
+  DepartmentId: number
 }
-
 
 export type AuditLogItem = {
   actor: string
@@ -111,7 +109,7 @@ export type SummaryCard = { detail: string; label: string; value: string }
 export type TableColumn<T> = {
   header: string
   key: string
-  render: (row: T, index: number) => React.ReactNode;
+  render: (row: T, index: number) => React.ReactNode
 }
 export type AccessTypeLabel = "Not Applicable" | "Read Only" | "Read & Write"
 export type AccessRequestItem = {
@@ -159,7 +157,6 @@ export type AccessRequestDetails = {
   status: string
   timeline: AccessRequestTimeline[]
 }
-
 
 export type AccessRequestFormPayloadForResumbission = {
   accessReqId: number

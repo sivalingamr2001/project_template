@@ -106,4 +106,3 @@ export default function ResetPasswordModal({
     </Dialog>
   )
 }
-

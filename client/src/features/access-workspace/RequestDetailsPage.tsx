@@ -79,7 +79,10 @@ function RequestDetailsPage() {
             </Button>
           )}
           {page.canRevoke && (
-            <Button variant="destructive" onClick={() => page.handleRevokeOpen()}>
+            <Button
+              variant="destructive"
+              onClick={() => page.handleRevokeOpen()}
+            >
               Revoke Request
             </Button>
           )}
@@ -101,7 +104,10 @@ function RequestDetailsPage() {
           )}
         </div>
       </div>
-      <StageFlow details={details} selectedItem={page.selectedItem ?? details.items[0]} />
+      <StageFlow
+        details={details}
+        selectedItem={page.selectedItem ?? details.items[0]}
+      />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,4fr)_minmax(280px,1fr)]">
         <RequestReportPanel details={detailsWithSelectedItem} />
 
@@ -112,7 +118,6 @@ function RequestDetailsPage() {
 
           <TimelineSection timeline={details.timeline} />
         </div>
-
       </div>
 
       <ApprovalReviewModal
@@ -141,7 +146,6 @@ function RequestDetailsPage() {
         onClose={page.handleRevokeClose}
         onSubmit={page.handleRevoke}
       />
-
     </div>
   )
 }

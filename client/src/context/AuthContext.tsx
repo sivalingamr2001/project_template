@@ -98,7 +98,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (!response.ok) {
-        throw new Error(response.status === 401 ? "Invalid credentials." : "Login failed.")
+        throw new Error(
+          response.status === 401 ? "Invalid credentials." : "Login failed."
+        )
       }
 
       const payload = await safeParseJson<LoginResponse>(response)

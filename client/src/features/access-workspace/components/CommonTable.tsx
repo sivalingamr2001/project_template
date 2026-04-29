@@ -96,7 +96,10 @@ function CommonTable<T>({
     return filteredRows.slice(startIndex, startIndex + resolvedPageSize)
   }, [currentPage, filteredRows, isServerPaginated, resolvedPageSize])
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / resolvedPageSize))
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredRows.length / resolvedPageSize)
+  )
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
@@ -142,9 +145,9 @@ function CommonTable<T>({
           {toolbarActions}
         </div>
       </div>
-      <div className="md:hidden space-y-4 relative">
+      <div className="relative space-y-4 md:hidden">
         {isLoading && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-[0.6rem]">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[0.6rem] bg-background/50 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-2">
               <IconLoader className="size-6 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Loading...</p>
@@ -166,10 +169,12 @@ function CommonTable<T>({
                   <div className="min-w-0 space-y-4">
                     {columns.map((column) => (
                       <div key={column.key}>
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                        <p className="text-[0.65rem] font-semibold tracking-[0.22em] text-muted-foreground uppercase">
                           {column.header}
                         </p>
-                        <div className="mt-1 text-sm">{column.render(row, index)}</div>
+                        <div className="mt-1 text-sm">
+                          {column.render(row, index)}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -179,7 +184,9 @@ function CommonTable<T>({
                       size="icon-xs"
                       type="button"
                       variant="outline"
-                      onClick={() => setExpandedRowId(isExpanded ? null : rowId)}
+                      onClick={() =>
+                        setExpandedRowId(isExpanded ? null : rowId)
+                      }
                       className="self-start"
                     >
                       {isExpanded ? (
@@ -205,9 +212,9 @@ function CommonTable<T>({
         )}
       </div>
 
-      <div className="hidden md:block overflow-hidden rounded-[0.4rem] border border-border relative">
+      <div className="relative hidden overflow-hidden rounded-[0.4rem] border border-border md:block">
         {isLoading && (
-          <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center rounded-[0.4rem]">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[0.4rem] bg-background/50 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-2">
               <IconLoader className="size-6 animate-spin text-primary" />
               <p className="text-sm text-muted-foreground">Loading...</p>
@@ -239,7 +246,9 @@ function CommonTable<T>({
                       columns={columns}
                       isExpandable={isExpandable}
                       isExpanded={isExpanded}
-                      onToggle={() => setExpandedRowId(isExpanded ? null : rowId)}
+                      onToggle={() =>
+                        setExpandedRowId(isExpanded ? null : rowId)
+                      }
                       renderExpandedRow={renderExpandedRow}
                       row={row}
                     />
@@ -267,7 +276,13 @@ function CommonTable<T>({
           onPageSizeChange={pagination?.onPageSizeChange}
           pageSize={resolvedPageSize}
           totalCount={pagination?.totalCount}
-          totalPages={isServerPaginated ? Math.ceil((pagination?.totalCount ?? 0) / (resolvedPageSize ?? 10)) : totalPages}
+          totalPages={
+            isServerPaginated
+              ? Math.ceil(
+                  (pagination?.totalCount ?? 0) / (resolvedPageSize ?? 10)
+                )
+              : totalPages
+          }
         />
       ) : null}
     </div>

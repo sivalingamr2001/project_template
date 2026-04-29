@@ -18,7 +18,10 @@ type AppHeaderProps = {
   onToggleSidebar?: () => void
 }
 
-export function AppHeader({ isSidebarCollapsed, onToggleSidebar }: AppHeaderProps) {
+export function AppHeader({
+  isSidebarCollapsed,
+  onToggleSidebar,
+}: AppHeaderProps) {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const { markNotificationAsRead, notifications } =
@@ -52,7 +55,7 @@ export function AppHeader({ isSidebarCollapsed, onToggleSidebar }: AppHeaderProp
           onClick={onToggleSidebar}
         >
           {isSidebarCollapsed ? (
-            <IconLayoutSidebarRightCollapse className="h-5 w-5"/>
+            <IconLayoutSidebarRightCollapse className="h-5 w-5" />
           ) : (
             <IconLayoutSidebarLeftCollapse className="h-5 w-5" />
           )}

@@ -47,10 +47,7 @@ export default function DepartmentsPage() {
   const rows: DepartmentRow[] = departments
 
   return (
-    <PageSection
-      title="Departments"
-      description="Department reference table."
-    >
+    <PageSection title="Departments" description="Department reference table.">
       {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
       <CommonTable
         columns={columns}
@@ -58,16 +55,22 @@ export default function DepartmentsPage() {
         onRefresh={refetch}
         pageSize={5}
         rows={isLoading ? [] : rows}
-        emptyMessage={isLoading ? "Loading..." : "No departments are available."}
+        emptyMessage={
+          isLoading ? "Loading..." : "No departments are available."
+        }
         toolbarActions={
-            <Button type="button" size='sm' onClick={() => {
-            setMode("create")
-            setSelected(null)
-            setIsModalOpen(true)
-          }}>
-              Add
-            </Button>
-          }
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              setMode("create")
+              setSelected(null)
+              setIsModalOpen(true)
+            }}
+          >
+            Add
+          </Button>
+        }
       />
       <EditDepartmentModal
         mode={mode}

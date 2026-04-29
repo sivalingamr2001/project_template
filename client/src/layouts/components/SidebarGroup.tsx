@@ -8,7 +8,11 @@ type SidebarGroupProps = {
   onItemClick?: () => void
 }
 
-function SidebarGroup({ isCollapsed, section, onItemClick }: SidebarGroupProps) {
+function SidebarGroup({
+  isCollapsed,
+  section,
+  onItemClick,
+}: SidebarGroupProps) {
   return (
     <div>
       {isCollapsed ? null : (

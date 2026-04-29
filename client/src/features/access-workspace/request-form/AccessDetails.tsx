@@ -38,7 +38,6 @@ export default function AccessDetail({
         )}
         onClick={onToggle}
       >
-
         <div className="flex items-center gap-3">
           <div className="text-muted-foreground">
             {isExpanded ? (

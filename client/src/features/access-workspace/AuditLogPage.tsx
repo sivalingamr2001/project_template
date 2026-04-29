@@ -55,7 +55,9 @@ function AuditLogPage() {
           },
         }}
         rows={isLoading ? [] : rows}
-        emptyMessage={isLoading ? "Loading..." : "No audit entries are available."}
+        emptyMessage={
+          isLoading ? "Loading..." : "No audit entries are available."
+        }
       />
     </PageSection>
   )

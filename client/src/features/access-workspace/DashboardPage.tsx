@@ -31,7 +31,11 @@ function DashboardPage() {
           onRefresh={refetch}
           searchPlaceholder="Search folder, request, or status"
           toolbarActions={
-            <Button type="button" size='sm' onClick={() => setIsModalOpen(true)}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => setIsModalOpen(true)}
+            >
               Create Request
             </Button>
           }

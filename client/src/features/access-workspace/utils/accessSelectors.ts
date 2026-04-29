@@ -96,7 +96,7 @@ export function getSummaryCards(
       label: "Provisioned",
       value: numberFormatter.format(
         userRequests.filter((request) =>
-              request.accessItems.some((item) => item.status === "Access Granted")
+          request.accessItems.some((item) => item.status === "Access Granted")
         ).length
       ),
       detail: "Access granted and logged",

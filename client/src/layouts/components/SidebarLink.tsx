@@ -10,7 +10,13 @@ type SidebarLinkProps = {
   to: string
 }
 
-function SidebarLink({ icon: Icon, isCollapsed, label, onClick, to }: SidebarLinkProps) {
+function SidebarLink({
+  icon: Icon,
+  isCollapsed,
+  label,
+  onClick,
+  to,
+}: SidebarLinkProps) {
   return (
     <NavLink
       to={to}
