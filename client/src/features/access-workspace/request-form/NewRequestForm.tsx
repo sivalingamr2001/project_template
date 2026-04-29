@@ -10,8 +10,7 @@ import type { NewRequestFormProps } from "./types"
 import { UserInfoSection } from "./UserInfoSection"
 import { createDefaultPayload } from "./utils/accessRequestForm"
 
-const API_URL =
-  import.meta.env.VITE_API_URL ?? "/access-portal/api"
+const API_URL = import.meta.env.VITE_API_URL ?? "/access-portal/api"
 
 export function NewRequestForm({
   initialData,
@@ -34,7 +33,8 @@ export function NewRequestForm({
     mode
   )
 
-  const displayUser = fetchedUser || (formData.empId === me ? currentUser : null)
+  const displayUser =
+    fetchedUser || (formData.empId === me ? currentUser : null)
 
   // API Sync Logic
   useEffect(() => {
@@ -42,9 +42,7 @@ export function NewRequestForm({
       const fetcher = async () => {
         setIsFetchingUser(true)
         try {
-          const res = await fetch(
-            `${API_URL}/User/${formData.empId}`
-          )
+          const res = await fetch(`${API_URL}/User/${formData.empId}`)
           if (res.ok) {
             const data = await res.json()
             setFetchedUser(data)
@@ -131,7 +129,7 @@ export function NewRequestForm({
             </Button>
           )}
         </div>
-        <div className="max-h-[clamp(200px,40vh,600px)] overflow-y-auto space-y-4 pr-2">
+        <div className="max-h-[clamp(200px,40vh,600px)] space-y-4 overflow-y-auto pr-2">
           {formData.items.map((detail, index) => (
             <AccessDetail
               key={index}

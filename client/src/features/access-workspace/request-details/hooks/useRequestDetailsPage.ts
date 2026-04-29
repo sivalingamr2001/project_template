@@ -35,13 +35,13 @@ export function useRequestDetailsPage(
     details?.items[0] ??
     null
   const canRevoke =
-    details &&
-    selectedItem?.status === "Access Granted" &&
-    role === "Admin"
+    details && selectedItem?.status === "Access Granted" && role === "Admin"
   const canResubmit =
     role === "User" &&
     details?.empId === reviewerEmployeeId &&
-    ["Rejected HOD", "Rejected IT", "Revoked"].includes(selectedItem?.status || "")
+    ["Rejected HOD", "Rejected IT", "Revoked"].includes(
+      selectedItem?.status || ""
+    )
 
   useEffect(() => {
     if (!details) return
@@ -65,7 +65,12 @@ export function useRequestDetailsPage(
     if (!details) return
     setIsPending(true)
     try {
-      await revokeAccessRequest(details.accessReqId, selectedItemId, reviewerEmployeeId, comments)
+      await revokeAccessRequest(
+        details.accessReqId,
+        selectedItemId,
+        reviewerEmployeeId,
+        comments
+      )
       await refetch()
       setIsRevokeOpen(false)
     } finally {

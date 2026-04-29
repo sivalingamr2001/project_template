@@ -88,7 +88,10 @@ function CommonTablePagination({
       <div className="flex items-center justify-center gap-2">
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
-            <label htmlFor="page-size" className="text-xs text-muted-foreground">
+            <label
+              htmlFor="page-size"
+              className="text-xs text-muted-foreground"
+            >
               Rows per page:
             </label>
             <Select
@@ -98,7 +101,7 @@ function CommonTablePagination({
                 onPageChange(1) // Reset to first page on size change
               }}
             >
-              <SelectTrigger id="page-size" className="w-16 h-8">
+              <SelectTrigger id="page-size" className="h-8 w-16">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -135,7 +138,10 @@ function CommonTablePagination({
 
           {pageNumbers.map((page, index) =>
             page === "..." ? (
-              <span key={`ellipsis-${index}`} className="px-2 text-muted-foreground">
+              <span
+                key={`ellipsis-${index}`}
+                className="px-2 text-muted-foreground"
+              >
                 ...
               </span>
             ) : (

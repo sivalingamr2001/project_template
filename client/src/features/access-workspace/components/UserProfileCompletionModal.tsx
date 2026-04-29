@@ -226,7 +226,8 @@ export default function UserProfileCompletionModal() {
           >
             {isSaving ? "Saving..." : "Save"}
           </Button>
-          <Button variant="outline"
+          <Button
+            variant="outline"
             onClick={() => {
               localStorage.removeItem(STORAGE_KEY)
               window.location.reload()

@@ -11,7 +11,8 @@ type ReviewQueuePageProps = {
 }
 
 function ReviewQueuePage({ description, mode, title }: ReviewQueuePageProps) {
-  const { errorMessage, isLoading, refetch, requests } = useAccessWorkspace(mode)
+  const { errorMessage, isLoading, refetch, requests } =
+    useAccessWorkspace(mode)
 
   return (
     <PageSection title={title} description={description}>
@@ -29,7 +30,6 @@ function ReviewQueuePage({ description, mode, title }: ReviewQueuePageProps) {
         rows={isLoading ? [] : requests}
         emptyMessage={isLoading ? "Loading..." : "No requests found."}
       />
-
     </PageSection>
   )
 }

@@ -11,7 +11,8 @@ type RequestListPageProps = {
 }
 
 function RequestListPage({ description, mode, title }: RequestListPageProps) {
-  const { errorMessage, isLoading, refetch, requests } = useAccessWorkspace(mode)
+  const { errorMessage, isLoading, refetch, requests } =
+    useAccessWorkspace(mode)
 
   return (
     <PageSection title={title} description={description}>

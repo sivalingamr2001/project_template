@@ -22,4 +22,3 @@ export interface AccessDetailProps {
   onRemove: (index: number) => void
   totalItems: number
 }
-

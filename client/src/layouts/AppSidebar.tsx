@@ -1,4 +1,8 @@
-import { IconFolders, IconLayoutSidebarLeftCollapse, IconToggleRight } from "@tabler/icons-react"
+import {
+  IconFolders,
+  IconLayoutSidebarLeftCollapse,
+  IconToggleRight,
+} from "@tabler/icons-react"
 
 import { useAuth } from "@/context/AuthContext"
 import { NAVIGATION_SECTIONS } from "@/features/app-shell/utils/navigation"
@@ -35,7 +39,7 @@ function AppSidebar({ isCollapsed, onClose, onItemClick }: AppSidebarProps) {
         </button>
       ) : null}
       <aside
-        className={`flex flex-col overflow-y-auto rounded-[0.75rem] border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground transition-all duration-300 ${isCollapsed ? "-translate-x-full opacity-0 md:translate-x-0 md:opacity-100 md:flex md:w-20" : "translate-x-0 opacity-100 fixed inset-y-0 left-0 z-30 w-[min(20rem,calc(100%-2rem))] max-w-[20rem] md:relative md:block md:w-72"}`}
+        className={`flex flex-col overflow-y-auto rounded-[0.75rem] border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground transition-all duration-300 ${isCollapsed ? "-translate-x-full opacity-0 md:flex md:w-20 md:translate-x-0 md:opacity-100" : "fixed inset-y-0 left-0 z-30 w-[min(20rem,calc(100%-2rem))] max-w-[20rem] translate-x-0 opacity-100 md:relative md:block md:w-72"}`}
       >
         <div
           className={`mb-6 flex items-center rounded-sm bg-sidebar-accent p-3 ${isCollapsed ? "justify-center bg-transparent" : "gap-3"}`}
@@ -50,7 +54,9 @@ function AppSidebar({ isCollapsed, onClose, onItemClick }: AppSidebarProps) {
                 alt="Janatics"
                 className="h-6 w-auto rounded-sm object-contain"
               />
-              <p className="text-sm tracking-widest text-muted-foreground">Access Portal</p>
+              <p className="text-sm tracking-widest text-muted-foreground">
+                Access Portal
+              </p>
             </div>
           )}
         </div>
@@ -68,7 +74,7 @@ function AppSidebar({ isCollapsed, onClose, onItemClick }: AppSidebarProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex justify-center align-middle w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-medium text-muted-foreground transition hover:border-primary hover:text-primary"
+            className="flex w-full justify-center rounded-xl border border-border bg-background px-3 py-2 align-middle text-sm font-medium text-muted-foreground transition hover:border-primary hover:text-primary"
           >
             <IconLayoutSidebarLeftCollapse className="size-6" />
           </button>
@@ -79,4 +85,3 @@ function AppSidebar({ isCollapsed, onClose, onItemClick }: AppSidebarProps) {
 }
 
 export { AppSidebar }
-

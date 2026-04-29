@@ -1,4 +1,8 @@
-import type { AccessRequestDetails, AccessRequestItem, AccessRequestTimeline } from "../../types"
+import type {
+  AccessRequestDetails,
+  AccessRequestItem,
+  AccessRequestTimeline,
+} from "../../types"
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" })
 const DATE_TIME_FORMATTER = new Intl.DateTimeFormat("en-IN", {
@@ -103,7 +107,9 @@ export function buildStageCards(
   let card4Desc = "Access delivered to requester."
 
   if (
-    ["Pending HOD", "Rejected HOD", "Pending IT", "Rejected IT"].includes(status)
+    ["Pending HOD", "Rejected HOD", "Pending IT", "Rejected IT"].includes(
+      status
+    )
   ) {
     card4Tone = "pending"
   } else if (status === "Access Granted") {

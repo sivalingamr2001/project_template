@@ -42,7 +42,9 @@ function RequestReportDetails({ details }: RequestReportDetailsProps) {
             value={primaryItem?.folderPath}
           />
           <ReportField label="Item Status">
-            <ReportBadge tone={getStatusTone(primaryItem?.status || details.status)}>
+            <ReportBadge
+              tone={getStatusTone(primaryItem?.status || details.status)}
+            >
               {primaryItem?.status ?? "Pending"}
             </ReportBadge>
           </ReportField>
@@ -82,9 +84,7 @@ function RequestReportDetails({ details }: RequestReportDetailsProps) {
           />
           <ReportField label="Decision">
             <ReportBadge
-              tone={getStatusTone(
-                details.items[0]?.status || details.status
-              )}
+              tone={getStatusTone(details.items[0]?.status || details.status)}
             >
               {details.items[0]?.status || "Pending"}
             </ReportBadge>

@@ -30,4 +30,3 @@ export function useDepartments() {
 
   return { departments, isLoading, error, refetch }
 }
-
