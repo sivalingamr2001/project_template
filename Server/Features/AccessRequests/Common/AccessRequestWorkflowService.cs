@@ -1,5 +1,4 @@
-using System.Linq;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Server.Common.Realtime;
 using Server.Domain.Entities;
@@ -7,10 +6,10 @@ using Server.Domain.Enums;
 using Server.Features.AccessRequests.Create;
 using Server.Features.AccessRequests.GetDetails;
 using Server.Features.AccessRequests.Renew;
+using Server.Features.AccessRequests.Resubmit;
 using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
-using Server.Features.AccessRequests.Resubmit;
 using Server.Features.Notifications.GetList;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
@@ -24,7 +23,7 @@ public sealed class AccessRequestWorkflowService(
     IAccessRequestEmailNotificationService emailNotificationService,
     IAccessRequestExpirationService expirationService)
 {
-    private const int AccessExpirationDays = 365;
+    private const int AccessExpirationDays = 90;
     private const int ExpirationReminderDays = 7;
 
     public async Task<CreateAccessRequestResponse> CreateOrUpdateAsync(CreateAccessRequest request, CancellationToken cancellationToken)
@@ -1248,4 +1247,36 @@ public sealed class AccessRequestWorkflowService(
 
     private static DateTime GetExpirationDateUtc(DateTime grantedOnUtc) =>
         grantedOnUtc.AddDays(AccessExpirationDays);
+
+    public async Task<AccessExpirationResponse> GetExpirationDateUtcWithTime(int accessItemId, CancellationToken cancellationToken)
+    {
+        var accessItem = await dbContext.AccessItems // Using AccessItems table per your schema
+            .Where(x => x.AccessItemId == accessItemId && x.Status == RequestStatus.AccessGranted) // 📍 Validate status is Approved
+            .Select(x => new { x.CreatedOn, x.ModifiedOn })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // If item isn't found OR status isn't approved, return null or throw
+        if (accessItem == null)
+        {
+            return null; // Or throw new Exception("Item not found or not yet approved");
+        }
+
+        DateTime approvedDate = (accessItem.ModifiedOn.HasValue && accessItem.ModifiedOn > accessItem.CreatedOn)
+            ? accessItem.ModifiedOn.Value
+            : accessItem.CreatedOn;
+
+        DateTime expiryDate = approvedDate;
+        int addedDays = 0;
+        while (addedDays < AccessExpirationDays)
+        {
+            expiryDate = expiryDate.AddDays(1);
+            if (expiryDate.DayOfWeek != DayOfWeek.Sunday) addedDays++;
+        }
+
+        return new AccessExpirationResponse
+        {
+            ApprovedOn = approvedDate,
+            ExpiresOn = expiryDate
+        };
+    }
 }

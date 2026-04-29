@@ -15,8 +15,7 @@ import type {
 } from "../types"
 import type { AuthUser } from "@/context/AuthContext"
 
-const API_URL =
-  import.meta.env.VITE_API_URL ?? "/access-portal/api"
+const API_URL = import.meta.env.VITE_API_URL ?? "/access-portal/api"
 
 /**
  * Safely parse a JSON response, handling cases where the server
@@ -24,12 +23,12 @@ const API_URL =
  */
 async function safeParseJson<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type")
-  
+
   // If it's not JSON content, throw an error instead of trying to parse
   if (contentType && !contentType.includes("application/json")) {
     throw new Error("Server returned non-JSON response")
   }
-  
+
   try {
     return await response.json()
   } catch (error) {
@@ -611,5 +610,32 @@ export async function searchAuditLogs(
     page: payload.page,
     pageSize: payload.pageSize,
     totalCount: payload.totalCount,
+  }
+}
+
+export async function getExpiredAccessItems(
+  accessItemId: number
+): Promise<string> {
+  try {
+    const response = await fetch(
+      `${API_URL}/access-requests/expiration/${accessItemId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Error fetching expiration: ${response.statusText}`)
+    }
+
+    const expirationDate = await response.json()
+
+    return expirationDate
+  } catch (error) {
+    console.error("Failed to get expiration date:", error)
+    throw error
   }
 }

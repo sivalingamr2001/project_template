@@ -13,6 +13,7 @@ import { useRequestDetails } from "./request-details/hooks/useRequestDetails"
 import { useRequestDetailsPage } from "./request-details/hooks/useRequestDetailsPage"
 import RequestReportPanel from "./request-details/report/components/RequestReportPanel"
 import RevocModal from "./components/RevocModal"
+import AccessValidityBadge from "./AccessValidityBadge"
 
 function RequestDetailsPage() {
   const { requestId } = useParams()
@@ -103,8 +104,17 @@ function RequestDetailsPage() {
       <StageFlow details={details} selectedItem={page.selectedItem ?? details.items[0]} />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,4fr)_minmax(280px,1fr)]">
         <RequestReportPanel details={detailsWithSelectedItem} />
-        <TimelineSection timeline={details.timeline} />
+
+        <div className="flex flex-col gap-4">
+          {page.selectedItem?.status === "Access Granted" && (
+            <AccessValidityBadge itemId={page.selectedItemId} />
+          )}
+
+          <TimelineSection timeline={details.timeline} />
+        </div>
+
       </div>
+
       <ApprovalReviewModal
         actionType={page.reviewAction}
         details={details}
