@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { STORAGE_KEY, useAuth } from "@/context/AuthContext"
 
 import { IconAlertCircle } from "@tabler/icons-react"
@@ -35,8 +28,7 @@ function splitName(fullName: string) {
 function isProfileIncomplete(user: any) {
   return (
     !!user &&
-    ([null, undefined, 0, "0"].includes(user.employeeId) ||
-      [null, undefined, 0, "0"].includes(user.departmentId))
+    ([null, undefined, 0, "0"].includes(user.employeeId))
   )
 }
 
@@ -127,14 +119,13 @@ export default function UserProfileCompletionModal() {
         <div className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="employeeId">EmployeeId</Label>
+              <Label htmlFor="employeeId">Employee ID</Label>
               <Input
                 id="employeeId"
+                className="border-primary"
                 value={String(employeeId ?? "")}
                 onChange={(e) =>
-                  setEmployeeId(
-                    e.target.value ? Number(e.target.value) : undefined
-                  )
+                  setEmployeeId(e.target.value ? Number(e.target.value) : undefined)
                 }
                 inputMode="numeric"
                 required
@@ -142,73 +133,41 @@ export default function UserProfileCompletionModal() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="userName">User Name</Label>
-              <Input
-                id="userName"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                required
-              />
+              <Input id="userName" value={userName} readOnly className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="firstName">First name</Label>
-              <Input
-                id="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-              />
+              <Input id="firstName" value={firstName} readOnly className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="lastName">Last name</Label>
-              <Input
-                id="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
+              <Input id="lastName" value={lastName} readOnly className="bg-muted" />
             </div>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                type="email"
-                required
-              />
+              <Input id="email" value={email} readOnly className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
-              <Input
-                id="phone"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                inputMode="numeric"
-                required
-              />
+              <Input id="phone" value={phone} readOnly className="bg-muted" />
             </div>
           </div>
 
           <div className="space-y-2">
             <Label>Department</Label>
-            <Select value={departmentId} onValueChange={setDepartmentId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select department" />
-              </SelectTrigger>
-              <SelectContent>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.deptId} value={String(dept.deptId)}>
-                    {dept.deptId} - {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              value={departmentName || "No department assigned"}
+              readOnly
+              className="bg-muted"
+            />
           </div>
 
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
         </div>
+
 
         <DialogFooter>
           <Button
