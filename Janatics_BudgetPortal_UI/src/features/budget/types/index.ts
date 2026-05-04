@@ -14,13 +14,16 @@ export interface BudgetCategory {
 }
 
 export interface ProjectHeaderData {
+  id?: number
   employeeId: number
   productName: string
   projectNumber: string
   productNo: string
   phase: string
   department: string
-  status: "ON TRACK" | "AT RISK"
+  status: string
+  approvalStatus?: string
+  isActive?: boolean
   lastUpdated: string
 }
 
@@ -88,6 +91,8 @@ export type BudgetRecordSummaryResponse = {
   projectTitle: string
   employeeId: number
   modifiedOn: string
+  approvalStatus: string
+  isActive: boolean
 }
 
 export type BudgetItemResponse = {
@@ -111,6 +116,8 @@ export type BudgetRecordResponse = {
     productNo: string
     projectTitle: string
     productName?: string
+    approvalStatus?: string
+    isActive?: boolean
     createdOn: string
     modifiedOn: string
   }
@@ -230,6 +237,7 @@ export function mapBudgetApiToUi(response: BudgetRecordResponse): BudgetRecord {
   return {
     id: response.header.budgetId.toString(),
     projectHeader: {
+      id: response.header.budgetId,
       employeeId: response.header.employeeId,
       productName: response.header.productName ?? response.header.projectTitle,
       projectNumber: response.header.projectNumber,
@@ -237,6 +245,8 @@ export function mapBudgetApiToUi(response: BudgetRecordResponse): BudgetRecord {
       phase: "Product development",
       department: "Research and Development",
       status: totalPlanned - totalActual < 0 ? "AT RISK" : "ON TRACK",
+      approvalStatus: response.header.approvalStatus,
+      isActive: response.header.isActive,
       lastUpdated: response.header.modifiedOn ?? response.header.createdOn,
     },
     budgetData: categories,

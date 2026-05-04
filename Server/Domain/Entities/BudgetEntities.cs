@@ -22,7 +22,8 @@ public class Budget : BaseEntity
     [Required]
     public string ProductNo { get; set; } = string.Empty;
 
-    [Required] public string Status { get; set; } = string.Empty;
+    [Required]
+    public BudgetStatus Status { get; set; } = BudgetStatus.Pending;
 
     [Required]
     public string ProjectTitle { get; set; } = string.Empty;
@@ -63,6 +64,7 @@ public class BudgetItem : BaseEntity
     public string ItemName { get; set; } = string.Empty;
 
     public decimal Planned { get; set; }
+    
     public decimal Actual { get; set; }
 }
 

@@ -46,6 +46,8 @@ function createLocalBudgetRecord(input: {
       phase: "Product development",
       department: "Research and Development",
       status: "ON TRACK",
+      approvalStatus: "Pending",
+      isActive: true,
       lastUpdated: new Date().toISOString(),
     },
     budgetData: templateToBudgetData(input.categories),
@@ -348,7 +350,7 @@ export default function BudgetPlanEntryPage() {
         })
         toast.success("Record created! Redirecting...")
       } else {
-        await updateBudgetRecord(recordToSave.id, recordToSave)
+            await updateBudgetRecord(recordToSave.id, recordToSave)
         toast.success("Changes saved! Redirecting...")
       }
 

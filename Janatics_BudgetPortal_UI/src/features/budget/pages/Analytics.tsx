@@ -58,6 +58,20 @@ function Analytics() {
               {activeRecord.projectHeader.productName} ·{" "}
               {activeRecord.projectHeader.phase}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {activeRecord.projectHeader.approvalStatus && (
+                <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                  {activeRecord.projectHeader.approvalStatus}
+                </span>
+              )}
+              <span className={`rounded-full border px-2.5 py-1 font-semibold ${
+                activeRecord.projectHeader.isActive
+                  ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                  : "border-amber-200 bg-amber-100 text-amber-700"
+              }`}>
+                {activeRecord.projectHeader.isActive ? "Active" : "Inactive"}
+              </span>
+            </div>
           </div>
         </div>
       </div>

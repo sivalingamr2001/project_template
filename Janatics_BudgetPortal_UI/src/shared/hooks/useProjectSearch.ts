@@ -13,6 +13,7 @@ function mapBudgetToProjectData(item: any): ProjectData {
     product_no: item.product_No || item.productNo,
     projectnumber: item.projectNumber || item.projectNumber,
     projectname: item.projectTitle || item.projectName,
+    status: item.isActive ? "Active" : "Inactive",
     budgetId: item.budgetId,
   }
 }

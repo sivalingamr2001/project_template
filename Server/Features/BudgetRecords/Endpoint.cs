@@ -18,20 +18,20 @@ public static class BudgetRecordsEndpoint
         .WithName("GetBudgets")
         .WithOpenApi();
 
-        //Create new endpoint for SearchByProductNoAsync
-        group.MapGet("/search", async (string? productNo, BudgetRecordsService service, IConfiguration configuration, CancellationToken cancellationToken) =>
+        group.MapGet("/search", async (string? productNo, string? projectNumber, BudgetRecordsService service, IConfiguration configuration, CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(productNo))
+            if (string.IsNullOrWhiteSpace(productNo) && string.IsNullOrWhiteSpace(projectNumber))
             {
-                throw new AppValidationException("productNo query parameter is required.");
+                throw new AppValidationException("At least one search parameter is required: productNo or projectNumber.");
             }
-            var decodedProductNo = DecodeRouteValue(productNo, nameof(productNo));
-            var result = await service.SearchByProductNoAsync(decodedProductNo, configuration, cancellationToken);
+            var decodedProductNo = string.IsNullOrWhiteSpace(productNo) ? null : DecodeRouteValue(productNo, nameof(productNo));
+            var decodedProjectNumber = string.IsNullOrWhiteSpace(projectNumber) ? null : DecodeRouteValue(projectNumber, nameof(projectNumber));
+            var result = await service.SearchAsync(decodedProductNo, decodedProjectNumber, configuration, cancellationToken);
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : ToProblem(result.Error!);
         })
-        .WithName("SearchBudgetsByProductNo")
+        .WithName("SearchBudgets")
         .WithOpenApi();
 
         group.MapGet("/summary", async (
@@ -148,6 +148,24 @@ public static class BudgetRecordsEndpoint
         .WithName("UpdateBudget")
         .WithOpenApi();
 
+        group.MapPatch("/", async (
+        UpdateBudgetRecordStatusRequest request,
+        BudgetRecordsService service,
+        CancellationToken cancellationToken) =>
+            {
+                // Await the task and pass properties from the request object
+                var result = await service.UpdateActiveStatusAsync(
+                    request.BudgetId,
+                    request.IsActive,
+                    cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.Ok()
+                    : ToProblem(result.Error!);
+            })
+    .WithName("UpdateBudgetActiveStatus")
+    .WithOpenApi();
+
         group.MapDelete("/{budgetId:int}", async (int budgetId, BudgetRecordsService service, CancellationToken cancellationToken) =>
         {
             var result = await service.DeleteAsync(budgetId, cancellationToken);
@@ -157,6 +175,27 @@ public static class BudgetRecordsEndpoint
         })
         .WithName("DeleteBudget")
         .WithOpenApi();
+
+        group.MapPost("/{budgetId:int}/approval", async (
+            int budgetId,
+            BudgetApprovalRequest request,
+            BudgetRecordsService service,
+            CancellationToken cancellationToken) =>
+            {
+                var result = await service.ApproveOrRejectAsync(
+                    budgetId,
+                    request.ApproverId,
+                    request.IsApproved,
+                    request.Comments,
+                    cancellationToken);
+
+                return result.IsSuccess
+                    ? Results.Ok(result)
+                    : ToProblem(result.Error!);
+            })
+        .WithName("ApproveOrRejectBudget")
+        .WithOpenApi();
+
     }
 
     private static void ValidateCreateRequest(CreateBudgetRecordRequest request)

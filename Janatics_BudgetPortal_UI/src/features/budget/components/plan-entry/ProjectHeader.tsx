@@ -12,16 +12,6 @@ import {
 } from "@/shared/components/ui/alert-dialog"
 import { Button } from "@/shared/components/ui/button"
 import {
-  FileDown,
-  Save,
-  Info,
-  ExternalLink,
-  Settings2,
-  ChevronDown,
-} from "lucide-react"
-import { useState } from "react"
-import { toast } from "sonner"
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -35,7 +25,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/shared/components/ui/tooltip"
-import { Link } from "react-router-dom"
+import {
+  ChevronDown,
+  ExternalLink,
+  FileDown,
+  Info,
+  Save,
+  Settings2
+} from "lucide-react"
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { toast } from "sonner"
+import ApproveModal from "./ApproveModal"
 
 interface ProjectHeaderProps {
   record: BudgetRecord
@@ -59,6 +60,8 @@ export function ProjectHeader({
   templateOptions,
 }: ProjectHeaderProps) {
   const [isRefreshConfirmOpen, setIsRefreshConfirmOpen] = useState(false)
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+  const navigate = useNavigate()
 
   const isFormValid = Boolean(
     record.projectHeader.projectNumber && record.projectHeader.productNo
@@ -97,6 +100,33 @@ export function ProjectHeader({
             </span>{" "}
             {projectHeader.productNo}
           </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <div>
+              {projectHeader.approvalStatus && (
+                <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 font-semibold text-primary">
+                  {projectHeader.approvalStatus}
+                </span>
+              )}
+              <span
+                className={`rounded-full border px-2.5 py-1 font-semibold ${projectHeader.isActive
+                  ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                  : "border-amber-200 bg-amber-100 text-amber-700"
+                  }`}
+              >
+                {projectHeader.isActive ? "Active" : "Inactive"}
+              </span>
+              {projectHeader.approvalStatus === "Pending" && (
+                <Button
+                  size='sm'
+                  onClick={() => setIsApproveModalOpen(true)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Approve / Reject
+                </Button>
+              )}
+
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col items-start gap-4 md:items-end">
@@ -216,6 +246,19 @@ export function ProjectHeader({
           </div>
         </div>
       </div>
+
+      {projectHeader?.id && (
+        <ApproveModal
+          isOpen={isApproveModalOpen}
+          onClose={() => setIsApproveModalOpen(false)}
+          budgetId={projectHeader.id}
+          onSuccess={() => {
+            navigate("/plan-entry");
+            toast.success("Budget status updated");
+          }}
+        />
+      )}
+
 
       <AlertDialog
         open={isRefreshConfirmOpen}

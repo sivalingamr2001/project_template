@@ -23,6 +23,12 @@ public sealed class CreateBudgetRecordRequest
     public IReadOnlyList<CreateBudgetCategoryRequest>? BudgetData { get; init; }
 }
 
+public sealed class UpdateBudgetRecordStatusRequest
+{
+    public int BudgetId { get; init; }
+    public bool IsActive { get; init; }
+}
+
 public sealed class CreateBudgetCategoryRequest
 {
     [JsonPropertyName("category")]
@@ -59,6 +65,18 @@ public sealed class UpdateBudgetRecordRequest
     public IReadOnlyList<BudgetItemUpdateDto>? Items { get; init; }
 }
 
+public sealed class UpdateBudgetStatusRequest
+{
+    [JsonPropertyName("status")]
+    public string Status { get; init; } = string.Empty;
+
+    [JsonPropertyName("approverId")]
+    public int ApproverId { get; init; }
+
+    [JsonPropertyName("comments")]
+    public string? Comments { get; init; }
+}
+
 public sealed record BudgetItemUpdateDto(int ItemId, decimal Planned, decimal Actual);
 
 public sealed record BudgetRecordSummaryDto(
@@ -67,7 +85,9 @@ public sealed record BudgetRecordSummaryDto(
     string ProductNo,
     string ProjectTitle,
     int EmployeeId,
-    DateTime ModifiedOn);
+    DateTime ModifiedOn,
+    string ApprovalStatus,
+    bool IsActive);
 
 public class BudgetRecordProductNoDto
 {
@@ -86,7 +106,9 @@ public sealed record BudgetRecordHeaderDto(
     string ProductNo,
     string ProjectTitle,
     DateTime CreatedOn,
-    DateTime ModifiedOn)
+    DateTime ModifiedOn,
+    string ApprovalStatus,
+    bool IsActive)
 {
     [JsonPropertyName("productName")]
     public string ProductName => ProjectTitle;
@@ -119,3 +141,10 @@ public sealed record BudgetTrendPointDto(
     decimal Planned,
     decimal Actual,
     decimal Variance);
+
+public sealed record BudgetApprovalRequest(
+    int BudgetId,
+    int ApproverId,
+    bool IsApproved,
+    string? Comments
+);

@@ -10,17 +10,29 @@ import {
 } from "@/shared/components/ui/command"
 import { Input } from "@/shared/components/ui/input"
 import { useProjectSearch } from "@/shared/hooks/useProjectSearch"
-import { FolderKanban, Package, Plus, Search } from "lucide-react"
+import { FolderKanban, Package, Plus, Search, Trash2 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import { getBudgetById, mapBudgetApiToUi } from "@/features/budget/types"
+import {
+  deleteBudget,
+  getBudgetById,
+  mapBudgetApiToUi,
+} from "@/features/budget/types"
 import type { ProjectData } from "@/types"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog"
+import { useBudget } from "@/providers/Budget/BudgetProvider"
+import { apiService } from "@/shared/lib/api-client"
 
 export default function ProjectSearchDashboard() {
   const { state, refs, actions } = useProjectSearch()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedRows, setSelectedRows] = useState<ProjectData[]>([])
+  const [idsToDelete, setIdsToDelete] = useState<number[]>([]);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { fetchBudgetRecords } = useBudget()
 
   const currentProductName = useMemo(() => {
     return state.filteredData[0]?.projectname || ""
@@ -54,25 +66,156 @@ export default function ProjectSearchDashboard() {
     [navigate]
   )
 
+  const handleDeleteBudget = (budgetIdOrIds: number | number[]) => {
+    const ids = Array.isArray(budgetIdOrIds) ? budgetIdOrIds : [budgetIdOrIds];
+    const validIds = ids.filter((id): id is number => Number.isInteger(id));
+
+    if (validIds.length === 0) {
+      toast.error("No valid budget records selected.");
+      return;
+    }
+
+    setIdsToDelete(validIds);
+    setIsAlertOpen(true);
+  };
+
+  // This performs the actual API call
+  const confirmDelete = async () => {
+    try {
+      await Promise.all(idsToDelete.map((id) => deleteBudget(id)));
+
+      toast.success(`${idsToDelete.length > 1 ? 'Budgets' : 'Budget'} deleted successfully.`);
+      setSelectedRows([]); // Clear grid selection
+      actions.handleSearch(); // Refresh data
+    } catch (error) {
+      console.error("Error deleting:", error);
+      toast.error("Failed to delete the selected items.");
+    } finally {
+      setIsAlertOpen(false);
+      setIdsToDelete([]);
+    }
+  };
+
+  const handleActivate = async (row: ProjectData[]) => {
+    const res = await apiService.patch("/budgets", {
+      budgetId: row.map(r => r.budgetId).filter((id): id is number => Number.isInteger(id)),
+      IsActive: true
+    })
+
+    if(res.status === 200) {
+      toast.success("Selected budget(s) activated successfully.");
+      setSelectedRows([]);
+      navigate("/plan-entry", {
+        state: { fromDashboard: true, inputData: row[0] },
+      })
+    } else {
+      toast.error("Failed to activate the selected budget(s).");
+    }
+  }
+
+  const handleRefresh = async () => {
+    setLoading(true)
+    try {
+      const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
+      await delay(3000);
+      await fetchBudgetRecords();
+
+      toast.success("Data refreshed successfully");
+    } catch (error) {
+      console.error("Refresh failed:", error);
+      toast.error("Failed to refresh records.");
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
+  const hasInactiveSelected = useMemo(
+    () => selectedRows.some((row) => row.status?.toLowerCase() === "inactive"),
+    [selectedRows]
+  )
+
   const columnDefs = useMemo(
     () => [
-      { field: "product_no", headerName: "Product Number", flex: 1 },
-      { field: "projectnumber", headerName: "Project Number", flex: 1 },
-      { field: "projectname", headerName: "Product Name", flex: 2 },
       {
-        headerName: "Actions",
-        pinned: "right" as const,
-        width: 100,
+        field: "projectname",
+        headerName: "Product Name",
+        flex: 2,
         cellRenderer: (params: any) => (
           <Button
-            variant="link"
-            size="sm"
+            type="button"
             onClick={() => handleViewDetails(params.data)}
+            className="cursor-pointer"
+            variant="link"
           >
-            View
+            {params.value}
           </Button>
         ),
       },
+      { field: "product_no", headerName: "Product Number", flex: 1 },
+      { field: "projectnumber", headerName: "Project Number", flex: 1 },
+      {
+        field: "status",
+        headerName: "Status",
+        flex: 1,
+        cellRenderer: (params: any) => {
+          const status = params.value?.toLowerCase()
+
+          // Define styles based on status
+          const statusStyles: Record<string, string> = {
+            active: "bg-green-100 text-green-800 border-green-200",
+            inactive: "bg-red-100 text-red-800 border-red-200",
+          }
+
+          const currentStyle =
+            statusStyles[status] || "bg-gray-100 text-gray-800"
+
+          return (
+            <div className="mt-5 flex h-full items-center">
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${currentStyle}`}
+              >
+                {params.value || "Unknown"}
+              </span>
+            </div>
+          )
+        },
+      },
+      //Remove here and add to table toolbox buttons and only visible the record check box is selected and The active button only the record with inactive status is selected
+      // {
+      //   headerName: "Actions",
+      //   pinned: "right" as const,
+      //   cellRenderer: (params: any) => (
+      //     <div className="flex justify-center items-center mt-4 gap-2">
+      //       {params.data?.status === 'Inactive' && (
+      //         <Button
+      //           variant="link"
+      //           size="sm"
+      //           onClick={() => handleViewDetails(params.data)}
+      //         >
+
+      //         </Button>
+      //       )}
+
+      //       <Button
+      //         variant="link"
+      //         size="sm"
+      //         onClick={() => handleViewDetails(params.data)}
+      //       >
+      //         <ViewIcon className="mr-2 h-4 w-4" />
+      //       </Button>
+      //       <Button
+      //         className="text-danger"
+      //         size="sm"
+      //         onClick={() => handleDeleteBudget(params.data.budgetId)}
+      //         variant="destructive"
+      //       >
+      //         <Trash2 className="text-red-600" />
+      //       </Button>
+      //     </div>
+      //   ),
+      // },
     ],
     [handleViewDetails]
   )
@@ -168,16 +311,52 @@ export default function ProjectSearchDashboard() {
       <DataGrid
         rowData={state.filteredData}
         columnDefs={columnDefs}
+        loading={loading}
         showSearch={true}
-        showRefreshButton={false}
+        showRefreshButton={true}
         showClearFiltersButton={false}
         showExportCsvButton={false}
         gridHeight="500px"
         onClearFilters={actions.clearSearch}
+        onRefresh={handleRefresh}
+        onSelectionChanged={(params: any) => {
+          setSelectedRows(params)
+        }}
         toolbarRight={
-          <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600">
-            <Plus className="mr-0 h-4 w-4" /> New Budget
-          </Button>
+          <div className="flex items-center gap-2">
+            {selectedRows.length > 0 && (
+              <>
+                {hasInactiveSelected ? (
+                  <Button
+                    variant="default"
+                    className="border-green-200 bg-green-100 text-green-800"
+                    size="sm"
+                    onClick={() => handleActivate(selectedRows)}
+                  >
+                    Activate
+                  </Button>
+                ) : (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() =>
+                      handleDeleteBudget(
+                        selectedRows
+                          .map((r) => r.budgetId)
+                          .filter((id): id is number => Number.isInteger(id))
+                      )
+                    }
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> DeActivate
+                  </Button>
+                )}
+              </>
+            )}
+
+            <Button onClick={() => setIsModalOpen(true)} size="sm">
+              <Plus className="mr-2 h-4 w-4" /> New Budget
+            </Button>
+          </div>
         }
       />
 
@@ -191,6 +370,27 @@ export default function ProjectSearchDashboard() {
           projectNumber: state.projectNo,
         }}
       />
+
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete {idsToDelete.length}{" "}
+              selected budget record{idsToDelete.length > 1 ? "s" : ""}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-500 hover:bg-red-700"
+            >
+              De-Activate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

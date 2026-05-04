@@ -32,7 +32,7 @@ const lightTheme = themeQuartz.withParams({
   fontFamily: "'Figtree', system-ui, sans-serif",
   fontSize: 13,
   rowHeight: 59,
-  headerHeight: 48,
+  headerHeight: 48
 })
 
 const darkTheme = themeQuartz.withParams({
@@ -246,7 +246,7 @@ function DataGridInner<TData extends Record<string, unknown>>(
           onQuickFilterChange={handlers.onQuickFilterChange}
           onRefresh={handlers.onRefresh}
           onClearFilters={async () => {
-            await handlers.onClearFilters()
+            handlers.onClearFilters()
             await onClearFiltersCallback?.()
           }}
           onExportCsv={handlers.onExportCsv}

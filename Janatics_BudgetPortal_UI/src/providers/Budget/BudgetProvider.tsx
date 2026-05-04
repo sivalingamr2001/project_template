@@ -41,6 +41,8 @@ function BudgetProvider({ children }: BudgetProviderProps) {
       productNo: data.projectHeader?.productNo ?? data.productNo,
       productName: data.projectHeader?.productName ?? data.projectTitle,
       status: data.projectHeader?.status ?? data.status ?? "N/A",
+      approvalStatus: data.projectHeader?.approvalStatus ?? data.approvalStatus,
+      isActive: data.projectHeader?.isActive ?? data.isActive,
     },
   })
 

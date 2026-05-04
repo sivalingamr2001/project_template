@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Oracle.ManagedDataAccess.Client;
 using Server.Domain.Common;
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 using Server.Domain.Errors;
 using Server.Infrastructure.Db;
 
@@ -14,10 +15,11 @@ public sealed class BudgetRecordsService(
 {
     private sealed record BudgetTrendAggregate(DateTime CreatedOn, decimal Planned, decimal Actual);
 
-    public async Task<Result<IReadOnlyList<BudgetRecordProductNoDto>>> SearchByProductNoAsync(
-    string searchTerm,
-    IConfiguration configuration,
-    CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<BudgetRecordProductNoDto>>> SearchAsync(
+        string? productNo,
+        string? projectNumber,
+        IConfiguration configuration,
+        CancellationToken cancellationToken)
     {
         try
         {
@@ -29,16 +31,16 @@ public sealed class BudgetRecordsService(
                     PRODUCT_NO,
                     PROJECTNAME as ProjectName
                 FROM JAN_PLM_PROJECT_HEADER_V 
-                WHERE PRODUCT_NO LIKE :Query || '%'";
+                WHERE (:ProductNo IS NULL OR PRODUCT_NO LIKE :ProductNo || '%')
+                  AND (:ProjectNumber IS NULL OR PROJECTNUMBER LIKE :ProjectNumber || '%')";
 
             using var connection = new OracleConnection(connectionString);
 
-            // This line throws the exception if the user types quickly
             var results = await connection.QueryAsync<BudgetRecordProductNoDto>(
-                new CommandDefinition(sql, new { Query = searchTerm }, cancellationToken: cancellationToken)
+                new CommandDefinition(sql, new { ProductNo = productNo, ProjectNumber = projectNumber }, cancellationToken: cancellationToken)
             );
 
-                return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(results.ToList().AsReadOnly());
+            return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(results.ToList().AsReadOnly());
         }
         catch (OperationCanceledException)
         {
@@ -56,7 +58,6 @@ public sealed class BudgetRecordsService(
     {
         var budgets = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.IsActive == 1)
             .OrderByDescending(b => b.ModifiedOn)
             .Select(b => new BudgetRecordSummaryDto(
                 b.BudgetId,
@@ -64,7 +65,9 @@ public sealed class BudgetRecordsService(
                 b.ProductNo,
                 b.ProjectTitle,
                 b.EmployeeId,
-                b.ModifiedOn))
+                b.ModifiedOn,
+                b.Status.ToString(),
+                b.IsActive == 1))
             .ToListAsync(cancellationToken);
 
         return budgets;
@@ -74,7 +77,7 @@ public sealed class BudgetRecordsService(
     {
         var budgetHeader = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.BudgetId == budgetId && b.IsActive == 1)
+            .Where(b => b.BudgetId == budgetId)
             .Select(b => new BudgetRecordHeaderDto(
                 b.BudgetId,
                 b.EmployeeId,
@@ -82,7 +85,9 @@ public sealed class BudgetRecordsService(
                 b.ProductNo,
                 b.ProjectTitle,
                 b.CreatedOn,
-                b.ModifiedOn))
+                b.ModifiedOn,
+                b.Status.ToString(),
+                b.IsActive == 1))
             .SingleOrDefaultAsync(cancellationToken);
 
         if (budgetHeader is null)
@@ -106,13 +111,27 @@ public sealed class BudgetRecordsService(
         return new BudgetRecordDto(budgetHeader, categories);
     }
 
+    public async Task<Result> UpdateActiveStatusAsync(int budgetId, bool isActive, CancellationToken cancellationToken)
+    {
+        var budget = await dbContext.Budgets
+            .SingleOrDefaultAsync(b => b.BudgetId == budgetId, cancellationToken);
+        if (budget is null)
+        {
+            return Result.Failure(BudgetErrors.NotFound(budgetId));
+        }
+        budget.IsActive = isActive ? 1 : 0;
+        budget.ModifiedOn = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+
     public async Task<Result<BudgetRecordDto>> GetByProductNoAsync(string productNo, CancellationToken cancellationToken)
     {
         var code = productNo.Trim();
 
         var budgetId = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.ProductNo == code && b.IsActive == 1)
+            .Where(b => b.ProductNo == code)
             .Select(b => (int?)b.BudgetId)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -131,7 +150,7 @@ public sealed class BudgetRecordsService(
 
         var budgetId = await dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.ProjectNumber == code && b.ProductNo == product && b.IsActive == 1)
+            .Where(b => b.ProjectNumber == code && b.ProductNo == product)
             .Select(b => (int?)b.BudgetId)
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -170,6 +189,7 @@ public sealed class BudgetRecordsService(
         // 2. Query and Aggregate
         // We calculate sums by flattening the relationship: Budget -> Categories -> Items
         var summary = await dbContext.Budgets
+            .Where(b => b.IsActive == 1 && b.Status == BudgetStatus.Approved)
             .Where(b => b.CreatedOn >= startDate && b.CreatedOn < endDate)
             .Select(b => new
             {
@@ -205,7 +225,7 @@ public sealed class BudgetRecordsService(
 
         IQueryable<Budget> query = dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.IsActive == 1);
+            .Where(b => b.IsActive == 1 && b.Status == BudgetStatus.Approved);
 
         if (!string.IsNullOrWhiteSpace(projectNumber))
         {
@@ -364,6 +384,7 @@ public sealed class BudgetRecordsService(
                 ProjectNumber = projectNumber,
                 ProductNo = productNo,
                 ProjectTitle = projectTitle,
+                Status = BudgetStatus.Pending,
                 CreatedOn = DateTime.UtcNow,
                 ModifiedOn = DateTime.UtcNow
             };
@@ -446,7 +467,20 @@ public sealed class BudgetRecordsService(
             // 4. Final Save (Categories and Items)
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            // 5. COMMIT: Everything is successful, save changes permanently
+            // 5. Audit: Budget creation record
+            dbContext.BudgetAudits.Add(new BudgetReqAuditEntity
+            {
+                BudgetId = budget.BudgetId,
+                EventType = BudgetStatus.Pending,
+                Message = $"Budget created and pending approval by employee {request.EmployeeId}.",
+                ActionByUserId = request.EmployeeId,
+                CreatedOn = DateTime.UtcNow,
+                ModifiedOn = DateTime.UtcNow,
+            });
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            // 6. COMMIT: Everything is successful, save changes permanently
             await transaction.CommitAsync(cancellationToken);
 
             return await GetByIdAsync(budget.BudgetId, cancellationToken);
@@ -475,7 +509,7 @@ public sealed class BudgetRecordsService(
         CancellationToken cancellationToken)
     {
         var budget = await dbContext.Budgets.SingleOrDefaultAsync(
-            b => b.BudgetId == budgetId && b.IsActive == 1,
+            b => b.BudgetId == budgetId,
             cancellationToken);
         if (budget is null)
         {
@@ -501,6 +535,7 @@ public sealed class BudgetRecordsService(
         budget.ProjectNumber = projectNumber;
         budget.ProductNo = productNo;
         budget.ProjectTitle = projectTitle;
+        budget.Status = BudgetStatus.Pending;
         budget.ModifiedOn = DateTime.UtcNow;
 
         var itemUpdates = request.Items ?? Array.Empty<BudgetItemUpdateDto>();
@@ -547,6 +582,48 @@ public sealed class BudgetRecordsService(
 
         budget.IsActive = 0;
         budget.ModifiedOn = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return Result.Success();
+    }
+
+    //Create a method for Approve or Reject budget record, which will create a new entry in the BudgetApprovalEntity table with the corresponding status and comments. 
+    public async Task<Result> ApproveOrRejectAsync(int budgetId, int approverId, bool isApproved, string? comments, CancellationToken cancellationToken)
+    {
+        var budget = await dbContext.Budgets
+            .SingleOrDefaultAsync(b => b.BudgetId == budgetId && b.IsActive == 1, cancellationToken);
+
+        if (budget is null)
+        {
+            return Result.Failure(BudgetErrors.NotFound(budgetId));
+        }
+
+        var newStatus = isApproved ? BudgetStatus.Approved : BudgetStatus.Rejected;
+        budget.Status = newStatus;
+
+        var approval = new BudgetApprovalEntity
+        {
+            BudgetId = budgetId,
+            ApproverId = approverId,
+            ApprovalStatus = newStatus,
+            Comments = comments?.Trim() ?? string.Empty,
+            CreatedOn = DateTime.UtcNow
+        };
+
+        dbContext.BudgetApprovals.Add(approval);
+
+        var audit = new BudgetReqAuditEntity
+        {
+            BudgetId = budgetId,
+            EventType = newStatus,
+            Message = $"Budget was {(isApproved ? "approved" : "rejected")} by user {approverId}.",
+            ActionByUserId = approverId,
+            CreatedOn = DateTime.UtcNow
+        };
+
+        dbContext.BudgetAudits.Add(audit);
+
+        // 5. Save all changes in one transaction
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

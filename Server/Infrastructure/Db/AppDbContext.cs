@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 
 namespace Server.Infrastructure.Db;
 
@@ -35,6 +36,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.ToTable("jan_budgets");
             entity.HasKey(e => e.BudgetId);
             entity.HasIndex(e => e.ProjectNumber).IsUnique();
+
+            entity.Property(e => e.Status)
+                  .HasConversion<string>()
+                  .HasMaxLength(50)
+                  .HasDefaultValue(BudgetStatus.Pending);
 
             entity.HasOne(b => b.Template)
                   .WithMany()

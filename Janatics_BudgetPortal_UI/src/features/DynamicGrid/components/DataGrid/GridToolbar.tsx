@@ -364,7 +364,7 @@ export const GridToolbar: React.FC<GridToolbarProps> = ({
               title="Reload data"
               aria-label={isRefreshing ? "Refreshing…" : "Refresh data"}
             >
-              <RefreshIcon spinning={isRefreshing} />
+              <RefreshIcon spinning={false} />
               <span className="datagrid-btn-label">
                 {isRefreshing ? "Refreshing…" : "Refresh"}
               </span>
