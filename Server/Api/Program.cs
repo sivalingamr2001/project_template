@@ -12,11 +12,7 @@ await app.InitializeDatabaseAsync();
 
 // --- CHANGE 1 & 2: Swagger Configuration ---
 app.UseSwagger();
-app.UseSwaggerUI(c => {
-    c.SwaggerEndpoint("/budget_portal/swagger/v1/swagger.json", "My API V1");
-
-    c.RoutePrefix = "swagger";
-});
+app.UseSwaggerUI();
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 

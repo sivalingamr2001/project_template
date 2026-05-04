@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
-using System.Text.Json;
 
 namespace Server.Infrastructure.Db;
 
@@ -11,63 +10,52 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BudgetCategory> BudgetCategories => Set<BudgetCategory>();
     public DbSet<BudgetItem> BudgetItems => Set<BudgetItem>();
     public DbSet<BudgetTemplateEntity> BudgetTemplates => Set<BudgetTemplateEntity>();
+    public DbSet<BudgetApprovalEntity> BudgetApprovals => Set<BudgetApprovalEntity>();
+    public DbSet<BudgetReqAuditEntity> BudgetAudits => Set<BudgetReqAuditEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Employee Configuration
-        modelBuilder.Entity<EmployeeEntity>(entity =>
-        {
+        // 1. Employee
+        modelBuilder.Entity<EmployeeEntity>(entity => {
             entity.ToTable("jan_employees");
             entity.HasKey(e => e.EmployeeId);
         });
 
-        // 2. Budget Template Configuration
-        modelBuilder.Entity<BudgetTemplateEntity>(entity =>
-        {
+        // 2. Budget Template
+        modelBuilder.Entity<BudgetTemplateEntity>(entity => {
             entity.ToTable("jan_budget_templates");
             entity.HasKey(e => e.TemplateId);
-
-            // Map the string property to Oracle's CLOB type (JSON stored as text)
-            entity.Property(e => e.TemplateJson)
-                  .HasColumnType("CLOB");
+            entity.Property(e => e.TemplateJson).HasColumnType("CLOB");
         });
 
-        // Budget Header
-        modelBuilder.Entity<Budget>(entity =>
-        {
+        // 3. Budget Header
+        modelBuilder.Entity<Budget>(entity => {
             entity.ToTable("jan_budgets");
             entity.HasKey(e => e.BudgetId);
             entity.HasIndex(e => e.ProjectNumber).IsUnique();
 
-            // 3. Link Budget to Template (Optional)
             entity.HasOne(b => b.Template)
                   .WithMany()
                   .HasForeignKey(b => b.TemplateId)
-                  .IsRequired(false)
                   .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // Budget Categories
-        modelBuilder.Entity<BudgetCategory>(entity =>
-        {
+        // 4. Budget Categories
+        modelBuilder.Entity<BudgetCategory>(entity => {
             entity.ToTable("jan_budget_categories");
             entity.HasKey(e => e.CategoryId);
-            entity.Property(e => e.CategoryId).ValueGeneratedOnAdd();
-
             entity.HasOne(d => d.Budget)
                   .WithMany(p => p.Categories)
                   .HasForeignKey(d => d.BudgetId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Budget Items
-        modelBuilder.Entity<BudgetItem>(entity =>
-        {
+        // 5. Budget Items
+        modelBuilder.Entity<BudgetItem>(entity => {
             entity.ToTable("jan_budget_items");
             entity.HasKey(e => e.ItemId);
-            entity.Property(e => e.ItemId).ValueGeneratedOnAdd();
             entity.Property(e => e.Planned).HasPrecision(18, 2);
             entity.Property(e => e.Actual).HasPrecision(18, 2);
 
@@ -77,12 +65,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // 6. Budget Approval
+        modelBuilder.Entity<BudgetApprovalEntity>(entity => {
+            entity.ToTable("jan_budget_approvals");
+            entity.HasKey(e => e.BudgetApproveId);
+            entity.Property(e => e.ApprovalStatus).HasConversion<string>().HasMaxLength(50);
+
+            entity.HasOne(a => a.Budget)
+                  .WithMany(b => b.Approvals)
+                  .HasForeignKey(a => a.BudgetId);
+        });
+
+        // 7. Budget Audit
+        modelBuilder.Entity<BudgetReqAuditEntity>(entity => {
+            entity.ToTable("jan_budget_audits");
+            entity.HasKey(e => e.AuditId);
+            entity.Property(e => e.EventType).HasConversion<string>().HasMaxLength(50);
+
+            entity.HasOne(a => a.Budget)
+                  .WithMany(b => b.Audits)
+                  .HasForeignKey(a => a.BudgetId);
+        });
+
         SeedBudgetData(modelBuilder);
     }
 
     private static void SeedBudgetData(ModelBuilder modelBuilder)
     {
-        // 4. Define the raw JSON string
         var defaultTemplateJson = @"[
           { ""category"": ""Product Design"", ""items"": [""Benchmarking sample"", ""FEA Analysis"", ""CFD Analysis"", ""Design consultancy"", ""Others""] },
           { ""category"": ""Concept development"", ""items"": [""Comp.devpt-Concept"", ""Machining components"", ""Plastic - Hand moulds"", ""Rubber moulds"", ""3D printing"", ""RPT"", ""MIM"", ""Jigs & fixtures"", ""Concept testing""] },
@@ -92,7 +101,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
           { ""category"": ""Field validation"", ""items"": [""Product development""] }
         ]";
 
-        // 5. Seed the default template with static values
         modelBuilder.Entity<BudgetTemplateEntity>().HasData(new BudgetTemplateEntity
         {
             TemplateId = 1,

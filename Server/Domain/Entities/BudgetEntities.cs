@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Server.Domain.Enums;
 
 namespace Server.Domain.Entities;
 
@@ -20,10 +22,16 @@ public class Budget : BaseEntity
     [Required]
     public string ProductNo { get; set; } = string.Empty;
 
+    [Required] public string Status { get; set; } = string.Empty;
+
     [Required]
     public string ProjectTitle { get; set; } = string.Empty;
 
     public ICollection<BudgetCategory> Categories { get; set; } = new List<BudgetCategory>();
+
+    public ICollection<BudgetApprovalEntity> Approvals { get; set; } = new List<BudgetApprovalEntity>();
+
+    public ICollection<BudgetReqAuditEntity> Audits { get; set; } = new List<BudgetReqAuditEntity>();
 
     public int IsActive { get; set; } = 1;
 }
@@ -56,4 +64,51 @@ public class BudgetItem : BaseEntity
 
     public decimal Planned { get; set; }
     public decimal Actual { get; set; }
+}
+
+public sealed class BudgetApprovalEntity : BaseEntity
+{
+    [Key]
+    public int BudgetApproveId { get; set; }
+
+    // Link to the Budget being approved
+    [Required]
+    public int BudgetId { get; set; }
+
+    [ForeignKey("BudgetId")]
+    public Budget Budget { get; set; } = null!;
+
+    [Required]
+    public int ApproverId { get; set; }
+
+    [Required]
+    public BudgetStatus ApprovalStatus { get; set; }
+
+    [MaxLength(500)]
+    public string Comments { get; set; } = string.Empty;
+}
+
+public sealed class BudgetReqAuditEntity : BaseEntity
+{
+    [Key]
+    public int AuditId { get; set; }
+
+    [Required]
+    public int BudgetId { get; set; }
+
+    [ForeignKey("BudgetId")]
+    public Budget Budget { get; set; } = null!;
+
+    public int? BudgetApproveId { get; set; }
+
+    [Required]
+    [MaxLength(100)]
+    public BudgetStatus EventType { get; set; }
+
+    [Required]
+    public string Message { get; set; } = string.Empty;
+
+    public int? ActionByUserId { get; set; }
+
+    public bool IsRead { get; set; } = false;
 }
