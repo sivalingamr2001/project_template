@@ -14,7 +14,7 @@ import { BrowserRouter } from "react-router"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/budget_portal">
       <AppProvider>
         <Toaster position="top-right" richColors />
         <AuthProvider>

@@ -52,8 +52,9 @@ const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504])
 function createApiInstance(): AxiosInstance {
   const instance = axios.create({
     baseURL: import.meta.env.DEV
-      ? import.meta.env.VITE_API_URL
-      : (import.meta.env.VITE_API_URL ?? "/api"),
+      ? import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+      : "/budget_portal/api",
+
     timeout: 15_000,
     headers: {
       "Content-Type": "application/json",
