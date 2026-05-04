@@ -9,6 +9,7 @@ public static class LoginEndpoint
         group.MapPost("/login", async Task<Results<Ok<LoginResponse>, UnauthorizedHttpResult>> (
             LoginRequest request,
             LoginService service,
+            IConfiguration configuration,
             CancellationToken cancellationToken) =>
         {
             var response = await service.AuthenticateAsync(request, cancellationToken);
