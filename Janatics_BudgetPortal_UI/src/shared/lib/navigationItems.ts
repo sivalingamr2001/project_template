@@ -5,6 +5,8 @@ import {
   Settings,
   BarChart3,
   FileText,
+  CircleOff,
+  CircleCheckBig 
 } from "lucide-react"
 
 export type NavigationItem = {
@@ -12,6 +14,7 @@ export type NavigationItem = {
   label: string
   path: string
   icon: LucideIcon
+  children?: any[]
 }
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
@@ -26,6 +29,23 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     label: "Projects",
     path: "/projects",
     icon: FolderSearch,
+    children: [
+      {
+        label: "Project Search",
+        path: "/projects",
+        icon: FolderSearch,
+      },
+      {
+        label: "Approved Projects",
+        path: "/projects/approved",
+        icon: CircleCheckBig
+      },
+      {
+        label: "Pending Projects",
+        path: "/projects/pending",
+        icon: CircleOff
+      },
+    ],
   },
   {
     id: "plan-entry",

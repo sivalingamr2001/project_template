@@ -23,11 +23,10 @@ public sealed class CreateBudgetRecordRequest
     public IReadOnlyList<CreateBudgetCategoryRequest>? BudgetData { get; init; }
 }
 
-public sealed class UpdateBudgetRecordStatusRequest
-{
-    public int BudgetId { get; init; }
-    public bool IsActive { get; init; }
-}
+public record UpdateBudgetRecordStatusRequest(
+    List<int> BudgetId,
+    bool IsActive
+);
 
 public sealed class CreateBudgetCategoryRequest
 {
@@ -85,16 +84,37 @@ public sealed record BudgetRecordSummaryDto(
     string ProductNo,
     string ProjectTitle,
     int EmployeeId,
+    DateTime CreatedOn,
     DateTime ModifiedOn,
     string ApprovalStatus,
     bool IsActive);
 
+public record BudgetRecordSummaryDtoWithplanedandactual(
+    int BudgetId,
+    string ProjectNumber,
+    string ProductNo,
+    string ProjectName,
+    int EmployeeId,
+    DateTime CreatedOn,
+    DateTime ModifiedOn,
+    string Status,
+    bool IsActive,
+    decimal Planned,
+    decimal Actual,
+    decimal Variance,
+    decimal UsagePercentage
+);
+
+
 public class BudgetRecordProductNoDto
 {
     public string? ProjectNumber { get; set; }
+
     public string? Product_No { get; set; }
 
     public string? ProjectName { get; set; }
+
+    public string? TeamName { get; set; }
 }
 
 public sealed record BudgetRecordDto(BudgetRecordHeaderDto Header, IReadOnlyList<BudgetCategoryDto> Categories);

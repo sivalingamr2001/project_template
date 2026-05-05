@@ -13,6 +13,7 @@ type BudgetTableProps = {
 
 export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
   const totals = useMemo(() => getTotals(record), [record])
+  const isApproved = record.projectHeader.approvalStatus === "Approved"
 
   // Fetch actual amounts from API
   const { actualAmounts, loading, error } = useActualAmounts(
@@ -142,6 +143,7 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
                     key={`${record.id}-${category.category}`}
                     totals={getCategoryTotals(record, categoryIndex)}
                     updateBudgetItem={updateBudgetItem}
+                    isapproved={isApproved}
                   />
                 ))
               )}

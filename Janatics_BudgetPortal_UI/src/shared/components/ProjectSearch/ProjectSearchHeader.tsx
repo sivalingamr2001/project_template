@@ -35,7 +35,7 @@ export default function ProjectSearchDashboard() {
   const { fetchBudgetRecords } = useBudget()
 
   const currentProductName = useMemo(() => {
-    return state.filteredData[0]?.projectname || ""
+    return state.filteredData[0]?.productName || state.projectSuggestions[0]?.productName || ""
   }, [state.filteredData])
 
   const handleViewDetails = useCallback(
@@ -102,12 +102,9 @@ export default function ProjectSearchDashboard() {
       IsActive: true
     })
 
-    if(res.status === 200) {
+    if (res.status === 200) {
       toast.success("Selected budget(s) activated successfully.");
       setSelectedRows([]);
-      navigate("/plan-entry", {
-        state: { fromDashboard: true, inputData: row[0] },
-      })
     } else {
       toast.error("Failed to activate the selected budget(s).");
     }
@@ -249,7 +246,7 @@ export default function ProjectSearchDashboard() {
             <Input
               value={state.productNo}
               onChange={(e) => {
-                e.target.value = e.target.value.toUpperCase()
+                e.target.value = e.target.value
                 actions.setProductNo(e.target.value)
                 actions.setShowProductSuggestions(true)
               }}
@@ -311,9 +308,10 @@ export default function ProjectSearchDashboard() {
       <DataGrid
         rowData={state.filteredData}
         columnDefs={columnDefs}
+        rowSelection="none"
         loading={loading}
         showSearch={true}
-        showRefreshButton={true}
+        showRefreshButton={false}
         showClearFiltersButton={false}
         showExportCsvButton={false}
         gridHeight="500px"

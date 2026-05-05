@@ -2,14 +2,23 @@ namespace Server.Domain.Errors;
 
 public static class BudgetErrors
 {
+    public static ServiceError NotFoundBudget()
+        => new($"Budgets was not found.", ErrorCode.NoContent);
+
     public static ServiceError NotFound(int budgetId)
-        => new($"Budget with ID '{budgetId}' was not found.", ErrorCode.NotFound);
+        => new($"Budget with ID '{budgetId}' was not found.", ErrorCode.NoContent);
+
+    public static ServiceError NoneFound(IEnumerable<int> budgetIds)
+    => new($"No budgets were found for the provided IDs: {string.Join(", ", budgetIds)}", ErrorCode.NoContent);
 
     public static ServiceError NotFoundByProductNo(string productNo)
-        => new($"Budget with product no '{productNo}' was not found.", ErrorCode.NotFound);
+        => new($"Budget with product no '{productNo}' was not found.", ErrorCode.NoContent);
 
     public static ServiceError NotFoundByProjectNumberAndProductNo(string projectNumber, string productNo)
-        => new($"Budget for project '{projectNumber}' and product '{productNo}' was not found.", ErrorCode.NotFound);
+        => new($"Budget for project '{projectNumber}' and product '{productNo}' was not found.", ErrorCode.NoContent);
+
+    public static ServiceError NoDataFound(string projectNumber, string productNo)
+        => new($"No budget record exists for '{projectNumber}'/'{productNo}'.", ErrorCode.NoContent);
 
     public static ServiceError DuplicateProjectNumber(string projectNumber)
         => new($"A budget with project code '{projectNumber}' already exists.", ErrorCode.Conflict);
@@ -31,5 +40,6 @@ public enum ErrorCode
     NotFound,
     Conflict,
     Validation,
-    Unexpected
+    Unexpected,
+    NoContent
 }

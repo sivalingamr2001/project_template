@@ -15,6 +15,7 @@ interface BudgetItemRowProps {
     field: "planned" | "actual",
     value: number
   ) => void
+  isapproved: boolean
 }
 
 export function BudgetItemRow({
@@ -22,6 +23,7 @@ export function BudgetItemRow({
   item,
   itemIndex,
   updateBudgetItem,
+  isapproved
 }: BudgetItemRowProps) {
   const variance = item.planned - item.actual
   const variancePercent = item.planned > 0 ? (variance / item.planned) * 100 : 0
@@ -34,6 +36,7 @@ export function BudgetItemRow({
           onValueChange={(value) =>
             updateBudgetItem(categoryIndex, itemIndex, "planned", value)
           }
+          readOnly={isapproved}
           value={item.planned}
         />
       </td>

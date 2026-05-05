@@ -39,24 +39,6 @@ export function useProjectSearch() {
   const debouncedProduct = useDebounce(productNo, 300)
   const debouncedProject = useDebounce(projectNo, 300)
 
-  // Initial fetch of all budgets
-  useEffect(() => {
-    const fetchInitialBudgets = async () => {
-      try {
-        const response = await apiService.get<BudgetSummaryItem[]>("/budgets")
-        const rows = response.data.map(mapBudgetToProjectData)
-        setFilteredData(rows)
-      } catch (e) {
-        console.error("Error fetching initial budgets:", e)
-        setFilteredData([])
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchInitialBudgets()
-  }, [])
-
   useEffect(() => {
     const fetchBudgets = async () => {
       if (!debouncedProduct || debouncedProduct.length < 2) {
@@ -66,7 +48,7 @@ export function useProjectSearch() {
 
       try {
         const response = await apiService.get<BudgetSummaryItem[]>(
-          `/budgets/search?productNo=${debouncedProduct}`
+          `/budgets/search?searchTerm=${debouncedProduct}`
         )
         const rows = response.data.map(mapBudgetToProjectData)
         setProductSuggestions(rows.slice(0, 6))
@@ -89,7 +71,7 @@ export function useProjectSearch() {
       try {
         // Assuming search also works by project number
         const response = await apiService.get<BudgetSummaryItem[]>(
-          `/budgets/search?projectNumber=${debouncedProject}`
+          `/budgets/search?searchTerm=${debouncedProject}`
         )
         const rows = response.data.map(mapBudgetToProjectData)
         setProjectSuggestions(rows.slice(0, 6))
@@ -112,7 +94,7 @@ export function useProjectSearch() {
       if (proj) queryParams.append("projectNumber", proj)
 
       const response = await apiService.get<BudgetSummaryItem[]>(
-        `/budgets/search?${queryParams.toString()}`
+        `/budgets/by-project/${encodeURIComponent(proj)}/product/${encodeURIComponent(prod)}`
       )
       const filtered = response.data.map(mapBudgetToProjectData)
       setFilteredData(filtered)
@@ -136,18 +118,6 @@ export function useProjectSearch() {
     setProjectNo("")
     setProductSuggestions([])
     setProjectSuggestions([])
-    // Reload initial data
-    const fetchInitialBudgets = async () => {
-      try {
-        const response = await apiService.get<BudgetSummaryItem[]>("/budgets")
-        const rows = response.data.map(mapBudgetToProjectData)
-        setFilteredData(rows)
-      } catch (e) {
-        console.error("Error fetching budgets:", e)
-        setFilteredData([])
-      }
-    }
-    fetchInitialBudgets()
   }
 
   return {

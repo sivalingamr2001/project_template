@@ -88,7 +88,7 @@ export function useProjectBudgets(productNo?: string) {
     const fetchSearch = async () => {
       try {
         const { data } = await apiService.get<BudgetRecord[]>(
-          "/budget/search",
+          "/budget/search/searchTerm=",
           {
             params: { productNo },
           }

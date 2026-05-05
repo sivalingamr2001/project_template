@@ -62,8 +62,9 @@ export function ProjectInformation({
 
       try {
         const res = await apiService.get(
-          `/budgets/search?productNo=${debouncedProduct}`
+          `/budgets/search?searchTerm=${debouncedProduct}`
         )
+
         const data = res.data as ProjectSearchResult[]
         setProjects(Array.isArray(data) ? data : [])
         toast.success(`${data.length} projects found.`)

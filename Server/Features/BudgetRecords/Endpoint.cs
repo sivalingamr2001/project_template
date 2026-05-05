@@ -18,15 +18,14 @@ public static class BudgetRecordsEndpoint
         .WithName("GetBudgets")
         .WithOpenApi();
 
-        group.MapGet("/search", async (string? productNo, string? projectNumber, BudgetRecordsService service, IConfiguration configuration, CancellationToken cancellationToken) =>
+        group.MapGet("/search", async (string ? searchTerm, BudgetRecordsService service, IConfiguration configuration, CancellationToken cancellationToken) =>
         {
-            if (string.IsNullOrWhiteSpace(productNo) && string.IsNullOrWhiteSpace(projectNumber))
+            if (string.IsNullOrWhiteSpace(searchTerm))
             {
                 throw new AppValidationException("At least one search parameter is required: productNo or projectNumber.");
             }
-            var decodedProductNo = string.IsNullOrWhiteSpace(productNo) ? null : DecodeRouteValue(productNo, nameof(productNo));
-            var decodedProjectNumber = string.IsNullOrWhiteSpace(projectNumber) ? null : DecodeRouteValue(projectNumber, nameof(projectNumber));
-            var result = await service.SearchAsync(decodedProductNo, decodedProjectNumber, configuration, cancellationToken);
+
+            var result = await service.SearchAsync(searchTerm, configuration, cancellationToken);
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : ToProblem(result.Error!);
@@ -93,7 +92,7 @@ public static class BudgetRecordsEndpoint
         .WithOpenApi();
 
         // productNo may contain slashes (e.g., "XYZ-5/2-PSV"), so this is a catch-all route.
-        group.MapGet("/by-project/{projectNumber}/product/{*productNo}", async (
+        group.MapGet("/by-project/{projectNumber}/product/{productNo}", async (
             string projectNumber,
             string productNo,
             BudgetRecordsService service,
@@ -113,6 +112,12 @@ public static class BudgetRecordsEndpoint
             var decodedProductNo = DecodeRouteValue(productNo, "productNo");
 
             var result = await service.GetByprojectNumberAndProductNoAsync(decodedprojectNumber, decodedProductNo, cancellationToken);
+
+            if (!result.IsSuccess && result.Error?.Code == ErrorCode.NoContent)
+            {
+                return Results.NoContent();
+            }
+
             return result.IsSuccess
                 ? Results.Ok(result.Value)
                 : ToProblem(result.Error!);
@@ -149,22 +154,21 @@ public static class BudgetRecordsEndpoint
         .WithOpenApi();
 
         group.MapPatch("/", async (
-        UpdateBudgetRecordStatusRequest request,
-        BudgetRecordsService service,
-        CancellationToken cancellationToken) =>
-            {
-                // Await the task and pass properties from the request object
-                var result = await service.UpdateActiveStatusAsync(
-                    request.BudgetId,
-                    request.IsActive,
-                    cancellationToken);
+             UpdateBudgetRecordStatusRequest request,
+             BudgetRecordsService service,
+             CancellationToken cancellationToken) =>
+                {
+                    var result = await service.UpdateActiveStatusAsync(
+                        request.BudgetId, // Pass the list here
+                        request.IsActive,
+                        cancellationToken);
 
-                return result.IsSuccess
-                    ? Results.Ok()
-                    : ToProblem(result.Error!);
-            })
-    .WithName("UpdateBudgetActiveStatus")
-    .WithOpenApi();
+                    return result.IsSuccess
+                        ? Results.Ok()
+                        : ToProblem(result.Error!);
+                })
+         .WithName("UpdateBudgetActiveStatus")
+         .WithOpenApi();
 
         group.MapDelete("/{budgetId:int}", async (int budgetId, BudgetRecordsService service, CancellationToken cancellationToken) =>
         {

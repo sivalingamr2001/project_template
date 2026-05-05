@@ -16,61 +16,97 @@ public sealed class BudgetRecordsService(
     private sealed record BudgetTrendAggregate(DateTime CreatedOn, decimal Planned, decimal Actual);
 
     public async Task<Result<IReadOnlyList<BudgetRecordProductNoDto>>> SearchAsync(
-        string? productNo,
-        string? projectNumber,
-        IConfiguration configuration,
-        CancellationToken cancellationToken)
+      string? searchTerm, // Renamed for clarity as it checks all 4 columns
+      IConfiguration configuration,
+      CancellationToken cancellationToken)
     {
         try
         {
             var connectionString = configuration["Database:PLMConnectionString"];
 
+            // Every occurrence of the parameter needs a unique name for Oracle/Dapper
             const string sql = @"
-                SELECT 
-                    PROJECTNUMBER, 
-                    PRODUCT_NO,
-                    PROJECTNAME as ProjectName
-                FROM JAN_PLM_PROJECT_HEADER_V 
-                WHERE (:ProductNo IS NULL OR PRODUCT_NO LIKE :ProductNo || '%')
-                  AND (:ProjectNumber IS NULL OR PROJECTNUMBER LIKE :ProjectNumber || '%')";
+            SELECT 
+                PROJECTNUMBER, 
+                PRODUCT_NO,
+                PROJECTNAME as ProjectName,
+                TEAMNAME
+            FROM JAN_PLM_PROJECT_HEADER_V 
+            WHERE :S1 IS NULL OR (
+                UPPER(PROJECTNUMBER) LIKE '%' || UPPER(:S2) || '%' OR
+                UPPER(PRODUCT_NO)    LIKE '%' || UPPER(:S3) || '%' OR
+                UPPER(PROJECTNAME)   LIKE '%' || UPPER(:S4) || '%' OR
+                UPPER(TEAMNAME)      LIKE '%' || UPPER(:S5) || '%'
+            )";
 
             using var connection = new OracleConnection(connectionString);
 
+            // Map the same search term to all unique placeholders
+            var parameters = new
+            {
+                S1 = searchTerm,
+                S2 = searchTerm,
+                S3 = searchTerm,
+                S4 = searchTerm,
+                S5 = searchTerm
+            };
+
             var results = await connection.QueryAsync<BudgetRecordProductNoDto>(
-                new CommandDefinition(sql, new { ProductNo = productNo, ProjectNumber = projectNumber }, cancellationToken: cancellationToken)
+                new CommandDefinition(sql, parameters, cancellationToken: cancellationToken)
             );
 
             return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(results.ToList().AsReadOnly());
         }
         catch (OperationCanceledException)
         {
-            // Return an empty list or a specific "Cancelled" result
             return Result<IReadOnlyList<BudgetRecordProductNoDto>>.Success(new List<BudgetRecordProductNoDto>().AsReadOnly());
         }
         catch (Exception)
         {
-            // Handle actual database errors here
             throw;
         }
     }
 
-    public async Task<Result<IReadOnlyList<BudgetRecordSummaryDto>>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<Result<IReadOnlyList<BudgetRecordSummaryDtoWithplanedandactual>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var budgets = await dbContext.Budgets
             .AsNoTracking()
             .OrderByDescending(b => b.ModifiedOn)
-            .Select(b => new BudgetRecordSummaryDto(
+            .Select(b => new
+            {
                 b.BudgetId,
                 b.ProjectNumber,
                 b.ProductNo,
                 b.ProjectTitle,
                 b.EmployeeId,
+                b.CreatedOn,
                 b.ModifiedOn,
-                b.Status.ToString(),
-                b.IsActive == 1))
+                Status = b.Status.ToString(),
+                IsActive = b.IsActive == 1,
+                // Flatten all items across all categories and sum values
+                TotalPlanned = b.Categories.SelectMany(c => c.Items).Sum(i => (decimal?)i.Planned) ?? 0,
+                TotalActual = b.Categories.SelectMany(c => c.Items).Sum(i => (decimal?)i.Actual) ?? 0
+            })
+            .Select(dto => new BudgetRecordSummaryDtoWithplanedandactual(
+                dto.BudgetId,
+                dto.ProjectNumber,
+                dto.ProductNo,
+                dto.ProjectTitle,
+                dto.EmployeeId,
+                dto.CreatedOn,
+                dto.ModifiedOn,
+                dto.Status,
+                dto.IsActive,
+                dto.TotalPlanned,
+                dto.TotalActual,
+                // Variance: Planned - Actual
+                dto.TotalPlanned - dto.TotalActual,
+                // Usage %: (Actual / Planned) * 100
+                dto.TotalPlanned > 0 ? (dto.TotalActual / dto.TotalPlanned) * 100 : 0
+            ))
             .ToListAsync(cancellationToken);
 
-        return budgets;
+        return budgets ?? new List<BudgetRecordSummaryDtoWithplanedandactual>();
     }
 
     public async Task<Result<BudgetRecordDto>> GetByIdAsync(int budgetId, CancellationToken cancellationToken)
@@ -111,18 +147,27 @@ public sealed class BudgetRecordsService(
         return new BudgetRecordDto(budgetHeader, categories);
     }
 
-    public async Task<Result> UpdateActiveStatusAsync(int budgetId, bool isActive, CancellationToken cancellationToken)
+    public async Task<Result> UpdateActiveStatusAsync(
+    IEnumerable<int>? budgetIds,
+    bool isActive,
+    CancellationToken cancellationToken)
     {
-        var budget = await dbContext.Budgets
-            .SingleOrDefaultAsync(b => b.BudgetId == budgetId, cancellationToken);
-        if (budget is null)
+        // Check if the list is null or empty first
+        if (budgetIds is null || !budgetIds.Any())
         {
-            return Result.Failure(BudgetErrors.NotFound(budgetId));
+            return Result.Failure(BudgetErrors.NoneFound(budgetIds));
         }
-        budget.IsActive = isActive ? 1 : 0;
-        budget.ModifiedOn = DateTime.UtcNow;
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return Result.Success();
+
+        int affectedRows = await dbContext.Budgets
+            .Where(b => budgetIds.Contains(b.BudgetId))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(b => b.IsActive, isActive ? 1 : 0)
+                .SetProperty(b => b.ModifiedOn, DateTime.UtcNow),
+                cancellationToken);
+
+        return affectedRows > 0
+            ? Result.Success()
+            : Result.Failure(BudgetErrors.NoneFound(budgetIds));
     }
 
     public async Task<Result<BudgetRecordDto>> GetByProductNoAsync(string productNo, CancellationToken cancellationToken)
@@ -155,7 +200,7 @@ public sealed class BudgetRecordsService(
             .SingleOrDefaultAsync(cancellationToken);
 
         return budgetId is null
-            ? BudgetErrors.NotFoundByProjectNumberAndProductNo(code, product)
+            ? BudgetErrors.NoDataFound(code, product)
             : await GetByIdAsync(budgetId.Value, cancellationToken);
     }
 

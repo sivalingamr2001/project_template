@@ -15,6 +15,7 @@ interface BudgetCategoryRowsProps {
     field: "planned" | "actual",
     value: number
   ) => void
+  isapproved: boolean
 }
 
 export function BudgetCategoryRows({
@@ -23,6 +24,7 @@ export function BudgetCategoryRows({
   items,
   totals,
   updateBudgetItem,
+  isapproved,
 }: BudgetCategoryRowsProps) {
   const [isOpen, setIsOpen] = useState(true)
 
@@ -50,6 +52,7 @@ export function BudgetCategoryRows({
               itemIndex={itemIndex}
               key={`${categoryName}-${item.name}-${itemIndex}`}
               updateBudgetItem={updateBudgetItem}
+              isapproved={isapproved}
             />
           ))}
           <SummaryRow
