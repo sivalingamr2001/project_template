@@ -1,4 +1,5 @@
 import { BudgetAmountInput } from "./BudgetAmountInput"
+import type { BudgetItem } from "@/features/budget/types"
 import {
   formatINR,
   formatPercent,
@@ -7,7 +8,7 @@ import {
 
 interface BudgetItemRowProps {
   categoryIndex: number
-  item: { name: string; planned: number; actual: number }
+  item: BudgetItem
   itemIndex: number
   updateBudgetItem: (
     categoryIndex: number,
@@ -23,20 +24,29 @@ export function BudgetItemRow({
   item,
   itemIndex,
   updateBudgetItem,
-  isapproved
+  isapproved,
 }: BudgetItemRowProps) {
   const variance = item.planned - item.actual
   const variancePercent = item.planned > 0 ? (variance / item.planned) * 100 : 0
+  const isReadOnlyPlanned = isapproved || item.isCalculated
+  const rowClassName = item.isCalculated
+    ? "border-t border-border/60 bg-muted/40 font-medium"
+    : "border-t border-border/60 hover:bg-accent/40"
+  const labelClassName = item.isSubItem
+    ? "pl-8 text-muted-foreground"
+    : item.isCalculated
+      ? "text-foreground"
+      : "text-muted-foreground"
 
   return (
-    <tr className="border-t border-border/60 hover:bg-accent/40">
-      <td className="px-4 py-3 text-muted-foreground">{item.name}</td>
+    <tr className={rowClassName}>
+      <td className={`px-4 py-3 ${labelClassName}`}>{item.name}</td>
       <td className="px-4 py-3">
         <BudgetAmountInput
           onValueChange={(value) =>
             updateBudgetItem(categoryIndex, itemIndex, "planned", value)
           }
-          readOnly={isapproved}
+          readOnly={isReadOnlyPlanned}
           value={item.planned}
         />
       </td>

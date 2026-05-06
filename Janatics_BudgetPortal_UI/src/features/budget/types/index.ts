@@ -5,6 +5,12 @@ export interface BudgetItem {
   name: string
   planned: number
   actual: number
+  excludeFromTotals?: boolean
+  isCalculated?: boolean
+  calculationType?: "multiply"
+  operandNames?: string[]
+  subCategory?: string
+  isSubItem?: boolean
 }
 
 export interface BudgetCategory {
@@ -62,7 +68,17 @@ export type SearchFieldProps = {
 
 export interface BudgetTemplateCategory {
   category: string
-  items: string[]
+  items: BudgetTemplateItem[]
+  subCategories?: BudgetTemplateSubCategory[]
+}
+
+export interface BudgetTemplateItem {
+  name: string
+}
+
+export interface BudgetTemplateSubCategory {
+  name: string
+  items: BudgetTemplateItem[]
 }
 
 export interface BudgetStoreState {
@@ -122,6 +138,7 @@ export type BudgetRecordResponse = {
     modifiedOn: string
   }
   categories: BudgetCategoryResponse[]
+  templateStructure?: BudgetTemplateCategory[]
 }
 
 export type CreateBudgetRequest = {

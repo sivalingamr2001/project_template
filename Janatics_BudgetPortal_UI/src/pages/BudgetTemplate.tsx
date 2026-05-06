@@ -10,7 +10,6 @@ import { Card, CardContent, CardTitle } from "@/shared/components/ui/card"
 import {
   budgetTemplateApi,
   mapTemplateToRow,
-  TEMPLATE_SESSION_KEY,
   type TemplateRow,
 } from "@/features/budget/utils/budgetTemplates"
 
@@ -61,14 +60,11 @@ export default function BudgetTemplate() {
   }
 
   const handleUseTemplate = (template: TemplateRow["template"]) => {
-    if (typeof window !== "undefined") {
-      window.sessionStorage.setItem(
-        TEMPLATE_SESSION_KEY,
-        JSON.stringify(template)
-      )
-    }
-
-    navigate("/plan-entry")
+    navigate("/plan-entry", {
+      state: {
+        templateCategories: template,
+      },
+    })
   }
 
   const columnDefs = useMemo<ColDef<TemplateRow>[]>(

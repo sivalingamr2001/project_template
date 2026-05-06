@@ -1,16 +1,13 @@
-import { useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/shared/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/shared/components/ui/dialog"
-import { useAuth } from "@/providers/auth-provider"
-import { useDraftStorage } from "./hooks/useDraftStorage"
-import { DraftResumePrompt } from "./CreateBudgetModal/DraftResumePrompt"
 import { BudgetFormFields } from "./CreateBudgetModal/BudgetFormFields"
 import { SearchResultDisplay } from "./CreateBudgetModal/SearchResultDisplay"
 import type { BudgetRecordResponse } from "../types"
@@ -36,28 +33,39 @@ export default function CreateBudgetModal({
   onSubmit,
   initialData,
 }: CreateBudgetModalProps) {
-  const { user } = useAuth()
-  const draftKey = useMemo(
-    () => `draft:create-budget:${user?.employeeId ?? "guest"}`,
-    [user?.employeeId]
-  )
-
-  const {
-    formData,
-    setFormData,
-    shouldPromptResume,
-    hasStoredDraft,
-    resumeStoredDraft,
-    discardStoredDraft,
-  } = useDraftStorage(draftKey, initialData, isOpen)
+  const [formData, setFormData] = useState({
+    productName: "",
+    projectNumber: "",
+    productNo: "",
+  })
 
   const [searchResult] = useState<BudgetRecordResponse | null>(null)
   const [searchError] = useState<string | null>(null)
   const [isSearching] = useState(false)
 
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    setFormData({
+      productName: initialData?.productName ?? "",
+      projectNumber: initialData?.projectNumber ?? "",
+      productNo: initialData?.productNo ?? "",
+    })
+  }, [initialData, isOpen])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
+    setFormData((current) => ({ ...current, [name]: value }))
+  }
+
+  const resetForm = () => {
+    setFormData({
+      productName: "",
+      projectNumber: "",
+      productNo: "",
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -71,12 +79,7 @@ export default function CreateBudgetModal({
       })
     }
 
-    setFormData({
-      productName: "",
-      projectNumber: "",
-      productNo: "",
-    })
-    discardStoredDraft()
+    resetForm()
 
     if (!onSubmit) {
       onClose()
@@ -84,12 +87,7 @@ export default function CreateBudgetModal({
   }
 
   const handleCancel = () => {
-    setFormData({
-      productName: "",
-      projectNumber: "",
-      productNo: "",
-    })
-    discardStoredDraft()
+    resetForm()
     onClose()
   }
 
@@ -113,13 +111,6 @@ export default function CreateBudgetModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="grid gap-6 py-6">
-          {shouldPromptResume && hasStoredDraft && (
-            <DraftResumePrompt
-              onResume={resumeStoredDraft}
-              onDiscard={discardStoredDraft}
-            />
-          )}
-
           <BudgetFormFields
             productName={formData.productName}
             projectNumber={formData.projectNumber}

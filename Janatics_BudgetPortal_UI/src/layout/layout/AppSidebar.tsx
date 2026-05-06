@@ -21,6 +21,7 @@ import { cn } from "@/shared/lib/utils"
 import { ChevronDown } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useLocation } from "react-router-dom"
+import { useAuth } from "@/providers/auth-provider"
 
 type SidebarProps = {
   variant?: "desktop" | "mobile"
@@ -30,17 +31,23 @@ type SidebarProps = {
 export function AppSidebar({ variant = "desktop", isCollapsed = false }: SidebarProps) {
   const [openMenus, setOpenMenus] = useState<string[]>([])
   const location = useLocation()
+  const { user } = useAuth()
+
+  // Filter navigation items based on user role
+  const filteredItems = NAVIGATION_ITEMS.filter(item => 
+    !item.roles || item.roles.includes(user?.role || '')
+  )
 
   useEffect(() => {
     if (!isCollapsed) {
-      const activeParent = NAVIGATION_ITEMS.find(item => 
+      const activeParent = filteredItems.find(item => 
         item.children?.some(child => location.pathname === child.path)
       )
       if (activeParent && !openMenus.includes(activeParent.id)) {
         setOpenMenus(prev => [...prev, activeParent.id])
       }
     }
-  }, [location.pathname, isCollapsed])
+  }, [location.pathname, isCollapsed, filteredItems])
 
   const toggleMenu = (id: string) => {
     setOpenMenus(prev => 
@@ -76,7 +83,7 @@ export function AppSidebar({ variant = "desktop", isCollapsed = false }: Sidebar
 
         {/* Navigation Section */}
         <nav className="space-y-2">
-          {NAVIGATION_ITEMS.map((item) => {
+          {filteredItems.map((item) => {
             const hasChildren = item.children && item.children.length > 0
             const isOpen = openMenus.includes(item.id)
             const isActive = location.pathname.startsWith(item.path)

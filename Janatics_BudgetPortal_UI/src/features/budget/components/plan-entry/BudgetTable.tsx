@@ -5,6 +5,7 @@ import { SummaryRow } from "./SummaryRow"
 import { getTotals, getCategoryTotals } from "./utils/budgetTableUtils"
 import { useActualAmounts } from "../hooks/useActualAmounts"
 import { mapActualAmountsToBudget } from "../../utils/actualAmountsUtils"
+import { recalculateCategoryItems } from "../../utils/budgetTemplates"
 
 type BudgetTableProps = {
   record: BudgetRecord
@@ -34,11 +35,13 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
     const updated = { ...record }
     updated.budgetData = updated.budgetData.map((category) => ({
       ...category,
-      items: category.items.map((item) => ({
-        ...item,
-        actual:
-          amountMap.get(`${category.category}|${item.name}`) || item.actual,
-      })),
+      items: recalculateCategoryItems(
+        category.items.map((item) => ({
+          ...item,
+          actual:
+            amountMap.get(`${category.category}|${item.name}`) || item.actual,
+        }))
+      ),
     }))
 
     // Only update if values actually changed
@@ -66,15 +69,17 @@ export function BudgetTable({ record, onRecordChange }: BudgetTableProps) {
 
       return {
         ...category,
-        items: category.items.map((item, itemIdx) => {
-          if (itemIdx !== itemIndex) {
-            return item
-          }
-          return {
-            ...item,
-            [field]: value,
-          }
-        }),
+        items: recalculateCategoryItems(
+          category.items.map((item, itemIdx) => {
+            if (itemIdx !== itemIndex) {
+              return item
+            }
+            return {
+              ...item,
+              [field]: value,
+            }
+          })
+        ),
       }
     })
 

@@ -1,12 +1,14 @@
 import { getBudgetById, mapBudgetApiToUi } from "@/features/budget/types"
+import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
 import { apiService } from "@/shared/lib/api-client"
 import type { ProjectData } from "@/types"
-import { CircleCheckBig, CircleOff } from "lucide-react"
+import { CircleCheckBig, CircleOff, Eye } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Button } from "../ui/button"
+import { useAuth } from "@/providers/auth-provider"
 
 interface BudgetSummaryItem {
   budgetId: number
@@ -48,6 +50,7 @@ export default function BudgetStatusProjects({
   const [budgets, setBudgets] = useState<ProjectData[]>([])
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   useEffect(() => {
     const loadBudgets = async () => {
@@ -87,8 +90,17 @@ export default function BudgetStatusProjects({
 
       try {
         const response = await getBudgetById(row.budgetId)
+        const mappedRecord = mapBudgetApiToUi(response)
         navigate("/plan-entry", {
-          state: { record: mapBudgetApiToUi(response) },
+          state: {
+            record: {
+              ...mappedRecord,
+              budgetData: applyTemplateMetadataToBudgetData(
+                mappedRecord.budgetData,
+                response.templateStructure
+              ),
+            },
+          },
         })
       } catch (error) {
         const errorMessage =
@@ -97,6 +109,23 @@ export default function BudgetStatusProjects({
             : "Failed to load budget record."
         toast.error(errorMessage)
       }
+    },
+    [navigate]
+  )
+
+  const handleViewReport = useCallback(
+    (row: ProjectData) => {
+      if (!row.budgetId && !row.product_no) {
+        toast.info("No report data found for this budget record.")
+        return
+      }
+
+      navigate("/reports", {
+        state: {
+          budgetId: row.budgetId,
+          productNo: row.product_no,
+        },
+      })
     },
     [navigate]
   )
@@ -139,7 +168,6 @@ export default function BudgetStatusProjects({
       setLoading(false);
     }
   };
-
 
   const columnDefs = useMemo(
     () => [
@@ -223,6 +251,13 @@ export default function BudgetStatusProjects({
         pinned: "right" as const,
         cellRenderer: (params: any) => (
           <div className="flex justify-center items-center mt-4 gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleViewReport(params.data)}
+              variant="outline"
+            >
+              <Eye className="mr-2 h-4 w-4" />              View
+            </Button>
             {params.data?.isActive === true ?
               <Button
                 className="text-danger"
@@ -245,7 +280,7 @@ export default function BudgetStatusProjects({
         ),
       },
     ],
-    [handleViewDetails]
+    [handleViewDetails, handleViewReport, statusFilter, user?.role]
   );
 
   return (

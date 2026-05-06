@@ -99,13 +99,92 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     private static void SeedBudgetData(ModelBuilder modelBuilder)
     {
         var defaultTemplateJson = @"[
-          { ""category"": ""Product Design"", ""items"": [""Benchmarking sample"", ""FEA Analysis"", ""CFD Analysis"", ""Design consultancy"", ""Others""] },
-          { ""category"": ""Concept development"", ""items"": [""Comp.devpt-Concept"", ""Machining components"", ""Plastic - Hand moulds"", ""Rubber moulds"", ""3D printing"", ""RPT"", ""MIM"", ""Jigs & fixtures"", ""Concept testing""] },
-          { ""category"": ""Prototype development"", ""items"": [""Machining components"", ""Plastic - Inj. moulds"", ""Aluminium - Die casting"", ""Investment casting"", ""Stamping tools"", ""Rubber moulds"", ""Jigs & fixtures"", ""Comp. mfg."", ""Testing""] },
-          { ""category"": ""Product testing"", ""items"": [""Testing instruments"", ""Testing fixtures"", ""Certification"", ""Others""] },
-          { ""category"": ""Capital equipments"", ""items"": [""Testing equipments"", ""Special machines"", ""Others""] },
-          { ""category"": ""Field validation"", ""items"": [""Product development""] }
+          {
+            ""category"": ""Product Design"",
+            ""items"": [
+              { ""name"": ""Benchmarking sample"" },
+              { ""name"": ""FEA Analysis"" },
+              { ""name"": ""CFD Analysis"" },
+              { ""name"": ""Design consultancy"" },
+              { ""name"": ""Others"" }
+            ]
+          },
+          {
+            ""category"": ""Concept devpt."",
+            ""items"": [
+              { ""name"": ""Special raw materials"" },
+              { ""name"": ""Plastic - Hand / Injection mould"" },
+              { ""name"": ""Rubber mould - Single cavity"" },
+              { ""name"": ""3D printing"" },
+              { ""name"": ""RPT"" },
+              { ""name"": ""MIM"" },
+              { ""name"": ""Jigs & fixtures"" },
+              { ""name"": ""Manufacturing machines"" },
+              { ""name"": ""Testing equipments"" },
+              { ""name"": ""Special cutting tools"" },
+              { ""name"": ""Concept testing - Functional & other testing"" },
+              { ""name"": ""Concept testing - Life testing"" },
+              { ""name"": ""FEA/CFD Analysis (External)"" }
+            ],
+            ""subCategories"": [
+              {
+                ""name"": ""Concept manufacturing. Qty:"",
+                ""items"": [
+                  { ""name"": ""Quantity for concept development"" },
+                  { ""name"": ""Product M+L for concept development"" }
+                ]
+              }
+            ]
+          },
+          {
+            ""category"": ""Prototype devpt."",
+            ""items"": [
+              { ""name"": ""Plastic - Inj. moulds"" },
+              { ""name"": ""Aluminium - Die casting"" },
+              { ""name"": ""Investment casting"" },
+              { ""name"": ""Stamping tools"" },
+              { ""name"": ""Rubber moulds"" },
+              { ""name"": ""Jigs & fixtures"" },
+              { ""name"": ""Manufacturing machines"" },
+              { ""name"": ""Testing equipments"" },
+              { ""name"": ""Special cutting tools"" },
+              { ""name"": ""Prototype testing - Functional & other testing"" },
+              { ""name"": ""Prototype testing - Life testing"" },
+              { ""name"": ""FEA/CFD Analysis (External)"" }
+            ],
+            ""subCategories"": [
+              {
+                ""name"": ""Prototype manufacturing"",
+                ""items"": [
+                  { ""name"": ""Quantity for prototype development"" },
+                  { ""name"": ""Product M+L for prototype development"" }
+                ]
+              }
+            ]
+          },
+          {
+            ""category"": ""Product testing & Measuring Equipment"",
+            ""items"": [
+              { ""name"": ""Testing instruments"" },
+              { ""name"": ""Testing fixtures"" },
+              { ""name"": ""Certification"" }
+            ]
+          },
+          {
+            ""category"": ""Field validation"",
+            ""items"": [
+              { ""name"": ""Product development"" }
+            ]
+          },
+          {
+            ""category"": ""Indirect cost"",
+            ""items"": [
+              { ""name"": ""Contingencies Expense"" }
+            ]
+          }
         ]";
+
+            defaultTemplateJson = System.Text.RegularExpressions.Regex.Replace(defaultTemplateJson, @"\r?\n", "\r\n");
 
         modelBuilder.Entity<BudgetTemplateEntity>().HasData(new BudgetTemplateEntity
         {

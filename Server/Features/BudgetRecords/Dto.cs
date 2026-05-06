@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Server.Features.Template;
 
 namespace Server.Features.BudgetRecords;
 
@@ -117,7 +118,10 @@ public class BudgetRecordProductNoDto
     public string? TeamName { get; set; }
 }
 
-public sealed record BudgetRecordDto(BudgetRecordHeaderDto Header, IReadOnlyList<BudgetCategoryDto> Categories);
+public sealed record BudgetRecordDto(
+    BudgetRecordHeaderDto Header,
+    IReadOnlyList<BudgetCategoryDto> Categories,
+    IReadOnlyList<TemplateStructureDto>? TemplateStructure);
 
 public sealed record BudgetRecordHeaderDto(
     int BudgetId,

@@ -98,6 +98,36 @@ public sealed record BudgetTemplateExportModel(
                     }
                 }
 
+                if (TryGetSubCategoriesElement(categoryElement, out var subCategoriesElement))
+                {
+                    foreach (var subCategoryElement in subCategoriesElement.EnumerateArray())
+                    {
+                        var subCategoryName = GetItemName(subCategoryElement);
+                        if (string.IsNullOrWhiteSpace(subCategoryName))
+                        {
+                            continue;
+                        }
+
+                        items.Add(new BudgetTemplateItemExportModel(subCategoryName));
+
+                        if (!TryGetItemsElement(subCategoryElement, out var subCategoryItemsElement))
+                        {
+                            continue;
+                        }
+
+                        foreach (var subItemElement in subCategoryItemsElement.EnumerateArray())
+                        {
+                            var subItemName = GetItemName(subItemElement);
+                            if (string.IsNullOrWhiteSpace(subItemName))
+                            {
+                                continue;
+                            }
+
+                            items.Add(new BudgetTemplateItemExportModel(subItemName));
+                        }
+                    }
+                }
+
                 categories.Add(new BudgetTemplateCategoryExportModel(categoryName, items));
             }
 
@@ -136,12 +166,16 @@ public sealed record BudgetTemplateExportModel(
     private static bool TryGetItemsElement(JsonElement categoryElement, out JsonElement itemsElement)
         => categoryElement.TryGetProperty("items", out itemsElement) && itemsElement.ValueKind == JsonValueKind.Array;
 
+    private static bool TryGetSubCategoriesElement(JsonElement categoryElement, out JsonElement subCategoriesElement)
+        => categoryElement.TryGetProperty("subCategories", out subCategoriesElement) && subCategoriesElement.ValueKind == JsonValueKind.Array;
+
     private static string? GetItemName(JsonElement itemElement)
     {
         return itemElement.ValueKind switch
         {
             JsonValueKind.String => itemElement.GetString()?.Trim(),
             JsonValueKind.Object when itemElement.TryGetProperty("name", out var nameElement) => nameElement.GetString()?.Trim(),
+            JsonValueKind.Object when itemElement.TryGetProperty("category", out var categoryElement) => categoryElement.GetString()?.Trim(),
             _ => null
         };
     }

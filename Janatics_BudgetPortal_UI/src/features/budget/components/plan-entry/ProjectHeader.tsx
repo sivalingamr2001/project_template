@@ -45,7 +45,7 @@ import { useAuth } from "@/providers/auth-provider"
 interface ProjectHeaderProps {
   record: BudgetRecord
   onSaveRecord?: () => Promise<void>
-  onDiscardDraft: () => void
+  onDiscardChanges: () => void
   onExportCsv: () => void | Promise<void>
   isExporting?: boolean
   selectedTemplateId: string
@@ -56,7 +56,7 @@ interface ProjectHeaderProps {
 export function ProjectHeader({
   record,
   onSaveRecord,
-  onDiscardDraft,
+  onDiscardChanges,
   onExportCsv,
   isExporting = false,
   selectedTemplateId,
@@ -88,11 +88,9 @@ export function ProjectHeader({
     : "border-red-200 dark:border-red-800"
 
   function confirmRefresh() {
-    onDiscardDraft()
+    onDiscardChanges()
     setIsRefreshConfirmOpen(false)
-    toast.success(
-      "Draft session cleared. Returning to the project search view."
-    )
+    toast.success("Changes cleared. Returning to the project search view.")
   }
 
   return (
@@ -334,9 +332,9 @@ export function ProjectHeader({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard draft changes?</AlertDialogTitle>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
             <AlertDialogDescription>
-              Refreshing will clear your draft session and return you to the
+              Leaving now will clear the unsaved changes and return you to the
               project search view. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -348,7 +346,7 @@ export function ProjectHeader({
             </AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button size="sm" onClick={confirmRefresh}>
-                Reload Drafts
+                Discard Changes
               </Button>
             </AlertDialogAction>
           </AlertDialogFooter>

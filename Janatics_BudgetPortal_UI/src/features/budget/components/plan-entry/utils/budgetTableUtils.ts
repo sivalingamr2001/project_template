@@ -1,14 +1,34 @@
 import type { BudgetRecord } from "@/features/budget/types"
 
+export function includeInTotals(item: { excludeFromTotals?: boolean }) {
+  return !item.excludeFromTotals
+}
+
+export function sumIncludedPlanned(
+  items: Array<{ planned: number; excludeFromTotals?: boolean }>
+) {
+  return items.reduce(
+    (sum, item) => (includeInTotals(item) ? sum + item.planned : sum),
+    0
+  )
+}
+
+export function sumIncludedActual(
+  items: Array<{ actual: number; excludeFromTotals?: boolean }>
+) {
+  return items.reduce(
+    (sum, item) => (includeInTotals(item) ? sum + item.actual : sum),
+    0
+  )
+}
+
 export function getTotals(record: BudgetRecord) {
   const totalPlanned = record.budgetData.reduce(
-    (sum, category) =>
-      sum + category.items.reduce((itemSum, item) => itemSum + item.planned, 0),
+    (sum, category) => sum + sumIncludedPlanned(category.items),
     0
   )
   const totalActual = record.budgetData.reduce(
-    (sum, category) =>
-      sum + category.items.reduce((itemSum, item) => itemSum + item.actual, 0),
+    (sum, category) => sum + sumIncludedActual(category.items),
     0
   )
   const variance = totalPlanned - totalActual
@@ -20,8 +40,8 @@ export function getTotals(record: BudgetRecord) {
 export function getCategoryTotals(record: BudgetRecord, categoryIndex: number) {
   const category = record.budgetData[categoryIndex]
 
-  const planned = category.items.reduce((sum, item) => sum + item.planned, 0)
-  const actual = category.items.reduce((sum, item) => sum + item.actual, 0)
+  const planned = sumIncludedPlanned(category.items)
+  const actual = sumIncludedActual(category.items)
   const variance = planned - actual
   const variancePercent = planned > 0 ? (variance / planned) * 100 : 0
 

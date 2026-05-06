@@ -9,7 +9,6 @@ import {
   Search,
 } from "lucide-react"
 import { useMemo, useState } from "react"
-
 import type { BudgetRecordResponse } from "@/features/budget/types"
 import { BudgetMetricCard } from "@/shared/components/dashboard/BudgetMetricCard"
 import { PlannedVsActualBarChart } from "@/shared/components/dashboard/PlannedVsActualBarChart"
@@ -37,6 +36,13 @@ import {
 } from "@/shared/hooks/useBudget"
 import { apiService } from "@/shared/lib/api-client"
 import { exportBudgetWorkbook } from "@/features/budget/utils/exportBudgetWorkbook"
+import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
+import {
+  sumIncludedActual,
+  sumIncludedPlanned,
+} from "@/features/budget/components/plan-entry/utils/budgetTableUtils"
+import { useEffect } from "react"
+import { useLocation } from "react-router-dom"
 
 type PeriodOption = "monthly" | "quarterly" | "yearly" | "custom"
 
@@ -48,6 +54,7 @@ const formatCurrency = (val: number) =>
   })
 
 export default function ReportPage() {
+  const location = useLocation()
   // --- State ---
   const [period, setPeriod] = useState<PeriodOption>("monthly")
   const [productNo, setProductNo] = useState("")
@@ -86,23 +93,27 @@ export default function ReportPage() {
       return { planned: 0, actual: 0, variance: 0 }
     }
 
-    const planned = productBudget.categories.reduce(
-      (sum, category) =>
-        sum +
-        category.items.reduce(
-          (itemSum: number, item: any) => itemSum + item.planned,
-          0
-        ),
+    const enrichedCategories = applyTemplateMetadataToBudgetData(
+      productBudget.categories.map((category) => ({
+        categoryId: category.categoryId,
+        category: category.categoryName,
+        items: category.items.map((item) => ({
+          itemId: item.itemId,
+          name: item.itemName,
+          planned: item.planned,
+          actual: item.actual,
+        })),
+      })),
+      productBudget.templateStructure
+    )
+
+    const planned = enrichedCategories.reduce(
+      (sum, category) => sum + sumIncludedPlanned(category.items),
       0
     )
 
-    const actual = productBudget.categories.reduce(
-      (sum, category) =>
-        sum +
-        category.items.reduce(
-          (itemSum: number, item: any) => itemSum + item.actual,
-          0
-        ),
+    const actual = enrichedCategories.reduce(
+      (sum, category) => sum + sumIncludedActual(category.items),
       0
     )
 
@@ -118,21 +129,72 @@ export default function ReportPage() {
       return []
     }
 
-    return productBudget.categories.map((category) => {
-      const planned = category.items.reduce(
-        (sum, item) => sum + item.planned,
-        0
-      )
-      const actual = category.items.reduce((sum, item) => sum + item.actual, 0)
+    const enrichedCategories = applyTemplateMetadataToBudgetData(
+      productBudget.categories.map((category) => ({
+        categoryId: category.categoryId,
+        category: category.categoryName,
+        items: category.items.map((item) => ({
+          itemId: item.itemId,
+          name: item.itemName,
+          planned: item.planned,
+          actual: item.actual,
+        })),
+      })),
+      productBudget.templateStructure
+    )
+
+    return enrichedCategories.map((category) => {
+      const planned = sumIncludedPlanned(category.items)
+      const actual = sumIncludedActual(category.items)
 
       return {
-        label: category.categoryName,
+        label: category.category,
         planned,
         actual,
         variance: planned - actual,
       }
     })
   }, [productBudget])
+
+  const productBudgetCategories = useMemo(() => {
+    if (!productBudget) {
+      return []
+    }
+
+    return applyTemplateMetadataToBudgetData(
+      productBudget.categories.map((category) => ({
+        categoryId: category.categoryId,
+        category: category.categoryName,
+        items: category.items.map((item) => ({
+          itemId: item.itemId,
+          name: item.itemName,
+          planned: item.planned,
+          actual: item.actual,
+        })),
+      })),
+      productBudget.templateStructure
+    )
+  }, [productBudget])
+
+  const loadProductBudgetByBudgetId = async (budgetId: number) => {
+    setProductLoading(true)
+    setProductError(null)
+    setReportConfig("product")
+
+    try {
+      const response = await apiService.get<BudgetRecordResponse>(
+        `/budgets/${budgetId}`
+      )
+      setProductBudget(response.data)
+      setProductNo(response.data.header.productNo)
+    } catch (error) {
+      console.error("Failed to load budget report", error)
+      setProductBudget(null)
+      setProductError("Unable to load the selected budget report.")
+    } finally {
+      setProductLoading(false)
+    }
+  }
 
   const loadProductBudget = async () => {
     const trimmedProductNo = productNo.trim()
@@ -155,6 +217,24 @@ export default function ReportPage() {
       setProductLoading(false)
     }
   }
+
+  useEffect(() => {
+    const reportState = location.state as
+      | {
+          budgetId?: number
+          productNo?: string
+        }
+      | null
+
+    if (reportState?.budgetId) {
+      void loadProductBudgetByBudgetId(reportState.budgetId)
+      return
+    }
+
+    if (reportState?.productNo) {
+      setProductNo(reportState.productNo)
+    }
+  }, [location.state])
 
   const handleExportProductReport = async () => {
     if (!productBudget?.header.budgetId) {
@@ -449,15 +529,9 @@ export default function ReportPage() {
               Budget category breakdown
             </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {productBudget.categories.map((category) => {
-                const planned = category.items.reduce(
-                  (sum, item) => sum + item.planned,
-                  0
-                )
-                const actual = category.items.reduce(
-                  (sum, item) => sum + item.actual,
-                  0
-                )
+              {productBudgetCategories.map((category) => {
+                const planned = sumIncludedPlanned(category.items)
+                const actual = sumIncludedActual(category.items)
                 const variance = planned - actual
 
                 return (
@@ -467,7 +541,7 @@ export default function ReportPage() {
                   >
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-bold text-primary">
-                        {category.categoryName}
+                        {category.category}
                       </span>
                       <span className="text-[10px] text-muted-foreground uppercase">
                         {category.items.length} line items

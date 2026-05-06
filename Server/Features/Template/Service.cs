@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Janatics.Application.Common.Models;
+﻿using Janatics.Application.Common.Models;
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
 using Server.Infrastructure.Db;
@@ -25,7 +24,7 @@ public class TemplateService(AppDbContext context, ILogger<TemplateService> logg
             var mappedData = items.Select(t => new TemplateResponse(
                 t.TemplateId,
                 t.Name,
-                JsonSerializer.Deserialize<List<TemplateStructureDto>>(t.TemplateJson) ?? []
+                TemplateJsonSerializer.ParseStructure(t.TemplateJson)
             )).ToList();
 
             var paged = new PagedResult<TemplateResponse>
@@ -51,7 +50,7 @@ public class TemplateService(AppDbContext context, ILogger<TemplateService> logg
         if (t == null) return ApiResult<TemplateResponse>.Fail($"Template {id} not found");
 
         var response = new TemplateResponse(t.TemplateId, t.Name,
-            JsonSerializer.Deserialize<List<TemplateStructureDto>>(t.TemplateJson) ?? []);
+            TemplateJsonSerializer.ParseStructure(t.TemplateJson));
 
         return ApiResult<TemplateResponse>.Ok(response);
     }
@@ -63,7 +62,7 @@ public class TemplateService(AppDbContext context, ILogger<TemplateService> logg
             var entity = new BudgetTemplateEntity
             {
                 Name = request.Name,
-                TemplateJson = JsonSerializer.Serialize(request.Structure)
+                TemplateJson = System.Text.Json.JsonSerializer.Serialize(request.Structure, TemplateJsonSerializer.Options)
             };
 
             context.BudgetTemplates.Add(entity);
@@ -87,7 +86,7 @@ public class TemplateService(AppDbContext context, ILogger<TemplateService> logg
                 return ApiResult<TemplateResponse>.Fail("Template not found");
 
             entity.Name = request.Name;
-            entity.TemplateJson = JsonSerializer.Serialize(request.Structure);
+            entity.TemplateJson = System.Text.Json.JsonSerializer.Serialize(request.Structure, TemplateJsonSerializer.Options);
 
             await context.SaveChangesAsync(ct);
 

@@ -10,6 +10,7 @@ import PlanEntry from "@/pages/PlanEntry"
 import ReportPage from "@/pages/ReportPage"
 import BudgetTemplate from "@/pages/BudgetTemplate"
 import TemplateEditorPage from "@/pages/TemplateEditorPage"
+import EmployeesPage from "@/pages/EmployeesPage"
 import { useEffect } from "react"
 import ApprovedProjects from "@/shared/components/ProjectSearch/ApprovedProjects"
 import PendingProjects from "@/shared/components/ProjectSearch/PendingProjects"
@@ -51,6 +52,7 @@ export default function AppRoutes() {
         <Route path="/plan-entry" element={<PlanEntry />} />
         <Route path="/reports" element={<ReportPage />} />
         <Route path="/budget-template" element={<BudgetTemplate />} />
+        <Route path="/employees" element={<EmployeesPage />} />
         <Route path="/projects/approved" element={<ApprovedProjects />} />
         <Route path="/projects/pending" element={<PendingProjects />} />
         <Route

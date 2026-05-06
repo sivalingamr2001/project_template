@@ -6,7 +6,8 @@ import {
   BarChart3,
   FileText,
   CircleOff,
-  CircleCheckBig 
+  CircleCheckBig,
+  Users
 } from "lucide-react"
 
 export type NavigationItem = {
@@ -15,6 +16,7 @@ export type NavigationItem = {
   path: string
   icon: LucideIcon
   children?: any[]
+  roles?: string[] // Add roles array to restrict access
 }
 
 export const NAVIGATION_ITEMS: NavigationItem[] = [
@@ -64,5 +66,12 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     label: "Budget Template",
     path: "/budget-template",
     icon: FileText,
+  },
+  {
+    id: "employees",
+    label: "Employees",
+    path: "/employees",
+    icon: Users,
+    roles: ["Admin"], // Only admin can access
   },
 ]

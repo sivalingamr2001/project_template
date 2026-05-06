@@ -1,13 +1,13 @@
 import { useState } from "react"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import type { BudgetCategoryTotals } from "@/features/budget/types"
+import type { BudgetCategoryTotals, BudgetItem } from "@/features/budget/types"
 import { BudgetItemRow } from "./BudgetItemRow"
 import { SummaryRow } from "./SummaryRow"
 
 interface BudgetCategoryRowsProps {
   categoryIndex: number
   categoryName: string
-  items: Array<{ name: string; planned: number; actual: number }>
+  items: BudgetItem[]
   totals: BudgetCategoryTotals
   updateBudgetItem: (
     categoryIndex: number,

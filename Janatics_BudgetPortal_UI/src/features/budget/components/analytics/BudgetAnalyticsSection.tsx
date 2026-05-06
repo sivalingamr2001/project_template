@@ -1,4 +1,9 @@
 import type { BudgetRecord, BudgetTotals } from "@/features/budget/types"
+import {
+  includeInTotals,
+  sumIncludedActual,
+  sumIncludedPlanned,
+} from "../plan-entry/utils/budgetTableUtils"
 import { PerformanceReportSection } from "./report/PerformanceReportSection"
 
 interface AnalyticsCategoryData {
@@ -20,11 +25,8 @@ interface VarianceItem {
 function getAnalyticsData(record: BudgetRecord) {
   const categories: AnalyticsCategoryData[] = record.budgetData.map(
     (category) => {
-      const planned = category.items.reduce(
-        (sum, item) => sum + item.planned,
-        0
-      )
-      const actual = category.items.reduce((sum, item) => sum + item.actual, 0)
+      const planned = sumIncludedPlanned(category.items)
+      const actual = sumIncludedActual(category.items)
       const variance = planned - actual
       const utilization = planned ? (actual / planned) * 100 : 0
 
@@ -59,7 +61,7 @@ function getAnalyticsData(record: BudgetRecord) {
 
   const varianceItems: VarianceItem[] = record.budgetData
     .flatMap((category) =>
-      category.items.map((item) => {
+      category.items.filter(includeInTotals).map((item) => {
         const amount = item.planned - item.actual
         const percent = item.planned
           ? (Math.abs(amount) / item.planned) * 100

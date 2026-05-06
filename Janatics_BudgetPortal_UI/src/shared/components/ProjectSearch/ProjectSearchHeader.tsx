@@ -19,6 +19,7 @@ import {
   getBudgetById,
   mapBudgetApiToUi,
 } from "@/features/budget/types"
+import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
 import type { ProjectData } from "@/types"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog"
 import { useBudget } from "@/providers/Budget/BudgetProvider"
@@ -52,8 +53,17 @@ export default function ProjectSearchDashboard() {
 
       try {
         const response = await getBudgetById(row.budgetId)
+        const mappedRecord = mapBudgetApiToUi(response)
         navigate("/plan-entry", {
-          state: { record: mapBudgetApiToUi(response) },
+          state: {
+            record: {
+              ...mappedRecord,
+              budgetData: applyTemplateMetadataToBudgetData(
+                mappedRecord.budgetData,
+                response.templateStructure
+              ),
+            },
+          },
         })
       } catch (error) {
         const errorMessage =
@@ -222,9 +232,7 @@ export default function ProjectSearchDashboard() {
     projectNumber: string
     productNo: string
   }) {
-    toast.success(
-      "Draft budget record created. Complete the plan entry to save it."
-    )
+    toast.success("Budget plan initialized. Complete the plan entry to save it.")
     setIsModalOpen(false)
     navigate("/plan-entry", {
       state: { fromDashboard: true, inputData: input },

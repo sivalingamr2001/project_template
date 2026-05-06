@@ -7,6 +7,11 @@ import type {
 } from "@/features/budget/types"
 import { apiService, type ApiError } from "@/shared/lib/api-client"
 import { mapBudgetApiToUi } from "@/features/budget/types"
+import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
+import {
+  sumIncludedActual,
+  sumIncludedPlanned,
+} from "@/features/budget/components/plan-entry/utils/budgetTableUtils"
 import { toast } from "sonner"
 
 interface BudgetProviderProps {
@@ -24,6 +29,31 @@ function BudgetProvider({ children }: BudgetProviderProps) {
   const [error, setError] = useState<string | null>(null)
 
   const lastToastTime = useRef(0)
+
+  const mapBudgetResponseToUi = useCallback((response: BudgetRecordResponse) => {
+    const mapped = mapBudgetApiToUi(response)
+    const budgetData = applyTemplateMetadataToBudgetData(
+      mapped.budgetData,
+      response.templateStructure
+    )
+    const totalPlanned = budgetData.reduce(
+      (sum, category) => sum + sumIncludedPlanned(category.items),
+      0
+    )
+    const totalActual = budgetData.reduce(
+      (sum, category) => sum + sumIncludedActual(category.items),
+      0
+    )
+
+    return {
+      ...mapped,
+      budgetData,
+      projectHeader: {
+        ...mapped.projectHeader,
+        status: totalPlanned - totalActual < 0 ? "AT RISK" : "ON TRACK",
+      },
+    }
+  }, [])
 
   const handleNotFound = useCallback((message: string) => {
     const now = Date.now()
@@ -74,7 +104,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
         const response = await apiService.get<BudgetRecordResponse>(
           `/budgets/${id}`
         )
-        setActiveRecord(mapBudgetApiToUi(response.data))
+        setActiveRecord(mapBudgetResponseToUi(response.data))
       } catch (err: unknown) {
         if (isApiError(err) && err.statusCode === 404) {
           setActiveRecord(null)
@@ -103,7 +133,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
         const response = await apiService.get<BudgetRecordResponse>(
           `/budgets/by-project/${projectNumber}/product/${productNumber}`
         )
-        const mappedData = mapBudgetApiToUi(response.data)
+        const mappedData = mapBudgetResponseToUi(response.data)
 
         setBudgetRecords([mappedData])
         setActiveRecord(mappedData)
@@ -152,7 +182,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
           throw new Error(`Unexpected response status: ${response.status}`)
         }
 
-        const newRecord = mapBudgetApiToUi(response.data)
+        const newRecord = mapBudgetResponseToUi(response.data)
         setBudgetRecords((prev) => [...prev, newRecord])
         setActiveRecord(newRecord)
         return newRecord
@@ -208,7 +238,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
           throw new Error(`Unexpected response status: ${response.status}`)
         }
 
-        const updatedRecord = mapBudgetApiToUi(response.data)
+        const updatedRecord = mapBudgetResponseToUi(response.data)
         setBudgetRecords((prev) =>
           prev.map((record) => (record.id === id ? updatedRecord : record))
         )

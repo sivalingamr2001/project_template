@@ -5,6 +5,7 @@ using Server.Domain.Common;
 using Server.Domain.Entities;
 using Server.Domain.Enums;
 using Server.Domain.Errors;
+using Server.Features.Template;
 using Server.Infrastructure.Db;
 
 namespace Server.Features.BudgetRecords;
@@ -144,7 +145,16 @@ public sealed class BudgetRecordsService(
                     .ToList()))
             .ToListAsync(cancellationToken);
 
-        return new BudgetRecordDto(budgetHeader, categories);
+        var templateStructure = await dbContext.Budgets
+            .AsNoTracking()
+            .Where(b => b.BudgetId == budgetId)
+            .Select(b => b.Template != null ? b.Template.TemplateJson : null)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return new BudgetRecordDto(
+            budgetHeader,
+            categories,
+            TemplateJsonSerializer.ParseStructure(templateStructure));
     }
 
     public async Task<Result> UpdateActiveStatusAsync(
