@@ -96,6 +96,7 @@ public record BudgetRecordSummaryDtoWithplanedandactual(
     string ProductNo,
     string ProjectName,
     int EmployeeId,
+    string TeamName,
     DateTime CreatedOn,
     DateTime ModifiedOn,
     string Status,

@@ -34,7 +34,7 @@ public class Budget : BaseEntity
 
     public ICollection<BudgetReqAuditEntity> Audits { get; set; } = new List<BudgetReqAuditEntity>();
 
-    public int IsActive { get; set; } = 1;
+    public bool IsActive { get; set; } = true;
 }
 
 public class BudgetCategory : BaseEntity

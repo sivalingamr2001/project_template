@@ -11,7 +11,7 @@ import {
 import { Input } from "@/shared/components/ui/input"
 import { useProjectSearch } from "@/shared/hooks/useProjectSearch"
 import { FolderKanban, Package, Plus, Search, Trash2 } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import {
@@ -35,14 +35,16 @@ export default function ProjectSearchDashboard() {
   const navigate = useNavigate()
   const { fetchBudgetRecords } = useBudget()
 
+  useEffect(() => {
+    setLoading(state.isLoading)
+  }, [state])
+
   const currentProductName = useMemo(() => {
-    return state.filteredData[0]?.productName || state.projectSuggestions[0]?.productName || ""
+    return state.filteredData[0]?.productName || state.projectSuggestions[0]?.projectname || ""
   }, [state.filteredData])
 
   const handleViewDetails = useCallback(
     async (row: ProjectData) => {
-      // If we don't have a budgetId from search results,
-      // prompt user to create a new budget instead
       if (!row.budgetId) {
         toast.info(
           "No budget record found. Please create a new budget for this project."
@@ -123,9 +125,9 @@ export default function ProjectSearchDashboard() {
   const handleRefresh = async () => {
     setLoading(true)
     try {
-      const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+      // const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-      await delay(3000);
+      // await delay(3000);
       await fetchBudgetRecords();
 
       toast.success("Data refreshed successfully");
@@ -371,7 +373,7 @@ export default function ProjectSearchDashboard() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleNavigateToPlanEntry}
         initialData={{
-          productName: currentProductName,
+          productName: currentProductName || state.projectSuggestions[0]?.projectname,
           productNo: state.productNo,
           projectNumber: state.projectNo,
         }}

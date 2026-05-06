@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { apiService } from "@/shared/lib/api-client"
 import type { ProjectData } from "@/types"
 import { useDebounce } from "../lib/utils"
+import useLoader from "@/shared/hooks/useLoader"
 
 interface BudgetSummaryItem {
   projectNumber: string
@@ -31,7 +32,7 @@ export function useProjectSearch() {
   )
   const [showProductSuggestions, setShowProductSuggestions] = useState(false)
   const [showProjectSuggestions, setShowProjectSuggestions] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const { loading: isLoading, withLoader } = useLoader()
 
   const productRef = useRef<HTMLDivElement>(null)
   const projectRef = useRef<HTMLDivElement>(null)
@@ -67,42 +68,67 @@ export function useProjectSearch() {
       return
     }
 
-    const fetchProjectSuggestions = async () => {
-      try {
-        // Assuming search also works by project number
-        const response = await apiService.get<BudgetSummaryItem[]>(
-          `/budgets/search?searchTerm=${debouncedProject}`
-        )
-        const rows = response.data.map(mapBudgetToProjectData)
-        setProjectSuggestions(rows.slice(0, 6))
-      } catch (e) {
-        console.error(e)
-        setProjectSuggestions([])
-      }
-    }
-
     fetchProjectSuggestions()
+    fetchTableData(productNo, projectNo)
   }, [debouncedProject])
 
-  const fetchTableData = async (prod: string, proj: string) => {
-    setIsLoading(true)
-
+  const fetchProjectSuggestions = async () => {
     try {
-      // Build query parameters based on provided search criteria
-      const queryParams = new URLSearchParams()
-      if (prod) queryParams.append("productNo", prod)
-      if (proj) queryParams.append("projectNumber", proj)
-
+      // Assuming search also works by project number
       const response = await apiService.get<BudgetSummaryItem[]>(
-        `/budgets/by-project/${encodeURIComponent(proj)}/product/${encodeURIComponent(prod)}`
+        `/budgets/search?searchTerm=${debouncedProject}`
       )
-      const filtered = response.data.map(mapBudgetToProjectData)
-      setFilteredData(filtered)
+      const rows = response.data.map(mapBudgetToProjectData)
+      setProjectSuggestions(rows.slice(0, 6))
     } catch (e) {
       console.error(e)
-    } finally {
-      setIsLoading(false)
+      setProjectSuggestions([])
     }
+  }
+
+  const fetchTableData = async (prod: string, proj: string) => {
+    await withLoader(async () => {
+      try {
+        // Build query parameters based on provided search criteria
+        const queryParams = new URLSearchParams()
+        if (prod) queryParams.append("productNo", prod)
+        if (proj) queryParams.append("projectNumber", proj)
+
+        const response = await apiService.get<BudgetSummaryItem[]>(
+          `/budgets/by-project/${encodeURIComponent(proj)}/product/${encodeURIComponent(prod)}`
+        )
+
+        if (response.status === 204) {
+          try {
+            const res = await apiService.get<BudgetSummaryItem[]>(
+              `/budgets/search?searchTerm=${debouncedProduct}`
+            )
+
+            // 1. Safety check: Ensure we are mapping an array
+            const dataArray = Array.isArray(res.data) ? res.data : [res.data]
+
+            const rows = dataArray.map(mapBudgetToProjectData)
+
+            // 2. Filter using the correct lowercase key 'projectnumber'
+            // Use .trim() and .toLowerCase() to prevent spacing or casing bugs
+            const matchedByProjectNumber = rows.filter((row) => {
+              const targetNo = String(projectNo).trim()
+              const currentRowNo = String(row.projectnumber).trim()
+              return currentRowNo === targetNo
+            })
+
+            setFilteredData(matchedByProjectNumber)
+          } catch (error) {
+            console.error("Error processing search results:", error)
+          }
+        }
+
+        const filtered = response.data.map(mapBudgetToProjectData)
+        setFilteredData(filtered)
+      } catch (e) {
+        console.error(e)
+      }
+    })
   }
 
   const handleSelect = (item: ProjectData) => {

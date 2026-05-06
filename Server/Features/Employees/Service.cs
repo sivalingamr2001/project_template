@@ -24,6 +24,7 @@ public sealed class EmployeesService(
                 e.Phone,
                 e.DepartmentId,
                 e.DepartmentName,
+                e.TeamName,
                 e.Role))
             .ToListAsync(cancellationToken);
 
@@ -42,6 +43,7 @@ public sealed class EmployeesService(
                 e.Phone,
                 e.DepartmentId,
                 e.DepartmentName,
+                e.TeamName,
                 e.Role))
             .SingleOrDefaultAsync(cancellationToken);
 
@@ -141,6 +143,7 @@ public sealed class EmployeesService(
             employee.Phone,
             employee.DepartmentId,
             employee.DepartmentName,
+            employee.TeamName,
             employee.Role);
 
     private static ServiceError DuplicateEmployee(int employeeId)

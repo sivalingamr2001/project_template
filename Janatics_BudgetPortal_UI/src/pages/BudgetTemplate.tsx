@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import useLoader from "@/shared/hooks/useLoader"
 import type { ColDef } from "ag-grid-community"
 import { useNavigate } from "react-router-dom"
 import { CheckCircle, Edit3, Trash2 } from "lucide-react"
@@ -16,25 +17,23 @@ import {
 export default function BudgetTemplate() {
   const navigate = useNavigate()
   const [templates, setTemplates] = useState<TemplateRow[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { loading: isLoading, withLoader } = useLoader()
 
   const fetchTemplates = useCallback(async () => {
-    setIsLoading(true)
+    await withLoader(async () => {
+      try {
+        const response = await budgetTemplateApi.getAll(1, 100)
 
-    try {
-      const response = await budgetTemplateApi.getAll(1, 100)
-
-      if (response.data.success) {
-        setTemplates(response.data.data.data.map(mapTemplateToRow))
-      } else {
-        toast.error(response.data.message || "Failed to load templates")
+        if (response.data.success) {
+          setTemplates(response.data.data.data.map(mapTemplateToRow))
+        } else {
+          toast.error(response.data.message || "Failed to load templates")
+        }
+      } catch (error) {
+        toast.error("Network error while fetching templates")
       }
-    } catch (error) {
-      toast.error("Network error while fetching templates")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+    })
+  }, [withLoader])
 
   useEffect(() => {
     void fetchTemplates()
@@ -45,18 +44,20 @@ export default function BudgetTemplate() {
       return
     }
 
-    try {
-      const response = await budgetTemplateApi.delete(id)
+    await withLoader(async () => {
+      try {
+        const response = await budgetTemplateApi.delete(id)
 
-      if (response.data.success) {
-        toast.success("Template deleted")
-        void fetchTemplates()
-      } else {
-        toast.error(response.data.message || "Delete failed")
+        if (response.data.success) {
+          toast.success("Template deleted")
+          void fetchTemplates()
+        } else {
+          toast.error(response.data.message || "Delete failed")
+        }
+      } catch (error) {
+        toast.error("Error connecting to server")
       }
-    } catch (error) {
-      toast.error("Error connecting to server")
-    }
+    })
   }
 
   const handleUseTemplate = (template: TemplateRow["template"]) => {
@@ -145,6 +146,7 @@ export default function BudgetTemplate() {
 
           <div className="rounded-xl border border-border bg-background p-2">
             <DataGrid<TemplateRow>
+              rowSelection="none"
               gridId="budget-template-grid"
               rowData={templates}
               columnDefs={columnDefs}

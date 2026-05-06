@@ -37,6 +37,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasKey(e => e.BudgetId);
             entity.HasIndex(e => e.ProjectNumber).IsUnique();
 
+            // Fix for ORA-00936: Map bool to NUMBER(1)
+            entity.Property(e => e.IsActive)
+                  .HasColumnType("NUMBER(1)")
+                  .HasConversion(
+                      v => v ? 1 : 0, // C# to DB
+                      v => v == 1     // DB to C#
+                  );
+
             entity.Property(e => e.Status)
                   .HasConversion<string>()
                   .HasMaxLength(50)

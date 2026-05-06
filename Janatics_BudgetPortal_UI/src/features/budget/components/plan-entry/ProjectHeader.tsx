@@ -260,7 +260,7 @@ export function ProjectHeader({
                 {/* Right: Action Controls */}
                 <div className="flex flex-wrap items-center gap-3 md:justify-end">
                   {/* Approve button */}
-                  {projectHeader.approvalStatus === "Pending" && (
+                  {projectHeader.approvalStatus === "Pending" && ['Hod', 'Admin'].includes(user?.role || '') && (
                     <Button
                       size="sm"
                       onClick={() => setIsApproveModalOpen(true)}
@@ -269,24 +269,22 @@ export function ProjectHeader({
                       Review & Approve
                     </Button>
                   )}
-                  {/* Export Button */}
-                  {user?.role === 'User' && (
-                    <Button
-                      disabled={isExporting}
-                      onClick={onExportCsv}
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full gap-2 hover:bg-slate-50 dark:hover:bg-slate-900"
-                    >
-                      <FileDown className="h-4 w-4" />
-                      <span className="hidden sm:inline">
-                        {isExporting ? "Exporting..." : "Export"}
-                      </span>
-                      <span className="sm:hidden">
-                        {isExporting ? "..." : "Export"}
-                      </span>
-                    </Button>
-                  )}
+
+                  <Button
+                    disabled={isExporting}
+                    onClick={onExportCsv}
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full gap-2 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  >
+                    <FileDown className="h-4 w-4" />
+                    <span className="hidden sm:inline">
+                      {isExporting ? "Exporting..." : "Export"}
+                    </span>
+                    <span className="sm:hidden">
+                      {isExporting ? "..." : "Export"}
+                    </span>
+                  </Button>
 
                   {onSaveRecord && isApproved === false && user?.role === 'User' && (
                     <Button

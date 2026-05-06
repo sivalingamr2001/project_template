@@ -28,6 +28,8 @@ import { cn, useDebounce } from "@/shared/lib/utils"
 import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react"
 import * as React from "react"
 import { toast } from "sonner"
+import useLoader from "@/shared/hooks/useLoader"
+import { useGlobalLoader } from "@/providers/LoaderProvider.tsx"
 
 interface ProjectInformationProps {
   onDataReceived: (
@@ -49,31 +51,34 @@ export function ProjectInformation({
   const [productNumber, setProductNumber] = React.useState("")
   const [projectNumber, setProjectNumber] = React.useState("")
   const [projects, setProjects] = React.useState<ProjectSearchResult[]>([])
-  const [isSearching, setIsSearching] = React.useState(false)
-  const [isFetchingDetails, setIsFetchingDetails] = React.useState(false)
+  const { loading: isSearching, withLoader: withSearch } = useLoader()
+  const { loading: isFetchingDetails, withLoader: withFetchDetails } = useLoader()
   const { fetchBudgetRecordById } = useBudget()
+    const { setLoading } = useGlobalLoader()
 
   const debouncedProduct = useDebounce(productNumber, 500)
 
   React.useEffect(() => {
     const fetchProjects = async () => {
       if (debouncedProduct.length <= 3) return
-      setIsSearching(true)
 
-      try {
-        const res = await apiService.get(
-          `/budgets/search?searchTerm=${debouncedProduct}`
-        )
+      await withSearch(async () => {
+        try {
+          setLoading(true)
+          const res = await apiService.get(
+            `/budgets/search?searchTerm=${debouncedProduct}`
+          )
 
-        const data = res.data as ProjectSearchResult[]
-        setProjects(Array.isArray(data) ? data : [])
-        toast.success(`${data.length} projects found.`)
-      } catch {
-        setProjects([])
-        toast.error("Failed to fetch projects.")
-      } finally {
-        setIsSearching(false)
-      }
+          const data = res.data as ProjectSearchResult[]
+          setProjects(Array.isArray(data) ? data : [])
+          toast.success(`${data.length} projects found.`)
+        } catch {
+          setProjects([])
+          toast.error("Failed to fetch projects.")
+        } finally {
+          setLoading(false)
+        }
+      })
     }
 
     fetchProjects()
@@ -81,22 +86,21 @@ export function ProjectInformation({
 
   const handleFetchDetails = async () => {
     if (!productNumber || !projectNumber) return
-    setIsFetchingDetails(true)
 
     const searchParams = { productNumber, projectNumber }
 
-    try {
-      const data = await fetchBudgetRecordById(projectNumber, productNumber)
-      onDataReceived(data, searchParams)
-      toast.success("Project details fetched successfully!")
-    } catch {
-      toast.error(
-        "Project details not found. Please check the project and product numbers."
-      )
-      onDataReceived({ status: 404 }, searchParams)
-    } finally {
-      setIsFetchingDetails(false)
-    }
+    await withFetchDetails(async () => {
+      try {
+        const data = await fetchBudgetRecordById(projectNumber, productNumber)
+        onDataReceived(data, searchParams)
+        toast.success("Project details fetched successfully!")
+      } catch {
+        toast.error(
+          "Project details not found. Please check the project and product numbers."
+        )
+        onDataReceived({ status: 404 }, searchParams)
+      }
+    })
   }
 
   return (

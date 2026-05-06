@@ -22,6 +22,7 @@ public sealed record LoggedInUserDto(
     string Email,
     int DepartmentId,
     string DepartmentName,
+    string TeamName,
     string Role,
     HodDto? DepartmentHod);
 

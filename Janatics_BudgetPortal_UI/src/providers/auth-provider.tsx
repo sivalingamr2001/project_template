@@ -15,6 +15,7 @@ import {
 import { getStorageItem, setStorageItem } from "@/shared/lib/storage"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import { useGlobalLoader } from "./LoaderProvider.tsx"
 
 const STORAGE_KEY = "janatics-auth-user"
 
@@ -33,6 +34,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
+  const { setLoading } = useGlobalLoader();
 
   useEffect(() => {
     const storedUser = getStorageItem<AuthResponse>(STORAGE_KEY)
@@ -58,6 +60,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   const login = async (request: LoginRequest) => {
     try {
+      setLoading(true)
       const auth: any = await authApi.login(request)
       const userData = auth.session.user
 
@@ -70,12 +73,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       // Success logic
       toast("Login successful!") // Optional: feedback
+      setLoading(false)
       navigate("/dashboard")
 
       return auth
     } catch (error) {
       // Error logic
       console.error("Login failed:", error)
+      setLoading(false)
       toast.error("Invalid credentials, please try again.")
       throw error
     }

@@ -32,6 +32,7 @@ public sealed class LoginService(
                 employee.Email,
                 employee.DepartmentId,
                 employee.DepartmentName,
+                employee.TeamName,
                 employee.Role,
                 employee.PasswordHash,
                 employee.PasswordSalt,
@@ -56,6 +57,7 @@ public sealed class LoginService(
                     user.Email,
                     user.DepartmentId,
                     user.DepartmentName,
+                    user.TeamName,
                     user.Role,
                     user.Hod != null
                         ? new HodDto(user.Hod.EmployeeId, user.Hod.Name, user.Hod.Email)
@@ -68,6 +70,7 @@ public sealed class LoginService(
         string Email,
         int DepartmentId,
         string DepartmentName,
+        string TeamName,
         string Role,
         string PasswordHash,
         string PasswordSalt,

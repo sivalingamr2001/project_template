@@ -27,6 +27,9 @@ public sealed class EmployeeEntity : BaseEntity
     [Column("dept_name", TypeName = "varchar(50)")]
     public string DepartmentName { get; set; } = string.Empty;
 
+    [Column("TeamName")]
+    public string? TeamName { get; set; }
+
     [Column("user_role", TypeName = "varchar(20)")]
     public string Role { get; set; } = string.Empty;
 

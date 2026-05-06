@@ -1,6 +1,8 @@
+import ProjectCostReportTable from "@/features/budget/pages/ReportSheet"
 import { getBudgetById, mapBudgetApiToUi } from "@/features/budget/types"
 import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
+import { useAuth } from "@/providers/auth-provider"
 import { apiService } from "@/shared/lib/api-client"
 import type { ProjectData } from "@/types"
 import { CircleCheckBig, CircleOff, Eye } from "lucide-react"
@@ -8,7 +10,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Button } from "../ui/button"
-import { useAuth } from "@/providers/auth-provider"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
+import { VisuallyHidden } from "radix-ui"
 
 interface BudgetSummaryItem {
   budgetId: number
@@ -21,6 +24,10 @@ interface BudgetSummaryItem {
   actual?: number
   variance?: number
   usagePercentage?: number
+  employeeId?: number
+  createdOn?: string
+  modifiedOn?: string
+  teamName?: string
 }
 
 function mapBudgetToProjectData(item: BudgetSummaryItem): ProjectData {
@@ -35,6 +42,10 @@ function mapBudgetToProjectData(item: BudgetSummaryItem): ProjectData {
     actual: item.actual,
     variance: item.variance,
     usagePercentage: item.usagePercentage,
+    employeeId: item.employeeId,
+    createdOn: item.createdOn,
+    modifiedOn: item.modifiedOn,
+    teamName: item.teamName,
   }
 }
 
@@ -51,6 +62,8 @@ export default function BudgetStatusProjects({
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [isOpenModal, setIsOpenModal] = useState(false)
+  const [selectedBudgetId, setSelectedBudgetId] = useState<number | null>(null)
 
   useEffect(() => {
     const loadBudgets = async () => {
@@ -115,20 +128,17 @@ export default function BudgetStatusProjects({
 
   const handleViewReport = useCallback(
     (row: ProjectData) => {
-      if (!row.budgetId && !row.product_no) {
-        toast.info("No report data found for this budget record.")
-        return
+      // Check if budgetId exists and is not undefined
+      if (row.budgetId === undefined || row.budgetId === null) {
+        toast.info("No report data found for this budget record.");
+        return;
       }
 
-      navigate("/reports", {
-        state: {
-          budgetId: row.budgetId,
-          productNo: row.product_no,
-        },
-      })
+      setSelectedBudgetId(row.budgetId);
+      setIsOpenModal(true);
     },
-    [navigate]
-  )
+    []
+  );
 
   const handleDeleteBudget =
     async (budgetId: number) => {
@@ -193,13 +203,13 @@ export default function BudgetStatusProjects({
       },
       { field: "projectnumber", headerName: "Project ID", flex: 1 },
       {
-        field: "year", headerName: "Year", flex: 1, valueGetter: (params: any) => {
+        field: "createdOn", headerName: "Year", flex: 1, valueGetter: (params: any) => {
           if (!params.data.createdOn) return "";
           const date = new Date(params.data.createdOn);
           return date.getFullYear();
         },
       },
-      { field: "team_name", headerName: "Team Name", flex: 1.5 },
+      { field: "team_name", headerName: "Team Name", flex: 1.5, valueGetter: (params: any) => params.data.teamName || "N/A" },
       {
         field: "planned",
         headerName: "Planned",
@@ -256,7 +266,7 @@ export default function BudgetStatusProjects({
               onClick={() => handleViewReport(params.data)}
               variant="outline"
             >
-              <Eye className="mr-2 h-4 w-4" />              View
+              <Eye className="h-4 w-4" />
             </Button>
             {params.data?.isActive === true ?
               <Button
@@ -265,7 +275,7 @@ export default function BudgetStatusProjects({
                 onClick={() => handleDeleteBudget(params.data.budgetId)}
                 variant="destructive"
               >
-                <CircleOff className="text-red-600" /> De-Activate
+                <CircleOff className="text-red-600" />
               </Button>
               :
               <Button
@@ -285,10 +295,10 @@ export default function BudgetStatusProjects({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded-sm border bg-card p-6 shadow-sm">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="rounded-sm border bg-card p-2 px-5 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">{title}</h1>
+            <h1 className="text-2xl mb-2 font-semibold">{title}</h1>
             <p className="text-sm text-muted-foreground">
               Showing budgets filtered by {statusFilter.toLowerCase()} status.
             </p>
@@ -301,7 +311,6 @@ export default function BudgetStatusProjects({
         columnDefs={columnDefs}
         rowSelection="none"
         loading={loading}
-        title={title}
         showSearch={true}
         showRefreshButton={true}
         showClearFiltersButton={false}
@@ -327,6 +336,37 @@ export default function BudgetStatusProjects({
           }
         }}
       />
+
+      <Dialog
+        open={isOpenModal}
+        onOpenChange={(open) => {
+          setIsOpenModal(open);
+          if (!open) setSelectedBudgetId(null); // Clear ID on close to prevent data ghosting
+        }}
+      >
+        <DialogContent className="sm:max-w-[250mm] h-[235mm] overflow-y-auto p-8 border-none">
+
+          {/* 1. Accessibility: Screen Reader Requirements */}
+          <VisuallyHidden.Root>
+            <DialogHeader>
+              <DialogTitle>Project Cost Report</DialogTitle>
+              <DialogDescription>
+                Detailed financial breakdown including estimated amount, actual spend, and variance.
+              </DialogDescription>
+            </DialogHeader>
+          </VisuallyHidden.Root>
+
+          {/* 2. Content: Conditional Rendering */}
+          {selectedBudgetId ? (
+            <ProjectCostReportTable budgetId={selectedBudgetId} />
+          ) : (
+            <div className="flex h-full items-center justify-center p-20 text-muted-foreground">
+              Initializing Report...
+            </div>
+          )}
+
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

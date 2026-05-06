@@ -52,6 +52,7 @@ export default function EmployeesPage() {
 
   const fetchEmployees = async () => {
     try {
+      setLoading(true)
       const response = await apiService.get<Employee[]>("/employees")
       setEmployees(response.data)
     } catch (error) {
@@ -166,7 +167,7 @@ export default function EmployeesPage() {
                   id="employeeId"
                   type="number"
                   value={formData.employeeId}
-                  onChange={(e) => setFormData({...formData, employeeId: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, employeeId: parseInt(e.target.value) })}
                   className="col-span-3"
                 />
               </div>
@@ -175,7 +176,7 @@ export default function EmployeesPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="col-span-3"
                 />
               </div>
@@ -185,7 +186,7 @@ export default function EmployeesPage() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="col-span-3"
                 />
               </div>
@@ -194,7 +195,7 @@ export default function EmployeesPage() {
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="col-span-3"
                 />
               </div>
@@ -204,7 +205,7 @@ export default function EmployeesPage() {
                   id="departmentId"
                   type="number"
                   value={formData.departmentId}
-                  onChange={(e) => setFormData({...formData, departmentId: parseInt(e.target.value)})}
+                  onChange={(e) => setFormData({ ...formData, departmentId: parseInt(e.target.value) })}
                   className="col-span-3"
                 />
               </div>
@@ -213,13 +214,13 @@ export default function EmployeesPage() {
                 <Input
                   id="departmentName"
                   value={formData.departmentName}
-                  onChange={(e) => setFormData({...formData, departmentName: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, departmentName: e.target.value })}
                   className="col-span-3"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="role" className="text-right">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -236,7 +237,7 @@ export default function EmployeesPage() {
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="col-span-3"
                 />
               </div>
@@ -322,7 +323,7 @@ export default function EmployeesPage() {
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="col-span-3"
               />
             </div>
@@ -332,7 +333,7 @@ export default function EmployeesPage() {
                 id="edit-email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="col-span-3"
               />
             </div>
@@ -341,7 +342,7 @@ export default function EmployeesPage() {
               <Input
                 id="edit-phone"
                 value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="col-span-3"
               />
             </div>
@@ -351,7 +352,7 @@ export default function EmployeesPage() {
                 id="edit-departmentId"
                 type="number"
                 value={formData.departmentId}
-                onChange={(e) => setFormData({...formData, departmentId: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, departmentId: parseInt(e.target.value) })}
                 className="col-span-3"
               />
             </div>
@@ -360,13 +361,13 @@ export default function EmployeesPage() {
               <Input
                 id="edit-departmentName"
                 value={formData.departmentName}
-                onChange={(e) => setFormData({...formData, departmentName: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, departmentName: e.target.value })}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-role" className="text-right">Role</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({...formData, role: value})}>
+              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
@@ -384,7 +385,7 @@ export default function EmployeesPage() {
                 type="password"
                 placeholder="Leave empty to keep current"
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="col-span-3"
               />
             </div>

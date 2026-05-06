@@ -3,32 +3,40 @@ using System.Text.Json;
 namespace Server.Features.BudgetExport;
 
 public sealed record BudgetExportWorkbook(
-    string FileName,
     byte[] Content,
-    string ContentType);
+    string ContentType,
+    string FileName);
+
+public record BudgetApprovalDetails(int BudgetId,int ApproverId, string ApproverName, string Status, string Comments, DateTime? ApprovedOn);
 
 public sealed record BudgetExportSource(
     int BudgetId,
+    int EmplyeeId,
+    string PreparedBy,
     int? TemplateId,
     string ProjectNumber,
     string ProductNo,
     string ProductName,
     DateTime StartDate,
+    DateTime CreatedOn,
     string ReportTitle,
     string? TemplateJson,
+    BudgetApprovalDetails Approvals,
     IReadOnlyList<BudgetExportCategoryData> Categories);
 
 public sealed record BudgetExportCategoryData(
-    string RowNumber,
+    string CategoryNumber,
     string CategoryName,
     IReadOnlyList<BudgetExportItemData> Items);
 
 public sealed record BudgetExportItemData(
-    string RowNumber,
+    string ItemNumber,
     string ItemName,
     decimal EstimatedAmount,
     decimal ActualAmount,
-    string Remarks);
+    string Variance,
+    string Percentage,
+    string Remarks); 
 
 public sealed record BudgetTemplateExportModel(
     string TemplateName,

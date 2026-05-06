@@ -11,6 +11,7 @@ public sealed record EmployeeSummaryDto(
     long Phone,
     int DepartmentId,
     string DepartmentName,
+    string TeamName,
     string Role);
 
 public sealed record EmployeeDto(
@@ -20,6 +21,7 @@ public sealed record EmployeeDto(
     long Phone,
     int DepartmentId,
     string DepartmentName,
+    string TeamName,
     string Role);
 
 public sealed record CreateEmployeeRequest
@@ -32,6 +34,7 @@ public sealed record CreateEmployeeRequest
     public long Phone { get; init; }
     public int DepartmentId { get; init; }
     public string DepartmentName { get; init; } = string.Empty;
+    public string TeamName { get; init; }
     public string Role { get; init; } = string.Empty;
     public string? Password { get; init; }
 }
@@ -45,6 +48,7 @@ public sealed record UpdateEmployeeRequest
     public long Phone { get; init; }
     public int DepartmentId { get; init; }
     public string DepartmentName { get; init; } = string.Empty;
+    public string TeamName { get; init; }
     public string Role { get; init; } = string.Empty;
     public string? Password { get; init; }
 }

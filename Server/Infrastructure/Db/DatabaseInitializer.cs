@@ -158,20 +158,51 @@ public sealed class DatabaseInitializer(
                 Console.WriteLine("Seeding initial administrative data...");
                 var (hash, salt) = passwordHasher.HashPassword("Jan@123");
 
+                // 1. Create Admin
                 var admin = new EmployeeEntity
                 {
                     EmployeeId = 1001,
-                    Name = "Admin",
+                    Name = "Admin User",
                     Email = "admin@janatics.co.in",
                     DepartmentId = 101,
                     DepartmentName = "IT",
+                    TeamName = "Infrastructure",
                     Role = "Admin",
                     PasswordHash = hash,
                     PasswordSalt = salt
                 };
 
-                await dbContext.Employees.AddAsync(admin, cancellationToken);
+                // 2. Create HOD
+                var hod = new EmployeeEntity
+                {
+                    EmployeeId = 1002,
+                    Name = "Head of Dept",
+                    Email = "hod@janatics.co.in",
+                    DepartmentId = 102,
+                    DepartmentName = "Production",
+                    TeamName = "Management",
+                    Role = "HOD",
+                    PasswordHash = hash,
+                    PasswordSalt = salt
+                };
+
+                // 3. Create Standard User
+                var user = new EmployeeEntity
+                {
+                    EmployeeId = 1003,
+                    Name = "Standard User",
+                    Email = "user@janatics.co.in",
+                    DepartmentId = 102,
+                    DepartmentName = "Production",
+                    TeamName = "Assembly",
+                    Role = "User",
+                    PasswordHash = hash,
+                    PasswordSalt = salt
+                };
+
+                await dbContext.Employees.AddRangeAsync(new[] { admin, hod, user }, cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
+
                 Console.WriteLine("Seeding completed.");
             }
         }

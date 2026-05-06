@@ -12,7 +12,7 @@ import { VarianceTrendChart } from "@/shared/components/dashboard/VarianceTrendC
 import { AdvancedViewPicker } from "@/shared/components/dashboard/AdvancedViewPicker"
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState<string>("2024-2025")
+  const [period, setPeriod] = useState<string>("2025-2026")
   const [date, setDate] = useState<{ from: Date; to: Date }>({
     from: new Date(new Date().getFullYear(), 0, 1),
     to: new Date(),

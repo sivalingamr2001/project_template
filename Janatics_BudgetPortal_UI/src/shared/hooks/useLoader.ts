@@ -1,38 +1,21 @@
-import { useCallback, useState } from "react"
-import { useAppLoaderContext } from "@/providers/app-provider"
+import { useState, useCallback } from "react"
 
-type LoaderScope = "local" | "global"
-
-export function useLoader() {
-  const { globalLoading, startGlobalLoading, stopGlobalLoading } =
-    useAppLoaderContext()
-  const [pendingCount, setPendingCount] = useState(0)
+function useLoader() {
+  const [loading, setIsLoading] = useState(false)
 
   const withLoader = useCallback(
-    async <T>(factory: () => Promise<T>, options?: { scope?: LoaderScope }) => {
-      const scope = options?.scope ?? "local"
-      setPendingCount((prev) => prev + 1)
-
-      if (scope === "global") {
-        startGlobalLoading()
-      }
-
+    async <T>(asyncFunction: () => Promise<T>): Promise<T> => {
+      setIsLoading(true)
       try {
-        return await factory()
+        return await asyncFunction()
       } finally {
-        setPendingCount((prev) => Math.max(0, prev - 1))
-
-        if (scope === "global") {
-          stopGlobalLoading()
-        }
+        setIsLoading(false)
       }
     },
-    [startGlobalLoading, stopGlobalLoading]
+    []
   )
 
-  return {
-    loading: pendingCount > 0,
-    globalLoading,
-    withLoader,
-  }
+  return { loading, withLoader }
 }
+
+export default useLoader

@@ -80,10 +80,14 @@ public sealed class BudgetRecordsService(
                 b.ProductNo,
                 b.ProjectTitle,
                 b.EmployeeId,
+                TeamName = dbContext.Employees
+                            .Where(e => e.EmployeeId == b.EmployeeId)
+                            .Select(e => e.TeamName)
+                            .FirstOrDefault(),
                 b.CreatedOn,
                 b.ModifiedOn,
                 Status = b.Status.ToString(),
-                IsActive = b.IsActive == 1,
+                b.IsActive,
                 // Flatten all items across all categories and sum values
                 TotalPlanned = b.Categories.SelectMany(c => c.Items).Sum(i => (decimal?)i.Planned) ?? 0,
                 TotalActual = b.Categories.SelectMany(c => c.Items).Sum(i => (decimal?)i.Actual) ?? 0
@@ -94,6 +98,7 @@ public sealed class BudgetRecordsService(
                 dto.ProductNo,
                 dto.ProjectTitle,
                 dto.EmployeeId,
+                dto.TeamName ?? string.Empty,
                 dto.CreatedOn,
                 dto.ModifiedOn,
                 dto.Status,
@@ -124,7 +129,7 @@ public sealed class BudgetRecordsService(
                 b.CreatedOn,
                 b.ModifiedOn,
                 b.Status.ToString(),
-                b.IsActive == 1))
+                b.IsActive))
             .SingleOrDefaultAsync(cancellationToken);
 
         if (budgetHeader is null)
@@ -171,7 +176,7 @@ public sealed class BudgetRecordsService(
         int affectedRows = await dbContext.Budgets
             .Where(b => budgetIds.Contains(b.BudgetId))
             .ExecuteUpdateAsync(s => s
-                .SetProperty(b => b.IsActive, isActive ? 1 : 0)
+                .SetProperty(b => b.IsActive, isActive)
                 .SetProperty(b => b.ModifiedOn, DateTime.UtcNow),
                 cancellationToken);
 
@@ -215,10 +220,10 @@ public sealed class BudgetRecordsService(
     }
 
     public async Task<Result<BudgetSummaryDto>> GetSummaryAsync(
-        string? period,
-        DateTime? from,
-        DateTime? to,
-        CancellationToken ct)
+    string? period,
+    DateTime? from,
+    DateTime? to,
+    CancellationToken ct)
     {
         var now = DateTime.UtcNow;
         DateTime startDate;
@@ -228,46 +233,55 @@ public sealed class BudgetRecordsService(
         if (from.HasValue)
         {
             startDate = from.Value.Date;
-            endDate = to.HasValue ? to.Value.Date.AddDays(1) : now.AddDays(1);
+            // If 'to' is provided, go to the end of that day. If not, go to end of today.
+            endDate = to.HasValue ? to.Value.Date.AddDays(1).AddTicks(-1) : now.Date.AddDays(1).AddTicks(-1);
         }
         else
         {
-            startDate = period?.ToLower() switch
+            // Handle named presets
+            (startDate, endDate) = period?.ToLower() switch
             {
-                "yearly" => new DateTime(now.Year, 1, 1),
-                "quarterly" => new DateTime(now.Year, ((now.Month - 1) / 3) * 3 + 1, 1),
-                _ => new DateTime(now.Year, now.Month, 1) // Default Monthly
+                "yearly" => (new DateTime(now.Year, 1, 1), new DateTime(now.Year, 12, 31, 23, 59, 59)),
+                "quarterly" => GetQuarterRange(now),
+                _ => (new DateTime(now.Year, now.Month, 1), now) // Default Monthly to current progress
             };
-            endDate = now.AddDays(1);
         }
 
         // 2. Query and Aggregate
-        // We calculate sums by flattening the relationship: Budget -> Categories -> Items
         var summary = await dbContext.Budgets
-            .Where(b => b.IsActive == 1 && b.Status == BudgetStatus.Approved)
-            .Where(b => b.CreatedOn >= startDate && b.CreatedOn < endDate)
+            .Where(b => b.IsActive && b.Status == BudgetStatus.Approved)
+            // Using inclusive range for clarity
+            .Where(b => b.CreatedOn >= startDate && b.CreatedOn <= endDate)
             .Select(b => new
             {
                 Planned = b.Categories.SelectMany(c => c.Items).Sum(i => i.Planned),
                 Actual = b.Categories.SelectMany(c => c.Items).Sum(i => i.Actual)
             })
-            .GroupBy(x => 1) // Aggregate all matching records into one result
+            .GroupBy(x => 1)
             .Select(g => new BudgetSummaryDto
             {
                 TotalPlanned = g.Sum(x => x.Planned),
                 TotalActual = g.Sum(x => x.Actual),
                 ActiveProjects = g.Count(),
                 AppliedFrom = startDate,
-                AppliedTo = endDate.AddSeconds(-1)
+                AppliedTo = endDate
             })
             .FirstOrDefaultAsync(ct);
 
-        // 3. Return result or empty DTO if no records found
         return summary ?? new BudgetSummaryDto
         {
             AppliedFrom = startDate,
-            AppliedTo = endDate.AddSeconds(-1)
+            AppliedTo = endDate
         };
+    }
+
+    // Helper to keep logic clean
+    private static (DateTime start, DateTime end) GetQuarterRange(DateTime date)
+    {
+        int quarterNumber = (date.Month - 1) / 3;
+        var start = new DateTime(date.Year, (quarterNumber * 3) + 1, 1);
+        var end = start.AddMonths(3).AddTicks(-1);
+        return (start, end);
     }
 
     public async Task<Result<IReadOnlyList<BudgetTrendPointDto>>> GetTrendAsync(
@@ -280,7 +294,7 @@ public sealed class BudgetRecordsService(
 
         IQueryable<Budget> query = dbContext.Budgets
             .AsNoTracking()
-            .Where(b => b.IsActive == 1 && b.Status == BudgetStatus.Approved);
+            .Where(b => b.IsActive && b.Status == BudgetStatus.Approved);
 
         if (!string.IsNullOrWhiteSpace(projectNumber))
         {
@@ -628,14 +642,14 @@ public sealed class BudgetRecordsService(
     public async Task<Result> DeleteAsync(int budgetId, CancellationToken cancellationToken)
     {
         var budget = await dbContext.Budgets
-            .SingleOrDefaultAsync(b => b.BudgetId == budgetId && b.IsActive == 1, cancellationToken);
+            .SingleOrDefaultAsync(b => b.BudgetId == budgetId && b.IsActive, cancellationToken);
 
         if (budget is null)
         {
             return Result.Failure(BudgetErrors.NotFound(budgetId));
         }
 
-        budget.IsActive = 0;
+        budget.IsActive = false;
         budget.ModifiedOn = DateTime.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -646,7 +660,7 @@ public sealed class BudgetRecordsService(
     public async Task<Result> ApproveOrRejectAsync(int budgetId, int approverId, bool isApproved, string? comments, CancellationToken cancellationToken)
     {
         var budget = await dbContext.Budgets
-            .SingleOrDefaultAsync(b => b.BudgetId == budgetId && b.IsActive == 1, cancellationToken);
+            .SingleOrDefaultAsync(b => b.BudgetId == budgetId && b.IsActive, cancellationToken);
 
         if (budget is null)
         {

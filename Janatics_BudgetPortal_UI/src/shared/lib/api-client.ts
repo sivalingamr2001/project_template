@@ -43,7 +43,7 @@ const tokenStore = {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MAX_RETRIES = 3
+const MAX_RETRIES = 2
 const RETRY_DELAY_MS = 500
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504])
 

@@ -1,5 +1,5 @@
 using ClosedXML.Excel;
-using System.Reflection;
+using DocumentFormat.OpenXml.Bibliography;
 
 namespace Server.Features.BudgetExport;
 
@@ -11,16 +11,24 @@ namespace Server.Features.BudgetExport;
 /// </summary>
 public sealed class ExcelReportBuilder
 {
+    // Use this to get the path relative to where the app is actually running
+    private static readonly string LogoImagePath = Path.Combine(
+        Directory.GetCurrentDirectory(),
+        "wwwroot",
+        "assets",
+        "jana.png"
+    );
+
     // ── Palette ─────────────────────────────────────────────────────────
-    private static readonly XLColor DarkNavy   = XLColor.FromHtml("#1F3864");
-    private static readonly XLColor MidBlue    = XLColor.FromHtml("#2E5BA8");
-    private static readonly XLColor LightBlue  = XLColor.FromHtml("#BDD7EE");
-    private static readonly XLColor PaleBlue   = XLColor.FromHtml("#DEEAF1");
-    private static readonly XLColor White      = XLColor.White;
-    private static readonly XLColor Black      = XLColor.Black;
-    private static readonly XLColor InputBlue  = XLColor.FromHtml("#00008B");
-    private static readonly XLColor ActualGreen= XLColor.FromHtml("#006400");
-    private static readonly XLColor VarRed     = XLColor.FromHtml("#8B0000");
+    private static readonly XLColor DarkNavy = XLColor.FromHtml("#1F3864");
+    private static readonly XLColor MidBlue = XLColor.FromHtml("#0393D3");
+    private static readonly XLColor LightBlue = XLColor.FromHtml("#BDD7EE");
+    private static readonly XLColor PaleBlue = XLColor.FromHtml("#DEEAF1");
+    private static readonly XLColor White = XLColor.White;
+    private static readonly XLColor Black = XLColor.Black;
+    private static readonly XLColor InputBlue = XLColor.FromHtml("#00008B");
+    private static readonly XLColor ActualGreen = XLColor.FromHtml("#006400");
+    private static readonly XLColor VarRed = XLColor.FromHtml("#8B0000");
 
     // ── Column indices (1-based, ClosedXML convention) ──────────────────
     // A=1  B=2  C=3  D=4  E=5  F=6  G=7  H=8
@@ -32,14 +40,14 @@ public sealed class ExcelReportBuilder
     //  F      : Actual Amount
     //  G      : Variance
     //  H      : Remarks
-    private const int ColCatNo  = 1;  // A
-    private const int ColSubNo  = 2;  // B
-    private const int ColDescL  = 3;  // C  ─┐ description merged
-    private const int ColDescR  = 4;  // D  ─┘
-    private const int ColEst    = 5;  // E
-    private const int ColAct    = 6;  // F
-    private const int ColVar    = 7;  // G
-    private const int ColRem    = 8;  // H
+    private const int ColCatNo = 1;  // A
+    private const int ColSubNo = 2;  // B
+    private const int ColDescL = 3;  // C  ─┐ description merged
+    private const int ColDescR = 4;  // D  ─┘
+    private const int ColEst = 5;  // E
+    private const int ColAct = 6;  // F
+    private const int ColVar = 7;  // G
+    private const int ColRem = 8;  // H
 
     private const string AmtFmt = @"#,##0;(#,##0);""-""";
 
@@ -56,12 +64,11 @@ public sealed class ExcelReportBuilder
         row = WriteColumnHeaders(ws, row);           // row  5    : table header
         var (directRows, row2) = WriteCategories(ws, row, source.Categories);
         row = row2;
-        row = WriteTotalDirect(ws, row, directRows); // row 11 equivalent
         var (indirectRows, row3) = WriteIndirectCosts(ws, row, source.Categories);
         row = row3;
         row = WriteTotalProject(ws, row, directRows, indirectRows);
-        row = WriteRemarksBlock(ws, row);
-        row = WriteFooterSignature(ws, row);
+        row = WriteRemarksBlock(ws, row, source);
+        row = WriteFooterSignature(ws, row, source);
         WriteFormMetadata(ws, row);
 
         ConfigurePrintSettings(ws, source);
@@ -80,14 +87,14 @@ public sealed class ExcelReportBuilder
     // ════════════════════════════════════════════════════════════════════
     private static void SetColumnWidths(IXLWorksheet ws)
     {
-        ws.Column(ColCatNo).Width  =  5;
-        ws.Column(ColSubNo).Width  =  7;
-        ws.Column(ColDescL).Width  = 30;
-        ws.Column(ColDescR).Width  = 20;
-        ws.Column(ColEst).Width    = 18;
-        ws.Column(ColAct).Width    = 18;
-        ws.Column(ColVar).Width    = 16;
-        ws.Column(ColRem).Width    = 26;
+        ws.Column(ColCatNo).Width = 10;
+        ws.Column(ColSubNo).Width = 7;
+        ws.Column(ColDescL).Width = 30;
+        ws.Column(ColDescR).Width = 20;
+        ws.Column(ColEst).Width = 18;
+        ws.Column(ColAct).Width = 18;
+        ws.Column(ColVar).Width = 16;
+        ws.Column(ColRem).Width = 26;
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -96,11 +103,30 @@ public sealed class ExcelReportBuilder
     private static int WriteBanner(IXLWorksheet ws, int row, BudgetExportSource source)
     {
         // Row 1 — Company name | Report title | Rec/Date/Page box
-        ws.Row(row).Height = 26;
+        ws.Row(row).Height = 30; // Slightly taller for better logo fit
 
         var company = ws.Range(row, ColCatNo, row, ColSubNo).Merge();
-        company.Value = "JANATICS";
-        Style(company, DarkNavy, White, 16, bold: true, hAlign: XLAlignmentHorizontalValues.Center);
+
+        // 🚩 Check if file exists to prevent DirectoryNotFound/FileNotFound exceptions
+        if (File.Exists(LogoImagePath))
+        {
+            var picture = ws.AddPicture(LogoImagePath)
+                            .MoveTo(company.FirstCell(), 6, 9); // 10px from left, 3px from top
+
+            // Set height explicitly to fit your Row Height (26)
+            picture.Height = 22;
+            picture.Width = 120;
+
+            // Automatically scale width to maintain the original aspect ratio
+            picture.ScaleWidth(1.0);
+        }
+        else
+        {
+            // Fallback text if the image is missing
+            company.Value = "JANATICS";
+        }
+
+        Style(company, White, White, 16, bold: true, hAlign: XLAlignmentHorizontalValues.Center);
         FullBorder(company);
 
         var title = ws.Range(row, ColDescL, row, ColVar).Merge();
@@ -109,12 +135,13 @@ public sealed class ExcelReportBuilder
         FullBorder(title);
 
         // Rec No / Date / Page No — stacked in column H (rows 1-3)
-        WriteMetaBox(ws, row, "Rec No :");
+        WriteMetaBox(ws, row, $"Rec No : {source.BudgetId}");
         row++;
 
         // Row 2 — Product No
+        string currentDate = DateTime.Now.ToString("dd.MM.yyyy");
         ws.Row(row).Height = 18;
-        WriteMetaBox(ws, row, "Date :");
+        WriteMetaBox(ws, row, $"Date : {currentDate}");
         WriteLabelValue(ws, row, "Product No :", source.ProductNo);
         row++;
 
@@ -143,7 +170,7 @@ public sealed class ExcelReportBuilder
         c.Style.Font.FontSize = 8;
         c.Style.Font.Bold = true;
         c.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-        c.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        c.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         c.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
     }
 
@@ -155,16 +182,16 @@ public sealed class ExcelReportBuilder
         lbl.Style.Font.FontSize = 9;
         lbl.Style.Font.Bold = true;
         lbl.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-        lbl.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        lbl.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         lbl.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
         var val = ws.Range(row, ColDescL, row, ColVar).Merge();
         val.Value = value;
-        val.Style.Font.FontName  = "Arial";
-        val.Style.Font.FontSize  = 9;
+        val.Style.Font.FontName = "Arial";
+        val.Style.Font.FontSize = 9;
         val.Style.Font.FontColor = MidBlue;
         val.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-        val.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        val.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         val.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
     }
 
@@ -186,11 +213,11 @@ public sealed class ExcelReportBuilder
         }
 
         Hdr(ColCatNo, ColSubNo, "Cost\nBreak up");
-        Hdr(ColDescL,  ColDescR, "Description");
-        Hdr(ColEst,    ColEst,   "Estimated\nAmount (₹)");
-        Hdr(ColAct,    ColAct,   "Actual\nAmount (₹)");
-        Hdr(ColVar,    ColVar,   "Variance\n(₹)");
-        Hdr(ColRem,    ColRem,   "Remarks");
+        Hdr(ColDescL, ColDescR, "Description");
+        Hdr(ColEst, ColEst, "Estimated\nAmount (₹)");
+        Hdr(ColAct, ColAct, "Actual\nAmount (₹)");
+        Hdr(ColVar, ColVar, "Variance\n(₹)");
+        Hdr(ColRem, ColRem, "Remarks");
 
         return row + 1;
     }
@@ -307,7 +334,7 @@ public sealed class ExcelReportBuilder
         b.Style.Font.FontSize = 8;
         b.Style.Fill.BackgroundColor = bg;
         b.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        b.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        b.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         b.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
         // C–D – description (merged)
@@ -317,44 +344,44 @@ public sealed class ExcelReportBuilder
         desc.Style.Font.FontSize = 9;
         desc.Style.Fill.BackgroundColor = bg;
         desc.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-        desc.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
-        desc.Style.Alignment.WrapText   = true;
+        desc.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        desc.Style.Alignment.WrapText = true;
         FullBorder(desc);
 
         // E – Estimated
         var est = ws.Cell(row, ColEst);
         est.Value = item.EstimatedAmount;
-        est.Style.Font.FontName  = "Arial";
-        est.Style.Font.FontSize  = 9;
+        est.Style.Font.FontName = "Arial";
+        est.Style.Font.FontSize = 9;
         est.Style.Font.FontColor = InputBlue;
         est.Style.NumberFormat.Format = AmtFmt;
         est.Style.Fill.BackgroundColor = bg;
         est.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        est.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        est.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         est.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
         // F – Actual
         var act = ws.Cell(row, ColAct);
         act.Value = item.ActualAmount;
-        act.Style.Font.FontName  = "Arial";
-        act.Style.Font.FontSize  = 9;
+        act.Style.Font.FontName = "Arial";
+        act.Style.Font.FontSize = 9;
         act.Style.Font.FontColor = ActualGreen;
         act.Style.NumberFormat.Format = AmtFmt;
         act.Style.Fill.BackgroundColor = bg;
         act.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        act.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        act.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         act.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
         // G – Variance formula
         var variance = ws.Cell(row, ColVar);
         variance.FormulaA1 = $"=E{row}-F{row}";
-        variance.Style.Font.FontName  = "Arial";
-        variance.Style.Font.FontSize  = 9;
+        variance.Style.Font.FontName = "Arial";
+        variance.Style.Font.FontSize = 9;
         variance.Style.Font.FontColor = VarRed;
         variance.Style.NumberFormat.Format = AmtFmt;
         variance.Style.Fill.BackgroundColor = bg;
         variance.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        variance.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        variance.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         variance.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
 
         // H – Remarks
@@ -364,26 +391,21 @@ public sealed class ExcelReportBuilder
         rem.Style.Font.FontSize = 8;
         rem.Style.Fill.BackgroundColor = bg;
         rem.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-        rem.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
-        rem.Style.Alignment.WrapText   = true;
+        rem.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        rem.Style.Alignment.WrapText = true;
         rem.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
     }
 
     // ════════════════════════════════════════════════════════════════════
     // TOTAL ROWS
     // ════════════════════════════════════════════════════════════════════
-    private static int WriteTotalDirect(IXLWorksheet ws, int row, List<int> directItemRows)
-    {
-        ws.Row(row).Height = 22;
-        return WriteTotalRow(ws, row, "11", "Total Cost - Direct", directItemRows, fontSize: 10);
-    }
 
     private static int WriteTotalProject(IXLWorksheet ws, int row,
         List<int> directRows, List<int> indirectRows)
     {
         ws.Row(row).Height = 24;
         var allRows = directRows.Concat(indirectRows).ToList();
-        return WriteTotalRow(ws, row, "13", "Total Project Cost", allRows, fontSize: 11);
+        return WriteTotalRow(ws, row, "-", "Total Project Cost", allRows, fontSize: 11);
     }
 
     private static int WriteTotalRow(IXLWorksheet ws, int row, string number, string label,
@@ -407,14 +429,14 @@ public sealed class ExcelReportBuilder
 
         var variance = ws.Cell(row, ColVar);
         variance.FormulaA1 = $"=E{row}-F{row}";
-        variance.Style.Font.FontName  = "Arial";
-        variance.Style.Font.FontSize  = fontSize;
+        variance.Style.Font.FontName = "Arial";
+        variance.Style.Font.FontSize = fontSize;
         variance.Style.Font.Bold = true;
         variance.Style.Font.FontColor = White;
         variance.Style.NumberFormat.Format = AmtFmt;
         variance.Style.Fill.BackgroundColor = DarkNavy;
         variance.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        variance.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        variance.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         variance.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         variance.Style.Border.OutsideBorderColor = Black;
 
@@ -431,14 +453,14 @@ public sealed class ExcelReportBuilder
     {
         var c = ws.Cell(row, col);
         c.FormulaA1 = formula;
-        c.Style.Font.FontName  = "Arial";
-        c.Style.Font.FontSize  = fontSize;
+        c.Style.Font.FontName = "Arial";
+        c.Style.Font.FontSize = fontSize;
         c.Style.Font.Bold = true;
         c.Style.Font.FontColor = White;
         c.Style.NumberFormat.Format = AmtFmt;
         c.Style.Fill.BackgroundColor = DarkNavy;
         c.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        c.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        c.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         c.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         c.Style.Border.OutsideBorderColor = Black;
     }
@@ -454,18 +476,18 @@ public sealed class ExcelReportBuilder
     // ════════════════════════════════════════════════════════════════════
     // REMARKS / DECISION BLOCK
     // ════════════════════════════════════════════════════════════════════
-    private static int WriteRemarksBlock(IXLWorksheet ws, int row)
+    private static int WriteRemarksBlock(IXLWorksheet ws, int row, BudgetExportSource source)
     {
         ws.Row(row).Height = 44;
 
         var cell = ws.Range(row, ColCatNo, row, ColRem).Merge();
-        cell.Value = "REMARKS / DECISION:";
+        cell.Value = $"REMARKS / DECISION: {source.Approvals.Comments}";
         cell.Style.Font.FontName = "Arial";
         cell.Style.Font.FontSize = 9;
         cell.Style.Font.Bold = true;
         cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-        cell.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Top;
-        cell.Style.Alignment.WrapText   = true;
+        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
+        cell.Style.Alignment.WrapText = true;
         cell.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
         cell.Style.Border.OutsideBorderColor = Black;
 
@@ -475,26 +497,36 @@ public sealed class ExcelReportBuilder
     // ════════════════════════════════════════════════════════════════════
     // FOOTER — Prepared By / Approved By
     // ════════════════════════════════════════════════════════════════════
-    private static int WriteFooterSignature(IXLWorksheet ws, int row)
+    private static int WriteFooterSignature(IXLWorksheet ws, int row, BudgetExportSource source)
     {
         ws.Row(row).Height = 28;
 
-        // "Prepared By" spans A–D
+        // 1. Prepared By
         var prep = ws.Range(row, ColCatNo, row, ColDescR).Merge();
-        prep.Value = "Prepared By :";
+        prep.Value = $"Prepared By : {source.PreparedBy}";
         StyleFooterBox(prep, LightBlue);
+        prep.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-        // Spacer E
-        var spacer = ws.Cell(row, ColEst);
-        spacer.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        // 2. Approved On (Column E) - Reducing padding/spacing here
+        var approvedOn = ws.Cell(row, ColEst);
+        var dateDisplay = source.Approvals.ApprovedOn?.ToString("yyyy-MM-dd") ?? "N/A";
+        approvedOn.Value = $"Approved On: {dateDisplay}"; // Shortened prefix to save space
+        StyleFooterBox(approvedOn.AsRange(), LightBlue);
 
-        // "Approved By" spans F–H
+        // Crucial for reducing space/overflow in the middle cell:
+        approvedOn.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        approvedOn.Style.Font.FontSize = 8.5; // Slightly smaller to prevent clipping
+        approvedOn.Style.Alignment.ShrinkToFit = true;
+
+        // 3. Approved By
         var appr = ws.Range(row, ColAct, row, ColRem).Merge();
-        appr.Value = "Approved By :";
+        appr.Value = $"Approved By : {source.Approvals.ApproverName}";
         StyleFooterBox(appr, LightBlue);
+        appr.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
         return row + 1;
     }
+
 
     private static void StyleFooterBox(IXLRange range, XLColor bg)
     {
@@ -503,7 +535,7 @@ public sealed class ExcelReportBuilder
         range.Style.Font.Bold = true;
         range.Style.Fill.BackgroundColor = bg;
         range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        range.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
         range.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
         range.Style.Border.OutsideBorderColor = XLColor.Black;
     }
@@ -513,14 +545,18 @@ public sealed class ExcelReportBuilder
     {
         ws.Row(row).Height = 14;
 
+        // Generate the dynamic string
+        string currentDate = DateTime.Now.ToString("dd.MM.yyyy");
+        string leftText = $"Form No: F/D&D/07          Issue No: 4.0          Date: {currentDate}";
+
         var left = ws.Range(row, ColCatNo, row, ColDescR).Merge();
-        left.Value = "Form No: F/D&D/07          Issue No: 4.0          Date: 01.01.2019";
+        left.Value = leftText;
         left.Style.Font.FontName = "Arial";
         left.Style.Font.FontSize = 7;
         left.Style.Font.Italic = true;
         left.Style.Font.FontColor = XLColor.FromHtml("#666666");
         left.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-        left.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        left.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
         var right = ws.Range(row, ColAct, row, ColRem).Merge();
         right.Value = "Controlled Copy";
@@ -529,7 +565,7 @@ public sealed class ExcelReportBuilder
         right.Style.Font.Italic = true;
         right.Style.Font.FontColor = XLColor.FromHtml("#666666");
         right.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-        right.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
+        right.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -538,26 +574,23 @@ public sealed class ExcelReportBuilder
     private static void ConfigurePrintSettings(IXLWorksheet ws, BudgetExportSource source)
     {
         // Paper & orientation
-        ws.PageSetup.PaperSize   = XLPaperSize.A4Paper;
+        ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
         ws.PageSetup.PageOrientation = XLPageOrientation.Portrait;
-        ws.PageSetup.FitToPages  = true;
-        ws.PageSetup.FitToWidth  = 1;
-        ws.PageSetup.FitToHeight = 0;   // let height grow naturally
+        ws.PageSetup.PagesWide = 1;
+        ws.PageSetup.PagesTall = 0;   // let height grow naturally
 
         // Margins (inches)
-        ws.PageSetup.Margins.Left   = 0.5;
-        ws.PageSetup.Margins.Right  = 0.4;
-        ws.PageSetup.Margins.Top    = 0.9;
+        ws.PageSetup.Margins.Left = 0.5;
+        ws.PageSetup.Margins.Right = 0.4;
+        ws.PageSetup.Margins.Top = 0.9;
         ws.PageSetup.Margins.Bottom = 0.9;
         ws.PageSetup.Margins.Header = 0.4;
         ws.PageSetup.Margins.Footer = 0.4;
 
         // ── Printed page heading ────────────────────────────────────────
-        // Left  : Company name
+        // Left  : Jana Logo image
         // Center: "Project Cost" (as requested)
         // Right : Product info
-        ws.PageSetup.Header.Left.AddText("JANATICS",
-            XLHFOccurrence.AllPages);
         ws.PageSetup.Header.Left.AddNewLine();
         ws.PageSetup.Header.Left.AddText($"Product No: {source.ProductNo}",
             XLHFOccurrence.AllPages);
@@ -571,12 +604,8 @@ public sealed class ExcelReportBuilder
         ws.PageSetup.Header.Right.AddText($"Date: {source.CreatedOn:dd-MMM-yyyy}",
             XLHFOccurrence.AllPages);
         ws.PageSetup.Header.Right.AddNewLine();
-        ws.PageSetup.Header.Right.AddText("Page ",
+        ws.PageSetup.Header.Right.AddText("Page &P of &N",
             XLHFOccurrence.AllPages);
-        ws.PageSetup.Header.Right.AddPageNumber(XLHFOccurrence.AllPages);
-        ws.PageSetup.Header.Right.AddText(" of ",
-            XLHFOccurrence.AllPages);
-        ws.PageSetup.Header.Right.AddNumberOfPages(XLHFOccurrence.AllPages);
 
         // ── Printed page footer ─────────────────────────────────────────
         // Left  : Prepared By
@@ -585,8 +614,9 @@ public sealed class ExcelReportBuilder
         ws.PageSetup.Footer.Left.AddText("Prepared By : ____________________",
             XLHFOccurrence.AllPages);
 
+        string currentDate = DateTime.Now.ToString("dd.MM.yyyy");
         ws.PageSetup.Footer.Center.AddText(
-            "Form No: F/D&D/07  |  Issue No: 4.0  |  Date: 01.01.2019",
+            $"Form No: F/D&D/07  |  Issue No: 4.0  |  Date:  {currentDate}",
             XLHFOccurrence.AllPages);
 
         ws.PageSetup.Footer.Right.AddText("Approved By : ____________________",
@@ -605,21 +635,21 @@ public sealed class ExcelReportBuilder
         bool wrap = false)
     {
         range.Style.Fill.BackgroundColor = bg;
-        range.Style.Font.FontName  = "Arial";
-        range.Style.Font.FontSize  = fontSize;
-        range.Style.Font.Bold      = bold;
+        range.Style.Font.FontName = "Arial";
+        range.Style.Font.FontSize = fontSize;
+        range.Style.Font.Bold = bold;
         range.Style.Font.FontColor = fg;
         range.Style.Alignment.Horizontal = hAlign;
-        range.Style.Alignment.Vertical   = XLAlignmentVerticalValues.Center;
-        range.Style.Alignment.WrapText   = wrap;
+        range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        range.Style.Alignment.WrapText = wrap;
     }
 
     private static void FullBorder(IXLRange range)
     {
-        range.Style.Border.OutsideBorder      = XLBorderStyleValues.Thin;
+        range.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         range.Style.Border.OutsideBorderColor = XLColor.Black;
-        range.Style.Border.InsideBorder       = XLBorderStyleValues.Thin;
-        range.Style.Border.InsideBorderColor  = XLColor.Black;
+        range.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+        range.Style.Border.InsideBorderColor = XLColor.Black;
     }
 
     private static string ColumnLetter(int columnIndex)

@@ -10,8 +10,11 @@ import { Button } from "@/shared/components/ui/button";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Label } from "@/shared/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/shared/components/ui/radio-group";
+import { Spinner } from "@/shared/components/ui/spinner";
 import { toast } from "sonner";
+import useLoader from "@/shared/hooks/useLoader";
 import { useAuth } from "@/providers/auth-provider";
+import { apiService } from "@/shared/lib/api-client";
 
 interface ApproveModalProps {
     isOpen: boolean;
@@ -28,40 +31,33 @@ export default function ApproveModal({
 }: ApproveModalProps) {
     const [isApproved, setIsApproved] = useState<boolean>(true);
     const [comments, setComments] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { loading: isSubmitting, withLoader } = useLoader();
     const { user } = useAuth()
 
     const handleSubmit = async () => {
-        setIsSubmitting(true);
+        await withLoader(async () => {
+            const payload = {
+                budgetId: budgetId,
+                approverId: user?.employeeId,
+                isApproved: isApproved,
+                comments: comments.trim(),
+            };
 
-        const payload = {
-            budgetId: budgetId,
-            approverId: user?.employeeId,
-            isApproved: isApproved,
-            comments: comments.trim(),
-        };
+            try {
+                // apiService handles base URL, headers, and stringification
+                await apiService.post(`/budgets/${budgetId}/approval`, payload);
 
-        try {
-            const response = await fetch(
-                `https://localhost:5000/api/budgets/${budgetId}/approval`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                }
-            );
-
-            if (!response.ok) throw new Error("Failed to process approval");
-
-            toast.success(isApproved ? "Budget Approved" : "Budget Rejected");
-            onSuccess();
-            onClose();
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "An error occurred. Please try again.";
-            toast.error(errorMessage);
-        } finally {
-            setIsSubmitting(false);
-        }
+                toast.success(isApproved ? "Budget Approved" : "Budget Rejected");
+                onSuccess();
+                onClose();
+            } catch (error) {
+                // Handles errors returned by your apiService wrapper
+                const errorMessage = error instanceof Error
+                    ? error.message
+                    : "An error occurred. Please try again.";
+                toast.error(errorMessage);
+            }
+        });
     };
 
     return (
@@ -113,6 +109,7 @@ export default function ApproveModal({
                         disabled={isSubmitting}
                         variant={isApproved ? "default" : "destructive"}
                     >
+                        {isSubmitting && <Spinner className="mr-2 h-4 w-4 text-current" />}
                         {isSubmitting ? "Processing..." : "Submit Decision"}
                     </Button>
                 </DialogFooter>

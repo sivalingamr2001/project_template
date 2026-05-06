@@ -1,28 +1,16 @@
-import { format } from "date-fns"
 import {
-  ArrowRight,
-  Calendar as CalendarIcon,
-  FileText,
-  LayoutDashboard,
-  Loader2,
-  MoreHorizontal,
-  Search,
-} from "lucide-react"
-import { useMemo, useState } from "react"
+  sumIncludedActual,
+  sumIncludedPlanned,
+} from "@/features/budget/components/plan-entry/utils/budgetTableUtils"
 import type { BudgetRecordResponse } from "@/features/budget/types"
+import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
+import { exportBudgetWorkbook } from "@/features/budget/utils/exportBudgetWorkbook"
+import { AdvancedViewPicker } from "@/shared/components/dashboard/AdvancedViewPicker"
 import { BudgetMetricCard } from "@/shared/components/dashboard/BudgetMetricCard"
 import { PlannedVsActualBarChart } from "@/shared/components/dashboard/PlannedVsActualBarChart"
 import { VarianceTrendChart } from "@/shared/components/dashboard/VarianceTrendChart"
 import { Button } from "@/shared/components/ui/button"
 import { Calendar } from "@/shared/components/ui/calendar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/shared/components/ui/dropdown-menu"
 import {
   Popover,
   PopoverContent,
@@ -35,16 +23,17 @@ import {
   useYearlyTrend,
 } from "@/shared/hooks/useBudget"
 import { apiService } from "@/shared/lib/api-client"
-import { exportBudgetWorkbook } from "@/features/budget/utils/exportBudgetWorkbook"
-import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
+import { format } from "date-fns"
 import {
-  sumIncludedActual,
-  sumIncludedPlanned,
-} from "@/features/budget/components/plan-entry/utils/budgetTableUtils"
-import { useEffect } from "react"
+  ArrowRight,
+  Calendar as CalendarIcon,
+  FileText,
+  LayoutDashboard,
+  Loader2,
+  Search
+} from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useLocation } from "react-router-dom"
-
-type PeriodOption = "monthly" | "quarterly" | "yearly" | "custom"
 
 const formatCurrency = (val: number) =>
   val.toLocaleString("en-IN", {
@@ -56,7 +45,7 @@ const formatCurrency = (val: number) =>
 export default function ReportPage() {
   const location = useLocation()
   // --- State ---
-  const [period, setPeriod] = useState<PeriodOption>("monthly")
+  const [period, setPeriod] = useState<string>("2025-2026")
   const [productNo, setProductNo] = useState("")
   const [reportConfig, setReportConfig] = useState<"summary" | "product">(
     "summary"
@@ -221,9 +210,9 @@ export default function ReportPage() {
   useEffect(() => {
     const reportState = location.state as
       | {
-          budgetId?: number
-          productNo?: string
-        }
+        budgetId?: number
+        productNo?: string
+      }
       | null
 
     if (reportState?.budgetId) {
@@ -342,48 +331,7 @@ export default function ReportPage() {
               </Popover>
             )}
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full hover:bg-accent"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>View Options</DropdownMenuLabel>
-                <DropdownMenuSeparator />{" "}
-                <DropdownMenuItem
-                  onClick={() => {
-                    setReportConfig("summary")
-                    setProductNo("")
-                    setProductBudget(null)
-                    setProductError(null)
-                  }}
-                >
-                  General Summary
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />{" "}
-                <DropdownMenuItem onClick={() => setPeriod("monthly")}>
-                  Monthly View
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPeriod("quarterly")}>
-                  Quarterly View
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setPeriod("yearly")}>
-                  Yearly View
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setPeriod("custom")}
-                  className="font-medium text-primary"
-                >
-                  Set Custom Range...
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <AdvancedViewPicker period={period} onPeriodChange={setPeriod} />
           </div>
         </div>
       </div>
@@ -410,7 +358,7 @@ export default function ReportPage() {
               title="Variance"
               value={formatCurrency(
                 (summary.summary?.totalPlanned ?? 0) -
-                  (summary.summary?.totalActual ?? 0)
+                (summary.summary?.totalActual ?? 0)
               )}
               subtitle="vs Planned"
               change="Difference"
