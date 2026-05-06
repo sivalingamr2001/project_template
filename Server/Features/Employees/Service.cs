@@ -70,6 +70,7 @@ public sealed class EmployeesService(
             Phone = request.Phone,
             DepartmentId = request.DepartmentId,
             DepartmentName = request.DepartmentName.Trim(),
+            TeamName = request.TeamName.Trim(),
             Role = request.Role.Trim(),
             PasswordHash = hash,
             PasswordSalt = salt
@@ -105,6 +106,7 @@ public sealed class EmployeesService(
         employee.Phone = request.Phone;
         employee.DepartmentId = request.DepartmentId;
         employee.DepartmentName = request.DepartmentName.Trim();
+        employee.TeamName = request.TeamName.Trim();
         employee.Role = request.Role.Trim();
 
         if (!string.IsNullOrWhiteSpace(request.Password))

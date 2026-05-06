@@ -2,9 +2,6 @@ import BudgetStatusProjects from "@/shared/components/ProjectSearch/BudgetStatus
 
 export default function ApprovedProjects() {
   return (
-    <BudgetStatusProjects
-      title="Approved Projects"
-      statusFilter="Approved"
-    />
+    <BudgetStatusProjects title="Approved Projects" statusFilter="Approved" />
   )
 }

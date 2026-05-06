@@ -64,11 +64,13 @@ function Analytics() {
                   {activeRecord.projectHeader.approvalStatus}
                 </span>
               )}
-              <span className={`rounded-full border px-2.5 py-1 font-semibold ${
-                activeRecord.projectHeader.isActive
-                  ? "border-emerald-200 bg-emerald-100 text-emerald-700"
-                  : "border-amber-200 bg-amber-100 text-amber-700"
-              }`}>
+              <span
+                className={`rounded-full border px-2.5 py-1 font-semibold ${
+                  activeRecord.projectHeader.isActive
+                    ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                    : "border-amber-200 bg-amber-100 text-amber-700"
+                }`}
+              >
                 {activeRecord.projectHeader.isActive ? "Active" : "Inactive"}
               </span>
             </div>

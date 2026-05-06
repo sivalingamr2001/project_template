@@ -153,6 +153,26 @@ public static class BudgetRecordsEndpoint
         .WithName("UpdateBudget")
         .WithOpenApi();
 
+        group.MapPut("/{id:int}/amounts", async (int id, UpdateBudgetAmountsRequest request, BudgetRecordsService service, CancellationToken cancellationToken) =>
+        {
+            // Simple validation to ensure IDs match
+            if (id != request.BudgetId)
+            {
+                return Results.BadRequest("URL ID and Body ID mismatch.");
+            }
+
+            var result = await service.UpdateAmountsAsync(request, cancellationToken);
+
+            if (!result.IsSuccess)
+            {
+                return ToProblem(result.Error!);
+            }
+
+            return Results.Ok(new { Message = "Amounts updated successfully", Success = true });
+        })
+        .WithName("UpdateBudgetAmounts")
+        .WithOpenApi();
+
         group.MapPatch("/", async (
              UpdateBudgetRecordStatusRequest request,
              BudgetRecordsService service,
@@ -169,6 +189,8 @@ public static class BudgetRecordsEndpoint
                 })
          .WithName("UpdateBudgetActiveStatus")
          .WithOpenApi();
+
+
 
         group.MapDelete("/{budgetId:int}", async (int budgetId, BudgetRecordsService service, CancellationToken cancellationToken) =>
         {

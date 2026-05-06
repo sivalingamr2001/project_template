@@ -2,10 +2,19 @@ import { useMemo, useState } from "react"
 import { format } from "date-fns"
 import { LayoutDashboard, Calendar as CalendarIcon } from "lucide-react"
 
-import { useBudgetSummary, useMonthlyTrend, useQuarterlyTrend, useYearlyTrend } from "@/shared/hooks/useBudget"
+import {
+  useBudgetSummary,
+  useMonthlyTrend,
+  useQuarterlyTrend,
+  useYearlyTrend,
+} from "@/shared/hooks/useBudget"
 import { Button } from "@/shared/components/ui/button"
 import { Calendar } from "@/shared/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/shared/components/ui/popover"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/shared/components/ui/popover"
 import { BudgetMetricCard } from "@/shared/components/dashboard/BudgetMetricCard"
 import { PlannedVsActualBarChart } from "@/shared/components/dashboard/PlannedVsActualBarChart"
 import { VarianceTrendChart } from "@/shared/components/dashboard/VarianceTrendChart"
@@ -51,16 +60,22 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 rounded-full border bg-card p-1.5 pl-4 shadow-sm">
+        <div className="flex h-8 items-center gap-3 rounded-full border bg-card p-1.5 pl-4 shadow-sm">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-            <span className="text-xs font-bold text-muted-foreground uppercase">{period}</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase">
+              {period}
+            </span>
           </div>
 
           {period === "custom" && (
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="secondary" size="sm" className="h-8 rounded-full px-3 text-[11px]">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-[11px]"
+                >
                   <CalendarIcon className="mr-2 h-3 w-3" />
                   {format(date.from, "MMM dd")} - {format(date.to, "MMM dd, y")}
                 </Button>
@@ -70,7 +85,9 @@ export default function Dashboard() {
                   initialFocus
                   mode="range"
                   selected={{ from: date.from, to: date.to }}
-                  onSelect={(range: any) => range?.from && range?.to && setDate(range)}
+                  onSelect={(range: any) =>
+                    range?.from && range?.to && setDate(range)
+                  }
                   numberOfMonths={2}
                 />
               </PopoverContent>

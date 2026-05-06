@@ -30,7 +30,7 @@ import {
   FileText,
   LayoutDashboard,
   Loader2,
-  Search
+  Search,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useLocation } from "react-router-dom"
@@ -208,12 +208,10 @@ export default function ReportPage() {
   }
 
   useEffect(() => {
-    const reportState = location.state as
-      | {
-        budgetId?: number
-        productNo?: string
-      }
-      | null
+    const reportState = location.state as {
+      budgetId?: number
+      productNo?: string
+    } | null
 
     if (reportState?.budgetId) {
       void loadProductBudgetByBudgetId(reportState.budgetId)
@@ -358,7 +356,7 @@ export default function ReportPage() {
               title="Variance"
               value={formatCurrency(
                 (summary.summary?.totalPlanned ?? 0) -
-                (summary.summary?.totalActual ?? 0)
+                  (summary.summary?.totalActual ?? 0)
               )}
               subtitle="vs Planned"
               change="Difference"

@@ -99,29 +99,30 @@ export function ProjectHeader({
     >
       {/* Background decoration for active state */}
       {projectHeader.isActive && (
-        <div className="absolute inset-0 rounded-xs opacity-[0.02] pointer-events-none">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500 rounded-full blur-3xl -z-10" />
+        <div className="pointer-events-none absolute inset-0 rounded-xs opacity-[0.02]">
+          <div className="absolute top-0 right-0 -z-10 h-96 w-96 rounded-full bg-emerald-500 blur-3xl" />
         </div>
       )}
 
       <div className="flex flex-col md:gap-0">
         {/* TOP SECTION: Project Info + Status */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           {/* Left: Project Information */}
           <div className="flex-1">
             {/* TOP: Primary Title */}
-            <div className="flex gap-4 mb-4">
-              <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            <div className="mb-4 flex gap-4">
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">
                 {projectHeader.productName}
               </h1>
-              <div className="h-6 mt-1 w-px rounded-full bg-muted-foreground/40" />
+              <div className="mt-1 h-6 w-px rounded-full bg-muted-foreground/40" />
               <div className="flex flex-wrap items-center gap-3 md:justify-end">
                 {/* Active/Inactive Badge */}
                 <Badge
-                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold border transition-all ${projectHeader.isActive
-                    ? "bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
-                    : "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
-                    }`}
+                  className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-xs font-semibold transition-all ${
+                    projectHeader.isActive
+                      ? "border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                      : "border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                  }`}
                 >
                   {projectHeader.isActive ? (
                     <CheckCircle2 className="h-3.5 w-3.5" />
@@ -134,10 +135,11 @@ export function ProjectHeader({
                 {/* Approval Status Badge */}
                 {projectHeader.approvalStatus && (
                   <Badge
-                    className={`rounded-full px-3.5 py-2 text-xs font-semibold border ${projectHeader.approvalStatus === "Pending"
-                      ? "bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
-                      : "bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
-                      }`}
+                    className={`rounded-full border px-3.5 py-2 text-xs font-semibold ${
+                      projectHeader.approvalStatus === "Pending"
+                        ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                        : "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                    }`}
                   >
                     {projectHeader.approvalStatus}
                   </Badge>
@@ -148,22 +150,31 @@ export function ProjectHeader({
             {/* BOTTOM: Metadata Row */}
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-muted-foreground">Project ID:</span>
-                <span className="font-medium text-foreground">{projectHeader.projectNumber}</span>
+                <span className="font-semibold text-muted-foreground">
+                  Project ID:
+                </span>
+                <span className="font-medium text-foreground">
+                  {projectHeader.projectNumber}
+                </span>
               </div>
 
               {/* Small Dot Separator */}
               <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
 
               <div className="flex items-center gap-1.5">
-                <span className="font-semibold text-muted-foreground">Product No:</span>
-                <span className="font-medium text-foreground">{projectHeader.productNo}</span>
+                <span className="font-semibold text-muted-foreground">
+                  Product No:
+                </span>
+                <span className="font-medium text-foreground">
+                  {projectHeader.productNo}
+                </span>
               </div>
               <div className="h-1 w-1 rounded-full bg-muted-foreground/40" />
 
-
               <div className="flex items-center gap-3 text-sm">
-                <span className="text-muted-foreground font-medium">Updated:</span>
+                <span className="font-medium text-muted-foreground">
+                  Updated:
+                </span>
                 <span className="font-semibold text-foreground">
                   {formatDate(projectHeader.lastUpdated)}
                 </span>
@@ -172,11 +183,11 @@ export function ProjectHeader({
           </div>
 
           {/* Right: Status Badges */}
-          < div className="flex flex-col items-end gap-0">
-            <div className="flex items-center mb-2.5 gap-1.5 h-7.5 rounded-full border border-border/60 bg-card/50 backdrop-blur-sm p-1.5 pr-2.5 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex flex-col items-end gap-0">
+            <div className="mb-2.5 flex h-7.5 items-center gap-1.5 rounded-full border border-border/60 bg-card/50 p-1.5 pr-2.5 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md">
               <div className="flex items-center gap-1.5 pl-2">
                 <Settings2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide hidden sm:inline">
+                <span className="hidden text-xs font-semibold tracking-wide text-muted-foreground uppercase sm:inline">
                   Template
                 </span>
               </div>
@@ -201,7 +212,7 @@ export function ProjectHeader({
                     <DropdownMenuItem
                       key={option.id}
                       onClick={() => onTemplateChange(option.id)}
-                      className="flex items-center justify-between cursor-pointer"
+                      className="flex cursor-pointer items-center justify-between"
                     >
                       {option.name}
                       {selectedTemplateId === option.id && (
@@ -226,13 +237,13 @@ export function ProjectHeader({
               <TooltipProvider>
                 <Tooltip delayDuration={200}>
                   <TooltipTrigger asChild>
-                    <button className="flex h-7 w-7 cursor-help items-center justify-center rounded-full hover:bg-muted/60 transition-colors">
+                    <button className="flex h-7 w-7 cursor-help items-center justify-center rounded-full transition-colors hover:bg-muted/60">
                       <Info className="h-4 w-4 text-muted-foreground" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="w-72 p-4">
                     <div className="space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-tight">
+                      <p className="text-xs font-bold tracking-tight uppercase">
                         Template Information
                       </p>
                       <p className="text-xs leading-relaxed">
@@ -242,7 +253,7 @@ export function ProjectHeader({
                       </p>
                       <Link
                         to="/budget-template"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:underline pt-1"
+                        className="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-emerald-600 hover:underline"
                       >
                         View Template Manager
                         <ExternalLink className="h-3 w-3" />
@@ -255,27 +266,27 @@ export function ProjectHeader({
             <div className="h-px w-full rounded-full bg-muted-foreground/0" />
 
             <div className="flex items-end">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 {/* Right: Action Controls */}
                 <div className="flex flex-wrap items-center gap-3 md:justify-end">
                   {/* Approve button */}
-                  {projectHeader.approvalStatus === "Pending" && ['Hod', 'Admin'].includes(user?.role || '') && (
-                    <Button
-                      size="sm"
-                      onClick={() => setIsApproveModalOpen(true)}
-                      className="ml-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full"
-                    >
-                      Review & Approve
-                    </Button>
-                  )}
+                  {projectHeader.approvalStatus === "Pending" &&
+                    ["Hod", "Admin"].includes(user?.role || "") && (
+                      <Button
+                        size="sm"
+                        onClick={() => setIsApproveModalOpen(true)}
+                        className="ml-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        Review & Approve
+                      </Button>
+                    )}
 
                   <Button
                     disabled={isExporting}
                     onClick={onExportCsv}
                     size="sm"
                     variant="outline"
-                    className="rounded-full gap-2 hover:bg-slate-50 dark:hover:bg-slate-900"
+                    className="gap-2 rounded-full hover:bg-slate-50 dark:hover:bg-slate-900"
                   >
                     <FileDown className="h-4 w-4" />
                     <span className="hidden sm:inline">
@@ -286,20 +297,23 @@ export function ProjectHeader({
                     </span>
                   </Button>
 
-                  {onSaveRecord && isApproved === false && user?.role === 'User' && (
-                    <Button
-                      disabled={!isFormValid}
-                      onClick={onSaveRecord}
-                      size="sm"
-                      className={`rounded-full gap-2 font-semibold transition-all ${isFormValid
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg"
-                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                  {onSaveRecord &&
+                    isApproved === false &&
+                    user?.role === "User" && (
+                      <Button
+                        disabled={!isFormValid}
+                        onClick={onSaveRecord}
+                        size="sm"
+                        className={`gap-2 rounded-full font-semibold transition-all ${
+                          isFormValid
+                            ? "bg-emerald-600 text-white shadow-md hover:bg-emerald-700 hover:shadow-lg"
+                            : "cursor-not-allowed bg-muted text-muted-foreground"
                         }`}
-                    >
-                      <Save className="h-4 w-4" />
-                      <span className="hidden sm:inline">Save</span>
-                    </Button>
-                  )}
+                      >
+                        <Save className="h-4 w-4" />
+                        <span className="hidden sm:inline">Save</span>
+                      </Button>
+                    )}
                 </div>
               </div>
             </div>
@@ -307,7 +321,6 @@ export function ProjectHeader({
         </div>
 
         {/* BOTTOM SECTION: Last Updated + Actions */}
-
       </div>
 
       {/* Approve Modal */}

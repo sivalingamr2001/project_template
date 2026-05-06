@@ -2,12 +2,36 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/shared/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/shared/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/shared/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/shared/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/shared/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/shared/components/ui/dialog"
 import { toast } from "sonner"
 import { Plus, Edit, Trash2 } from "lucide-react"
 import { apiService } from "@/shared/lib/api-client"
@@ -19,6 +43,7 @@ type Employee = {
   phone: number
   departmentId: number
   departmentName: string
+  teamName?: string
   role: string
 }
 
@@ -29,8 +54,10 @@ type CreateEmployeeRequest = {
   phone: string
   departmentId: number
   departmentName: string
+  teamName?: string
   role: string
   password?: string
+  confirmPassword?: string
 }
 
 export default function EmployeesPage() {
@@ -46,9 +73,12 @@ export default function EmployeesPage() {
     phone: "",
     departmentId: 0,
     departmentName: "",
+    teamName: "",
     role: "",
-    password: ""
+    password: "",
+    confirmPassword: "",
   })
+  const [passwordError, setPasswordError] = useState("")
 
   const fetchEmployees = async () => {
     try {
@@ -56,7 +86,8 @@ export default function EmployeesPage() {
       const response = await apiService.get<Employee[]>("/employees")
       setEmployees(response.data)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch employees"
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch employees"
       toast.error(errorMessage)
     } finally {
       setLoading(false)
@@ -71,14 +102,15 @@ export default function EmployeesPage() {
     try {
       await apiService.post("/employees", {
         ...formData,
-        phone: parseInt(formData.phone)
+        phone: parseInt(formData.phone),
       })
       toast.success("Employee created successfully")
       setIsCreateDialogOpen(false)
       resetForm()
       fetchEmployees()
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to create employee"
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to create employee"
       toast.error(errorMessage)
     }
   }
@@ -88,7 +120,7 @@ export default function EmployeesPage() {
     try {
       await apiService.put(`/employees/${editingEmployee.employeeId}`, {
         ...formData,
-        phone: parseInt(formData.phone)
+        phone: parseInt(formData.phone),
       })
       toast.success("Employee updated successfully")
       setIsEditDialogOpen(false)
@@ -96,7 +128,8 @@ export default function EmployeesPage() {
       resetForm()
       fetchEmployees()
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update employee"
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update employee"
       toast.error(errorMessage)
     }
   }
@@ -108,7 +141,8 @@ export default function EmployeesPage() {
       toast.success("Employee deleted successfully")
       fetchEmployees()
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to delete employee"
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete employee"
       toast.error(errorMessage)
     }
   }
@@ -121,8 +155,9 @@ export default function EmployeesPage() {
       phone: "",
       departmentId: 0,
       departmentName: "",
+      teamName: "",
       role: "",
-      password: ""
+      password: "",
     })
   }
 
@@ -135,93 +170,140 @@ export default function EmployeesPage() {
       phone: employee.phone.toString(),
       departmentId: employee.departmentId,
       departmentName: employee.departmentName,
+      teamName: employee.teamName || "",
       role: employee.role,
-      password: ""
+      password: "",
     })
     setIsEditDialogOpen(true)
   }
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>
+    return (
+      <div className="flex h-64 items-center justify-center">Loading...</div>
+    )
   }
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Employee Management</h1>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Add Employee
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create Employee</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="employeeId" className="text-right">Employee ID</Label>
+
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4 py-4">
+              {/* Employee ID */}
+              <div className="grid gap-2">
+                <Label htmlFor="employeeId">Employee ID</Label>
                 <Input
                   id="employeeId"
                   type="number"
                   value={formData.employeeId}
-                  onChange={(e) => setFormData({ ...formData, employeeId: parseInt(e.target.value) })}
-                  className="col-span-3"
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      employeeId: parseInt(e.target.value),
+                    })
+                  }
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">Name</Label>
+
+              {/* Name */}
+              <div className="grid gap-2">
+                <Label htmlFor="name">Name</Label>
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="col-span-3"
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="email" className="text-right">Email</Label>
+
+              {/* Email */}
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="col-span-3"
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="phone" className="text-right">Phone</Label>
+
+              {/* Phone */}
+              <div className="grid gap-2">
+                <Label htmlFor="phone">Phone</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="col-span-3"
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: e.target.value })
+                  }
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="departmentId" className="text-right">Dept ID</Label>
+
+              {/* Dept ID */}
+              <div className="grid gap-2">
+                <Label htmlFor="departmentId">Dept ID</Label>
                 <Input
                   id="departmentId"
                   type="number"
                   value={formData.departmentId}
-                  onChange={(e) => setFormData({ ...formData, departmentId: parseInt(e.target.value) })}
-                  className="col-span-3"
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      departmentId: parseInt(e.target.value),
+                    })
+                  }
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="departmentName" className="text-right">Dept Name</Label>
+
+              {/* Dept Name */}
+              <div className="grid gap-2">
+                <Label htmlFor="departmentName">Dept Name</Label>
                 <Input
                   id="departmentName"
                   value={formData.departmentName}
-                  onChange={(e) => setFormData({ ...formData, departmentName: e.target.value })}
-                  className="col-span-3"
+                  onChange={(e) =>
+                    setFormData({ ...formData, departmentName: e.target.value })
+                  }
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="role" className="text-right">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger className="col-span-3">
+
+              {/* Team Name (New Field) */}
+              <div className="grid gap-2">
+                <Label htmlFor="teamName">Team Name</Label>
+                <Input
+                  id="teamName"
+                  value={formData.teamName || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, teamName: e.target.value })
+                  }
+                  placeholder="Enter team name"
+                />
+              </div>
+
+              {/* Role */}
+              <div className="grid gap-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, role: value })
+                  }
+                >
+                  <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -231,20 +313,71 @@ export default function EmployeesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="password" className="text-right">Password</Label>
+
+              {/* Password */}
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="col-span-3"
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                 />
               </div>
+
+              {/* Confirm Password */}
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  className={
+                    passwordError
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                    if (passwordError) setPasswordError("")
+                  }}
+                  onBlur={() => {
+                    if (
+                      formData.confirmPassword &&
+                      formData.password !== formData.confirmPassword
+                    ) {
+                      setPasswordError("Passwords do not match")
+                    }
+                  }}
+                />
+                {passwordError && (
+                  <span className="animate-in text-[12px] font-medium text-red-500 fade-in slide-in-from-top-1">
+                    {passwordError}
+                  </span>
+                )}
+              </div>
             </div>
+
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleCreate}>Create</Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreate}
+                disabled={
+                  !!passwordError ||
+                  formData.password !== formData.confirmPassword
+                }
+              >
+                Create
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -283,14 +416,14 @@ export default function EmployeesPage() {
                         size="sm"
                         onClick={() => openEditDialog(employee)}
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleDelete(employee.employeeId)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
@@ -303,72 +436,111 @@ export default function EmployeesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
+          {" "}
+          {/* Widened for two columns */}
           <DialogHeader>
             <DialogTitle>Edit Employee</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-employeeId" className="text-right">Employee ID</Label>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-4 py-4">
+            {/* Employee ID (Full Width or Disabled) */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-employeeId">Employee ID</Label>
               <Input
                 id="edit-employeeId"
                 type="number"
                 value={formData.employeeId}
                 disabled
-                className="col-span-3"
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">Name</Label>
+
+            {/* Name */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-name">Name</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="col-span-3"
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-email" className="text-right">Email</Label>
+
+            {/* Email */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-email">Email</Label>
               <Input
                 id="edit-email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="col-span-3"
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-phone" className="text-right">Phone</Label>
+
+            {/* Phone */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-phone">Phone</Label>
               <Input
                 id="edit-phone"
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="col-span-3"
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-departmentId" className="text-right">Dept ID</Label>
+
+            {/* Dept ID */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-departmentId">Dept ID</Label>
               <Input
                 id="edit-departmentId"
                 type="number"
                 value={formData.departmentId}
-                onChange={(e) => setFormData({ ...formData, departmentId: parseInt(e.target.value) })}
-                className="col-span-3"
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    departmentId: parseInt(e.target.value),
+                  })
+                }
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-departmentName" className="text-right">Dept Name</Label>
+
+            {/* Dept Name */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-departmentName">Dept Name</Label>
               <Input
                 id="edit-departmentName"
                 value={formData.departmentName}
-                onChange={(e) => setFormData({ ...formData, departmentName: e.target.value })}
-                className="col-span-3"
+                onChange={(e) =>
+                  setFormData({ ...formData, departmentName: e.target.value })
+                }
               />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-role" className="text-right">Role</Label>
-              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                <SelectTrigger className="col-span-3">
+
+            {/* Team Name (New Field) */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-teamName">Team Name</Label>
+              <Input
+                id="edit-teamName"
+                value={formData.teamName || ""}
+                onChange={(e) =>
+                  setFormData({ ...formData, teamName: e.target.value })
+                }
+              />
+            </div>
+
+            {/* Role */}
+            <div className="grid gap-2">
+              <Label htmlFor="edit-role">Role</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, role: value })
+                }
+              >
+                <SelectTrigger>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -378,20 +550,63 @@ export default function EmployeesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-password" className="text-right">Password</Label>
+
+            {/* Password (Full width if desired, or keep in column) */}
+            <div className="col-span-2 grid gap-2">
+              <Label htmlFor="edit-password">Password</Label>
               <Input
                 id="edit-password"
                 type="password"
                 placeholder="Leave empty to keep current"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="col-span-3"
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
               />
             </div>
+            {formData.password && (
+              <div className="col-span-2 grid gap-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  className={
+                    passwordError
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }
+                  value={formData.confirmPassword}
+                  onChange={(e) => {
+                    setFormData({
+                      ...formData,
+                      confirmPassword: e.target.value,
+                    })
+                    if (passwordError) setPasswordError("")
+                  }}
+                  onBlur={() => {
+                    if (
+                      formData.confirmPassword &&
+                      formData.password !== formData.confirmPassword
+                    ) {
+                      setPasswordError("Passwords do not match")
+                    }
+                  }}
+                />
+                {passwordError && (
+                  <span className="animate-in text-[12px] font-medium text-red-500 fade-in slide-in-from-top-1">
+                    {passwordError}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
             <Button onClick={handleUpdate}>Update</Button>
           </div>
         </DialogContent>

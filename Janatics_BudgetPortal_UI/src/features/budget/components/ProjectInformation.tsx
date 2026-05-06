@@ -52,9 +52,10 @@ export function ProjectInformation({
   const [projectNumber, setProjectNumber] = React.useState("")
   const [projects, setProjects] = React.useState<ProjectSearchResult[]>([])
   const { loading: isSearching, withLoader: withSearch } = useLoader()
-  const { loading: isFetchingDetails, withLoader: withFetchDetails } = useLoader()
+  const { loading: isFetchingDetails, withLoader: withFetchDetails } =
+    useLoader()
   const { fetchBudgetRecordById } = useBudget()
-    const { setLoading } = useGlobalLoader()
+  const { setLoading } = useGlobalLoader()
 
   const debouncedProduct = useDebounce(productNumber, 500)
 

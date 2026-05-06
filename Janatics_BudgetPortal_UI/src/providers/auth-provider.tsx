@@ -34,7 +34,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
-  const { setLoading } = useGlobalLoader();
+  const { setLoading } = useGlobalLoader()
 
   useEffect(() => {
     const storedUser = getStorageItem<AuthResponse>(STORAGE_KEY)

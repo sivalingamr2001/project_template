@@ -21,30 +21,48 @@ import {
 } from "@/features/budget/types"
 import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
 import type { ProjectData } from "@/types"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "../ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog"
 import { useBudget } from "@/providers/Budget/BudgetProvider"
 import { apiService } from "@/shared/lib/api-client"
+import { se } from "date-fns/locale"
 
 export default function ProjectSearchDashboard() {
   const { state, refs, actions } = useProjectSearch()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRows, setSelectedRows] = useState<ProjectData[]>([])
-  const [idsToDelete, setIdsToDelete] = useState<number[]>([]);
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [idsToDelete, setIdsToDelete] = useState<number[]>([])
+  const [isAlertOpen, setIsAlertOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { fetchBudgetRecords } = useBudget()
+  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null)
 
   useEffect(() => {
     setLoading(state.isLoading)
   }, [state])
 
   const currentProductName = useMemo(() => {
-    return state.filteredData[0]?.productName || state.projectSuggestions[0]?.projectname || ""
+    return (
+      state.filteredData[0]?.productName ||
+      state.projectSuggestions[0]?.projectname ||
+      ""
+    )
   }, [state.filteredData])
 
   const handleViewDetails = useCallback(
     async (row: ProjectData) => {
+
+      setSelectedProject(row);
+
       if (!row.budgetId) {
         toast.info(
           "No budget record found. Please create a new budget for this project."
@@ -79,46 +97,50 @@ export default function ProjectSearchDashboard() {
   )
 
   const handleDeleteBudget = (budgetIdOrIds: number | number[]) => {
-    const ids = Array.isArray(budgetIdOrIds) ? budgetIdOrIds : [budgetIdOrIds];
-    const validIds = ids.filter((id): id is number => Number.isInteger(id));
+    const ids = Array.isArray(budgetIdOrIds) ? budgetIdOrIds : [budgetIdOrIds]
+    const validIds = ids.filter((id): id is number => Number.isInteger(id))
 
     if (validIds.length === 0) {
-      toast.error("No valid budget records selected.");
-      return;
+      toast.error("No valid budget records selected.")
+      return
     }
 
-    setIdsToDelete(validIds);
-    setIsAlertOpen(true);
-  };
+    setIdsToDelete(validIds)
+    setIsAlertOpen(true)
+  }
 
   // This performs the actual API call
   const confirmDelete = async () => {
     try {
-      await Promise.all(idsToDelete.map((id) => deleteBudget(id)));
+      await Promise.all(idsToDelete.map((id) => deleteBudget(id)))
 
-      toast.success(`${idsToDelete.length > 1 ? 'Budgets' : 'Budget'} deleted successfully.`);
-      setSelectedRows([]); // Clear grid selection
-      actions.handleSearch(); // Refresh data
+      toast.success(
+        `${idsToDelete.length > 1 ? "Budgets" : "Budget"} deleted successfully.`
+      )
+      setSelectedRows([]) // Clear grid selection
+      actions.handleSearch() // Refresh data
     } catch (error) {
-      console.error("Error deleting:", error);
-      toast.error("Failed to delete the selected items.");
+      console.error("Error deleting:", error)
+      toast.error("Failed to delete the selected items.")
     } finally {
-      setIsAlertOpen(false);
-      setIdsToDelete([]);
+      setIsAlertOpen(false)
+      setIdsToDelete([])
     }
-  };
+  }
 
   const handleActivate = async (row: ProjectData[]) => {
     const res = await apiService.patch("/budgets", {
-      budgetId: row.map(r => r.budgetId).filter((id): id is number => Number.isInteger(id)),
-      IsActive: true
+      budgetId: row
+        .map((r) => r.budgetId)
+        .filter((id): id is number => Number.isInteger(id)),
+      IsActive: true,
     })
 
     if (res.status === 200) {
-      toast.success("Selected budget(s) activated successfully.");
-      setSelectedRows([]);
+      toast.success("Selected budget(s) activated successfully.")
+      setSelectedRows([])
     } else {
-      toast.error("Failed to activate the selected budget(s).");
+      toast.error("Failed to activate the selected budget(s).")
     }
   }
 
@@ -128,17 +150,16 @@ export default function ProjectSearchDashboard() {
       // const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
       // await delay(3000);
-      await fetchBudgetRecords();
+      await fetchBudgetRecords()
 
-      toast.success("Data refreshed successfully");
+      toast.success("Data refreshed successfully")
     } catch (error) {
-      console.error("Refresh failed:", error);
-      toast.error("Failed to refresh records.");
+      console.error("Refresh failed:", error)
+      toast.error("Failed to refresh records.")
     } finally {
       setLoading(false)
     }
   }
-
 
   const hasInactiveSelected = useMemo(
     () => selectedRows.some((row) => row.status?.toLowerCase() === "inactive"),
@@ -234,7 +255,9 @@ export default function ProjectSearchDashboard() {
     projectNumber: string
     productNo: string
   }) {
-    toast.success("Budget plan initialized. Complete the plan entry to save it.")
+    toast.success(
+      "Budget plan initialized. Complete the plan entry to save it."
+    )
     setIsModalOpen(false)
     navigate("/plan-entry", {
       state: { fromDashboard: true, inputData: input },
@@ -373,9 +396,10 @@ export default function ProjectSearchDashboard() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleNavigateToPlanEntry}
         initialData={{
-          productName: currentProductName || state.projectSuggestions[0]?.projectname,
-          productNo: state.productNo,
-          projectNumber: state.projectNo,
+          productName:
+            selectedProject?.projectname || currentProductName || state.projectSuggestions[0]?.projectname,
+          productNo: selectedProject?.product_no || state.productNo,
+          projectNumber: selectedProject?.projectnumber || state.projectNo,
         }}
       />
 
@@ -384,8 +408,9 @@ export default function ProjectSearchDashboard() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {idsToDelete.length}{" "}
-              selected budget record{idsToDelete.length > 1 ? "s" : ""}.
+              This action cannot be undone. This will permanently delete{" "}
+              {idsToDelete.length} selected budget record
+              {idsToDelete.length > 1 ? "s" : ""}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

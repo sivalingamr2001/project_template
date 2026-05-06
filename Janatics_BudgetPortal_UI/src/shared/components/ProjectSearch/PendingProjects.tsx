@@ -2,9 +2,6 @@ import BudgetStatusProjects from "@/shared/components/ProjectSearch/BudgetStatus
 
 export default function PendingProjects() {
   return (
-    <BudgetStatusProjects
-      title="Pending Projects"
-      statusFilter="Pending"
-    />
+    <BudgetStatusProjects title="Pending Projects" statusFilter="Pending" />
   )
 }

@@ -93,9 +93,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         // 7. Budget Audit
         modelBuilder.Entity<BudgetReqAuditEntity>(entity => {
             entity.ToTable("jan_budget_audits");
-            entity.HasKey(e => e.AuditId);
-            entity.Property(e => e.EventType).HasConversion<string>().HasMaxLength(50);
 
+            // Primary Key: Ensure this is 'int' in C# to match NUMBER(10)
+            entity.HasKey(e => e.AuditId);
+            entity.Property(e => e.AuditId)
+                  .ValueGeneratedOnAdd();
+
+            // Mapping for Boolean/Checkbox field
+            entity.Property(e => e.IsRead)
+                  .HasColumnName("IsRead")
+                  .HasColumnType("NUMBER(1)")
+                  .HasConversion<int>();
+
+            // Mapping for EventType
+            entity.Property(e => e.EventType)
+                  .HasConversion<string>()
+                  .HasMaxLength(50);
+
+            // Ensure Base Entity fields match the database casing
+            entity.Property(e => e.CreatedOn).HasColumnName("CreatedOn");
+            entity.Property(e => e.ModifiedOn).HasColumnName("ModifiedOn");
+            entity.Property(e => e.CreatedBy).HasColumnName("CreatedBy");
+            entity.Property(e => e.ModifiedBy).HasColumnName("ModifiedBy");
+
+            // Foreign Key Relationships
             entity.HasOne(a => a.Budget)
                   .WithMany(b => b.Audits)
                   .HasForeignKey(a => a.BudgetId);

@@ -7,7 +7,7 @@ import {
   FileText,
   CircleOff,
   CircleCheckBig,
-  Users
+  Users,
 } from "lucide-react"
 
 export type NavigationItem = {
@@ -40,12 +40,12 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
       {
         label: "Approved Projects",
         path: "/projects/approved",
-        icon: CircleCheckBig
+        icon: CircleCheckBig,
       },
       {
         label: "Pending Projects",
         path: "/projects/pending",
-        icon: CircleOff
+        icon: CircleOff,
       },
     ],
   },

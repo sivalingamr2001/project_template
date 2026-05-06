@@ -96,7 +96,10 @@ export function applyTemplateMetadataToBudgetData(
   }
 
   const rawCategoryLookup = new Map(
-    rawCategories.map((category) => [category.category.trim().toLowerCase(), category])
+    rawCategories.map((category) => [
+      category.category.trim().toLowerCase(),
+      category,
+    ])
   )
 
   return templateCategories.map((templateCategory, categoryIndex) => {
@@ -109,12 +112,14 @@ export function applyTemplateMetadataToBudgetData(
         categoryId: categoryIndex + 1,
         category: templateCategory.category,
         items: recalculateCategoryItems(
-          flattenTemplateCategoryItems(templateCategory).map((item, itemIndex) => ({
-            ...item,
-            itemId: itemIndex + 1,
-            planned: 0,
-            actual: 0,
-          }))
+          flattenTemplateCategoryItems(templateCategory).map(
+            (item, itemIndex) => ({
+              ...item,
+              itemId: itemIndex + 1,
+              planned: 0,
+              actual: 0,
+            })
+          )
         ),
       }
     }
@@ -162,7 +167,8 @@ export function recalculateCategoryItems(items: BudgetItem[]): BudgetItem[] {
       .map((operandName) =>
         items.find(
           (candidate) =>
-            candidate.name.trim().toLowerCase() === operandName.trim().toLowerCase()
+            candidate.name.trim().toLowerCase() ===
+            operandName.trim().toLowerCase()
         )
       )
       .filter((candidate): candidate is BudgetItem => Boolean(candidate))
@@ -170,12 +176,18 @@ export function recalculateCategoryItems(items: BudgetItem[]): BudgetItem[] {
     const planned =
       sourceItems.length === 0
         ? 0
-        : sourceItems.reduce((product, sourceItem) => product * sourceItem.planned, 1)
+        : sourceItems.reduce(
+            (product, sourceItem) => product * sourceItem.planned,
+            1
+          )
 
     const actual =
       sourceItems.length === 0
         ? 0
-        : sourceItems.reduce((product, sourceItem) => product * sourceItem.actual, 1)
+        : sourceItems.reduce(
+            (product, sourceItem) => product * sourceItem.actual,
+            1
+          )
 
     return {
       ...item,

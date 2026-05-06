@@ -127,8 +127,7 @@ export function TemplateEditor({
     }
 
     const duplicate = pendingSubCategories.some(
-      (subCategory) =>
-        normalizeName(subCategory.name) === normalizeName(value)
+      (subCategory) => normalizeName(subCategory.name) === normalizeName(value)
     )
     if (duplicate) {
       return toast.error("Duplicate subcategory")
@@ -370,8 +369,9 @@ export function TemplateEditor({
                             <p className="text-sm font-semibold">
                               {subCategory.name}
                             </p>
-                            <p className="text-[10px] uppercase text-muted-foreground">
-                              multiplied from {subCategory.items.length} sub-items
+                            <p className="text-[10px] text-muted-foreground uppercase">
+                              multiplied from {subCategory.items.length}{" "}
+                              sub-items
                             </p>
                           </div>
                           <Button
@@ -458,7 +458,7 @@ export function TemplateEditor({
                             <p className="text-sm font-semibold">
                               {category.category}
                             </p>
-                            <p className="text-[10px] uppercase text-muted-foreground">
+                            <p className="text-[10px] text-muted-foreground uppercase">
                               {category.items.length} direct items,{" "}
                               {(category.subCategories ?? []).length} multiplied
                               subcategories
@@ -492,7 +492,7 @@ export function TemplateEditor({
                       {expandedIndex === idx && (
                         <div className="space-y-3 bg-muted/30 px-6 pt-2 pb-4">
                           <div className="space-y-1">
-                            <p className="text-[11px] font-semibold uppercase text-muted-foreground">
+                            <p className="text-[11px] font-semibold text-muted-foreground uppercase">
                               Direct Items
                             </p>
                             {(category.items ?? []).map((item) => (
@@ -507,7 +507,7 @@ export function TemplateEditor({
 
                           {(category.subCategories ?? []).map((subCategory) => (
                             <div key={subCategory.name} className="space-y-1">
-                              <p className="text-[11px] font-semibold uppercase text-muted-foreground">
+                              <p className="text-[11px] font-semibold text-muted-foreground uppercase">
                                 {subCategory.name}
                               </p>
                               {subCategory.items.map((item) => (

@@ -32,7 +32,7 @@ const lightTheme = themeQuartz.withParams({
   fontFamily: "'Figtree', system-ui, sans-serif",
   fontSize: 13,
   rowHeight: 59,
-  headerHeight: 48
+  headerHeight: 48,
 })
 
 const darkTheme = themeQuartz.withParams({

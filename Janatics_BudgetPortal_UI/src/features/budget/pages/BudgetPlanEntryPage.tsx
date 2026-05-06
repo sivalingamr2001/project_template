@@ -60,6 +60,7 @@ export default function BudgetPlanEntryPage() {
   const [templateOptions, setTemplateOptions] = useState<TemplateOption[]>([])
   const [selectedTemplateId, setSelectedTemplateId] = useState("")
   const [isExporting, setIsExporting] = useState(false)
+  const [draftRecord, setDraftRecord] = useState<BudgetRecord | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -100,6 +101,11 @@ export default function BudgetPlanEntryPage() {
       templateCategories?: TemplateCategory[]
     } | null
 
+    if (draftRecord) {
+      setLocalRecord(draftRecord)
+      return
+    }
+
     if (state?.record) {
       setLocalRecord(state.record)
       setActiveRecord(state.record)
@@ -135,6 +141,21 @@ export default function BudgetPlanEntryPage() {
       toast.success("Loaded budget template into plan entry.")
     }
   }, [location.state, setActiveRecord, templateOptions, user?.employeeId])
+
+  useEffect(() => {
+    // Use a key unique to the record or project
+    const storageKey = `failed_save_${localRecord?.id}`;
+    const savedData = localStorage.getItem(storageKey);
+
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+
+      // Logic to populate your state (e.g., setLocalRecord)
+      setDraftRecord(parsedData);
+
+      toast.info("Restored unsaved changes from a previous failed attempt.");
+    }
+  }, [localRecord?.id]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -175,9 +196,7 @@ export default function BudgetPlanEntryPage() {
   }
 
   const saveRecord = async () => {
-    if (!localRecord) {
-      return
-    }
+    if (!localRecord) return;
 
     const recordToSave = {
       ...localRecord,
@@ -185,37 +204,40 @@ export default function BudgetPlanEntryPage() {
         ...localRecord.projectHeader,
         employeeId: user?.employeeId || 0,
       },
-    }
+    };
 
     try {
       if (recordToSave.id.startsWith("draft-")) {
         await createBudgetRecord({
           projectHeader: recordToSave.projectHeader,
-          templateId:
-            Number(selectedTemplateId) || templateOptions[0]?.templateId || 1,
+          templateId: Number(selectedTemplateId) || templateOptions[0]?.templateId || 1,
           budgetData: recordToSave.budgetData,
-        })
-        toast.success("Record created! Redirecting...")
+        });
+        toast.success("Record created! Redirecting...");
+        localStorage.removeItem(`failed_save_${localRecord?.id}`);
       } else {
-        await updateBudgetRecord(recordToSave.id, recordToSave)
-        toast.success("Changes saved! Redirecting...")
+        await updateBudgetRecord(recordToSave.id, {
+          budgetData: recordToSave.budgetData,
+          projectHeader: recordToSave.projectHeader
+        });
+        toast.success("Changes saved! Redirecting...");
       }
 
-      resetEditorState()
-      await delay(2000)
-      navigate("/dashboard")
-    } catch (saveError) {
-      const errorMessage =
-        saveError &&
-        typeof saveError === "object" &&
-        "message" in saveError &&
-        typeof saveError.message === "string"
-          ? saveError.message
-          : "Failed to save budget record"
+      // Success: Clear any previous draft for this specific record
+      localStorage.removeItem(`failed_save_${recordToSave.id}`);
 
-      toast.error(errorMessage)
+      resetEditorState();
+      await delay(2000);
+      navigate("/dashboard");
+    } catch (saveError) {
+      // 💡 Save to LocalStorage on Failure
+      const storageKey = `failed_save_${recordToSave.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(recordToSave));
+
+      const errorMessage = "Failed to save. Data backed up locally.";
+      toast.error(errorMessage);
     }
-  }
+  };
 
   const discardChanges = () => {
     resetEditorState()

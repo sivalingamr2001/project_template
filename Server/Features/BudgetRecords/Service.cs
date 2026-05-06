@@ -618,8 +618,14 @@ public sealed class BudgetRecordsService(
             var itemIds = updatesById.Keys.ToArray();
 
             var items = await dbContext.BudgetItems
-                .Where(i => itemIds.Contains(i.ItemId) && i.Category.BudgetId == budgetId)
+                .Include(i => i.Category) // Ensure the join is explicit
+                .Where(i => itemIds.Contains(i.ItemId))
+                .Where(i => i.Category != null && i.Category.BudgetId == budgetId)
                 .ToListAsync(cancellationToken);
+
+            // If this returns data, then the problem is definitely the BudgetId or Category join
+            var checkExists = await dbContext.BudgetItems
+                .AnyAsync(i => itemIds.Contains(i.ItemId));
 
             if (items.Count != itemIds.Length)
             {
@@ -637,6 +643,62 @@ public sealed class BudgetRecordsService(
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return await GetByIdAsync(budgetId, cancellationToken);
+    }
+
+    public async Task<Result<bool>> UpdateAmountsAsync(UpdateBudgetAmountsRequest request, CancellationToken cancellationToken)
+    {
+        using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            // 1. Fetch items with Budget check for security
+            var itemIds = request.Items.Select(x => x.ItemId).ToList();
+            var existingItems = await dbContext.BudgetItems
+                .Where(i => itemIds.Contains(i.ItemId) && i.Category.BudgetId == request.BudgetId)
+                .ToListAsync(cancellationToken);
+
+            if (!existingItems.Any())
+            {
+                return new ServiceError("Budget items not found or access denied.", ErrorCode.NotFound);
+            }
+
+            // 2. Update Budget Items and Metadata
+            foreach (var updateDto in request.Items)
+            {
+                var item = existingItems.FirstOrDefault(i => i.ItemId == updateDto.ItemId);
+                if (item != null)
+                {
+                    item.Planned = updateDto.Planned;
+                    item.Actual = updateDto.Actual;
+                    item.ModifiedBy = request.ModifiedBy.ToString();
+                    item.ModifiedOn = request.ModifedOn; // Using the date from request
+                }
+            }
+
+            // 3. Create Audit Entry
+            dbContext.BudgetAudits.Add(new BudgetReqAuditEntity
+            {
+                BudgetId = request.BudgetId,
+                EventType = BudgetStatus.Pending,
+                Message = $"Budget amounts updated by user {request.ModifiedBy}.",
+                ActionByUserId = request.ModifiedBy,
+                CreatedBy = request.ModifiedBy.ToString(),
+                CreatedOn = request.ModifedOn,
+                ModifiedBy = request.ModifiedBy.ToString(),
+                ModifiedOn = request.ModifedOn
+            });
+
+            // 4. Save and Commit
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            logger.LogError(ex, "Failed to update amounts for Budget {BudgetId}", request.BudgetId);
+            throw;
+        }
     }
 
     public async Task<Result> DeleteAsync(int budgetId, CancellationToken cancellationToken)
