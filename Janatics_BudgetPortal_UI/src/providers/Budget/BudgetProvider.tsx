@@ -4,16 +4,16 @@ import { BudgetContext, type BudgetContextType } from "./BudgetContext"
 import type {
   BudgetRecord,
   BudgetRecordResponse,
+  UpdateBudgetRequest,
 } from "@/features/budget/types"
 import { apiService, type ApiError } from "@/shared/lib/api-client"
-import { mapBudgetApiToUi } from "@/features/budget/types"
+import { mapBudgetApiToUi, updateBudget } from "@/features/budget/types"
 import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
 import {
   sumIncludedActual,
   sumIncludedPlanned,
 } from "@/features/budget/components/plan-entry/utils/budgetTableUtils"
 import { toast } from "sonner"
-import { useAuth } from "../auth-provider"
 
 interface BudgetProviderProps {
   children: ReactNode
@@ -28,7 +28,6 @@ function BudgetProvider({ children }: BudgetProviderProps) {
   const [activeRecord, setActiveRecord] = useState<BudgetRecord | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
 
   const lastToastTime = useRef(0)
 
@@ -209,72 +208,73 @@ function BudgetProvider({ children }: BudgetProviderProps) {
 
   const updateBudgetRecord = useCallback(
     async (id: string, updates: Partial<BudgetRecord>): Promise<BudgetRecord> => {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
       try {
-        const numericId = Number(id);
+        const numericId = Number(id)
         if (!Number.isInteger(numericId) || numericId <= 0) {
-          throw new Error("Invalid budget record id.");
+          throw new Error("Invalid budget record id.")
         }
 
-        // Prepare payload for the specific amounts endpoint
-        const request = {
-          budgetId: numericId,
-          modifiedBy: user?.employeeId || 0,
-          modifedOn: new Date().toISOString(),
-          items: updates.budgetData
-            ? updates.budgetData.flatMap((category) =>
-              category.items
-                .filter((item) => item.itemId != null)
-                .map((item) => ({
-                  itemId: item.itemId as number,
-                  planned: item.planned,
-                  actual: item.actual,
-                }))
-            )
-            : [],
-        };
+        const currentRecord =
+          budgetRecords.find((record) => record.id === id) ?? activeRecord
 
-        const response = await apiService.put<boolean>(
-          `/budgets/${numericId}/amounts`,
-          request
-        );
-
-        if (response.status !== 200) {
-          throw new Error(`Unexpected response status: ${response.status}`);
+        if (!currentRecord) {
+          throw new Error("Budget record not found in local state.")
         }
 
-        // Construct the updated record to satisfy the return type
-        const currentRecord = budgetRecords.find(r => r.id === id) || activeRecord;
-        const updatedRecord = {
+        const nextRecord: BudgetRecord = {
           ...currentRecord,
           ...updates,
-        } as BudgetRecord;
-
-        // Update Local State
-        setBudgetRecords((prev) =>
-          prev.map((record) => (record.id === id ? updatedRecord : record))
-        );
-
-        if (activeRecord?.id === id) {
-          setActiveRecord(updatedRecord);
+          projectHeader: {
+            ...currentRecord.projectHeader,
+            ...updates.projectHeader,
+          },
+          budgetData: updates.budgetData ?? currentRecord.budgetData,
         }
 
-        // Success cleanup
+        const request: UpdateBudgetRequest = {
+          projectNumber: nextRecord.projectHeader.projectNumber,
+          productNo: nextRecord.projectHeader.productNo,
+          productName: nextRecord.projectHeader.productName,
+          items: nextRecord.budgetData.flatMap((category) =>
+            category.items
+              .filter((item) => item.itemId != null)
+              .map((item) => ({
+                itemId: item.itemId as number,
+                planned: item.planned,
+                actual: item.actual,
+              }))
+          ),
+        }
+
+        const response = await updateBudget(numericId, request)
+        const updatedRecord = mapBudgetResponseToUi(response)
+
+        setBudgetRecords((prev) =>
+          prev.map((record) => (record.id === id ? updatedRecord : record))
+        )
+
+        if (activeRecord?.id === id) {
+          setActiveRecord(updatedRecord)
+        }
+
         localStorage.removeItem(`failed_save_${id}`);
 
-        return updatedRecord; // Returning the object, not the boolean
+        return updatedRecord
       } catch (err: unknown) {
-        const message = isApiError(err) ? err.message : "Failed to update budget record";
-        setError(message);
-        throw err;
+        const message = isApiError(err)
+          ? err.message
+          : "Failed to update budget record"
+        setError(message)
+        throw err
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     },
-    [activeRecord, budgetRecords, user?.employeeId]
-  );
+    [activeRecord, budgetRecords, mapBudgetResponseToUi]
+  )
 
   const deleteBudgetRecord = useCallback(
     async (id: string) => {
