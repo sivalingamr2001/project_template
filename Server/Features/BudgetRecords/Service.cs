@@ -123,6 +123,7 @@ public sealed class BudgetRecordsService(
             .Select(b => new BudgetRecordHeaderDto(
                 b.BudgetId,
                 b.EmployeeId,
+                b.TemplateId,
                 b.ProjectNumber,
                 b.ProductNo,
                 b.ProjectTitle,
@@ -650,44 +651,68 @@ public sealed class BudgetRecordsService(
         using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            // 1. Fetch items with Budget check for security
-            var itemIds = request.Items.Select(x => x.ItemId).ToList();
+
+            var totalItemsInBudget = await dbContext.BudgetItems
+    .CountAsync(i => i.Category.BudgetId == request.BudgetId);
+
+            Console.WriteLine(totalItemsInBudget);
+
+            // 1. Extract IDs from the request for the query
+            var itemIds = request.Items.Select(x => x.ItemId).Distinct().ToList();
+            var categoryIds = request.Items.Select(x => x.categoryId).Distinct().ToList();
+
+            // 2. Fetch items belonging to this specific budget
+            // We filter by Category.BudgetId to ensure the user isn't updating items in another budget
             var existingItems = await dbContext.BudgetItems
-                .Where(i => itemIds.Contains(i.ItemId) && i.Category.BudgetId == request.BudgetId)
+                .Include(i => i.Category)
+                .Where(i => i.Category.BudgetId == request.BudgetId &&
+                            categoryIds.Contains(i.CategoryId) &&
+                            itemIds.Contains(i.ItemId))
                 .ToListAsync(cancellationToken);
 
-            if (!existingItems.Any())
+            // ORACLE FIX: Use .Count instead of .Any() to prevent ORA-00904: "FALSE" invalid identifier
+            if (existingItems.Count == 0)
             {
-                return new ServiceError("Budget items not found or access denied.", ErrorCode.NotFound);
+                return new ServiceError("No matching budget items found. Verify BudgetId and Category associations.", ErrorCode.NotFound);
             }
 
-            // 2. Update Budget Items and Metadata
+            // 3. Update the matching items
             foreach (var updateDto in request.Items)
             {
-                var item = existingItems.FirstOrDefault(i => i.ItemId == updateDto.ItemId);
+                // Find the specific item matching both ItemId and CategoryId
+                var item = existingItems.FirstOrDefault(i =>
+                    i.ItemId == updateDto.ItemId &&
+                    i.CategoryId == updateDto.categoryId);
+
                 if (item != null)
                 {
                     item.Planned = updateDto.Planned;
-                    item.Actual = updateDto.Actual;
+                    // item.Actual is NOT updated per your instructions
+
+                    // Track metadata on the entity
                     item.ModifiedBy = request.ModifiedBy.ToString();
-                    item.ModifiedOn = request.ModifedOn; // Using the date from request
+                    item.ModifiedOn = request.ModifedOn;
                 }
             }
 
-            // 3. Create Audit Entry
-            dbContext.BudgetAudits.Add(new BudgetReqAuditEntity
+            // 4. Create the Audit Entry
+            var auditEntry = new BudgetReqAuditEntity
             {
                 BudgetId = request.BudgetId,
                 EventType = BudgetStatus.Pending,
                 Message = $"Budget amounts updated by user {request.ModifiedBy}.",
                 ActionByUserId = request.ModifiedBy,
+                IsRead = false,
+                // BaseEntity metadata
                 CreatedBy = request.ModifiedBy.ToString(),
                 CreatedOn = request.ModifedOn,
                 ModifiedBy = request.ModifiedBy.ToString(),
                 ModifiedOn = request.ModifedOn
-            });
+            };
 
-            // 4. Save and Commit
+            dbContext.BudgetAudits.Add(auditEntry);
+
+            // 5. Persist changes
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 

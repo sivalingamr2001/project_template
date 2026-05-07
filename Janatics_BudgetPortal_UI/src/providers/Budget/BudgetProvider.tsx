@@ -14,6 +14,7 @@ import {
   sumIncludedPlanned,
 } from "@/features/budget/components/plan-entry/utils/budgetTableUtils"
 import { toast } from "sonner"
+import { useAuth } from "../auth-provider"
 
 interface BudgetProviderProps {
   children: ReactNode
@@ -28,6 +29,7 @@ function BudgetProvider({ children }: BudgetProviderProps) {
   const [activeRecord, setActiveRecord] = useState<BudgetRecord | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth()
 
   const lastToastTime = useRef(0)
 
@@ -207,23 +209,24 @@ function BudgetProvider({ children }: BudgetProviderProps) {
   )
 
   const updateBudgetRecord = useCallback(
-    async (id: string, updates: Partial<BudgetRecord>): Promise<BudgetRecord> => {
-      setLoading(true)
-      setError(null)
+    async (id: string, updates: Partial<BudgetRecord>): Promise<any> => {
+      setLoading(true);
+      setError(null);
 
       try {
-        const numericId = Number(id)
+        const numericId = Number(id);
         if (!Number.isInteger(numericId) || numericId <= 0) {
-          throw new Error("Invalid budget record id.")
+          throw new Error("Invalid budget record id.");
         }
 
-        const currentRecord =
-          budgetRecords.find((record) => record.id === id) ?? activeRecord
+        // 1. Get the current state (containing real DB IDs: 52, 13, 63, etc.)
+        const currentRecord = budgetRecords.find((r) => r.id === id) ?? activeRecord;
 
         if (!currentRecord) {
-          throw new Error("Budget record not found in local state.")
+          throw new Error("Budget record not found in local state.");
         }
 
+        // 2. Merge updates while strictly preserving IDs from the currentRecord
         const nextRecord: BudgetRecord = {
           ...currentRecord,
           ...updates,
@@ -231,50 +234,59 @@ function BudgetProvider({ children }: BudgetProviderProps) {
             ...currentRecord.projectHeader,
             ...updates.projectHeader,
           },
+          // Fallback to currentRecord.budgetData to ensure IDs aren't lost
           budgetData: updates.budgetData ?? currentRecord.budgetData,
-        }
+        };
 
+        // 3. Construct the request object for the C# API
         const request: UpdateBudgetRequest = {
-          projectNumber: nextRecord.projectHeader.projectNumber,
-          productNo: nextRecord.projectHeader.productNo,
-          productName: nextRecord.projectHeader.productName,
-          items: nextRecord.budgetData.flatMap((category) =>
-            category.items
-              .filter((item) => item.itemId != null)
-              .map((item) => ({
-                itemId: item.itemId as number,
-                planned: item.planned,
-                actual: item.actual,
-              }))
-          ),
-        }
+          budgetId: numericId,
+          modifiedBy: user?.employeeId ?? 0,
+          modifedOn: new Date().toISOString(),
 
-        const response = await updateBudget(numericId, request)
-        const updatedRecord = mapBudgetResponseToUi(response)
+          items: nextRecord.budgetData.flatMap((uiCategory) => {
+            const realCategory = currentRecord.budgetData.find(
+              c => c.category === uiCategory.category || c.categoryId === uiCategory.categoryId
+            );
 
-        setBudgetRecords((prev) =>
-          prev.map((record) => (record.id === id ? updatedRecord : record))
-        )
+            return uiCategory.items.map((uiItem) => {
+              const realItem = realCategory?.items.find(
+                (i: any) => i.name === uiItem.name || i.itemId === uiItem.itemId
+              );
 
-        if (activeRecord?.id === id) {
-          setActiveRecord(updatedRecord)
-        }
+              return {
+                // Use "as number" to satisfy the type, or fallback to 0
+                itemId: (realItem?.itemId ?? uiItem.itemId ?? 0) as number,
+                categoryId: realCategory?.categoryId ?? uiCategory.categoryId,
+                planned: uiItem.planned
+              };
+            });
+          })
+
+        };
+
+
+        // 4. Execute API Call
+        const response = await updateBudget(numericId, request);
 
         localStorage.removeItem(`failed_save_${id}`);
 
-        return updatedRecord
+        if (response) {
+          toast.success("Budget record updated successfully.");
+        }
+
       } catch (err: unknown) {
-        const message = isApiError(err)
-          ? err.message
-          : "Failed to update budget record"
-        setError(message)
-        throw err
+        const message = isApiError(err) ? err.message : "Failed to update budget record";
+        setError(message);
+        throw err;
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     },
-    [activeRecord, budgetRecords, mapBudgetResponseToUi]
-  )
+    [activeRecord, budgetRecords, user, mapBudgetResponseToUi]
+  );
+
+
 
   const deleteBudgetRecord = useCallback(
     async (id: string) => {

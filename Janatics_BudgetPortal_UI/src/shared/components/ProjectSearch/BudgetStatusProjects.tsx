@@ -116,6 +116,7 @@ export default function BudgetStatusProjects({
                 mappedRecord.budgetData,
                 response.templateStructure
               ),
+              templateId: response.header.templateId,
             },
           },
         })
@@ -146,6 +147,7 @@ export default function BudgetStatusProjects({
       await apiService.delete(`/budgets/${budgetId}`)
       toast.success("Budget record deleted successfully.")
       setBudgets((prev) => prev.filter((b) => b.budgetId !== budgetId))
+      await fetchBudgets()
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -160,14 +162,16 @@ export default function BudgetStatusProjects({
 
     try {
       const res = await apiService.patch("/budgets", {
-        budgetId: budgetId,
+        // Wrap the single ID in an array to match List<int> on the backend
+        budgetId: [budgetId],
         IsActive: true,
       })
 
       if (res.status === 200) {
         toast.success("Selected budget(s) activated successfully.")
-        navigate("/projects/pending")
       }
+
+      await fetchBudgets()
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -316,6 +320,26 @@ export default function BudgetStatusProjects({
     [handleViewDetails, handleViewReport, statusFilter, user?.role]
   )
 
+  // Inside your component
+  const fetchBudgets = async () => {
+    setLoading(true)
+    try {
+      const response = await apiService.get<BudgetSummaryItem[]>("/budgets")
+      const rows = response.data
+        .map(mapBudgetToProjectData)
+        .filter(
+          (item) => item.status?.toLowerCase() === statusFilter.toLowerCase()
+        )
+      setBudgets(rows)
+    } catch (error) {
+      console.error("Failed to fetch budgets:", error)
+      setBudgets([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-sm border bg-card p-2 px-5 shadow-sm">
@@ -339,25 +363,7 @@ export default function BudgetStatusProjects({
         showClearFiltersButton={false}
         showExportCsvButton={false}
         gridHeight="520px"
-        onRefresh={async () => {
-          setLoading(true)
-          try {
-            const response =
-              await apiService.get<BudgetSummaryItem[]>("/budgets")
-            const rows = response.data
-              .map(mapBudgetToProjectData)
-              .filter(
-                (item) =>
-                  item.status?.toLowerCase() === statusFilter.toLowerCase()
-              )
-            setBudgets(rows)
-          } catch (error) {
-            console.error("Failed to refresh budgets:", error)
-            setBudgets([])
-          } finally {
-            setLoading(false)
-          }
-        }}
+        onRefresh={fetchBudgets}
       />
 
       <Dialog
@@ -367,7 +373,7 @@ export default function BudgetStatusProjects({
           if (!open) setSelectedBudgetId(null) // Clear ID on close to prevent data ghosting
         }}
       >
-        <DialogContent className="h-[235mm] overflow-y-auto border-none p-8 sm:max-w-[250mm]">
+        <DialogContent className="h-[235mm] overflow-y-auto border-none p-8 sm:max-w-fit">
           {/* 1. Accessibility: Screen Reader Requirements */}
           <VisuallyHidden.Root>
             <DialogHeader>

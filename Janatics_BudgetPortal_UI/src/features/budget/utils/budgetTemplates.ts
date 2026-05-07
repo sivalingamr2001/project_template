@@ -47,12 +47,10 @@ export type TemplateRow = {
 export function templateToBudgetData(
   categories: TemplateCategory[]
 ): BudgetCategory[] {
-  return categories.map((category, categoryIndex) => ({
-    categoryId: categoryIndex + 1,
+  return categories.map((category) => ({
     category: category.category,
-    items: flattenTemplateCategoryItems(category).map((item, itemIndex) => ({
+    items: flattenTemplateCategoryItems(category).map((item) => ({
       ...item,
-      itemId: itemIndex + 1,
       planned: 0,
       actual: 0,
     })),

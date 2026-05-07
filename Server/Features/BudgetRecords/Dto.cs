@@ -86,8 +86,8 @@ public record UpdateBudgetAmountsRequest(
 
 public record ItemAmountUpdateDto(
     int ItemId,
-    decimal Planned,
-    decimal Actual
+    int categoryId,
+    decimal Planned
 );
 
 public sealed record BudgetItemUpdateDto(int ItemId, decimal Planned, decimal Actual);
@@ -140,6 +140,7 @@ public sealed record BudgetRecordDto(
 public sealed record BudgetRecordHeaderDto(
     int BudgetId,
     int EmployeeId,
+    int? TemplateId,
     string projectNumber,
     string ProductNo,
     string ProjectTitle,

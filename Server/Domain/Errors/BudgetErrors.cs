@@ -31,6 +31,9 @@ public static class BudgetErrors
 
     public static ServiceError TemplateNotFound(int templateId)
         => new($"Budget template '{templateId}' was not found.", ErrorCode.Validation);
+
+    public static ServiceError OperationCancelled()
+    => new("The database operation timed out or was cancelled by the user.", ErrorCode.Unexpected);
 }
 
 public record ServiceError(string Message, ErrorCode Code);

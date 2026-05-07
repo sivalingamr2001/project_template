@@ -18,6 +18,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.HasDefaultSchema("JAN_IT_NEW");
+
         // 1. Employee
         modelBuilder.Entity<EmployeeEntity>(entity => {
             entity.ToTable("jan_employees");

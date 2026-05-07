@@ -58,9 +58,10 @@ export default function BudgetPlanEntryPage() {
   const [localRecord, setLocalRecord] = useState<BudgetRecord | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [templateOptions, setTemplateOptions] = useState<TemplateOption[]>([])
-  const [selectedTemplateId, setSelectedTemplateId] = useState("")
+  const [selectedTemplateId, setSelectedTemplateId] = useState(0)
   const [isExporting, setIsExporting] = useState(false)
   const [draftRecord, setDraftRecord] = useState<BudgetRecord | null>(null)
+  const stateData = location.state
 
   useEffect(() => {
     let isMounted = true
@@ -75,7 +76,7 @@ export default function BudgetPlanEntryPage() {
         }
 
         setTemplateOptions(options)
-        setSelectedTemplateId((current) => current || options[0]?.id || "")
+        setSelectedTemplateId(stateData?.record?.templateId || 0)
       } catch {
         if (isMounted) {
           toast.error("Unable to load budget templates")
@@ -100,7 +101,7 @@ export default function BudgetPlanEntryPage() {
       }
       templateCategories?: TemplateCategory[]
     } | null
-
+    
     if (draftRecord) {
       setLocalRecord(draftRecord)
       return
@@ -216,9 +217,10 @@ export default function BudgetPlanEntryPage() {
         toast.success("Record created! Redirecting...");
         localStorage.removeItem(`failed_save_${localRecord?.id}`);
       } else {
-        await updateBudgetRecord(recordToSave.id, {
-          budgetData: recordToSave.budgetData,
-          projectHeader: recordToSave.projectHeader
+        await updateBudgetRecord(
+          recordToSave.id, {
+          projectHeader: recordToSave.projectHeader,
+          budgetData: recordToSave.budgetData
         });
         toast.success("Changes saved! Redirecting...");
       }
@@ -281,9 +283,9 @@ export default function BudgetPlanEntryPage() {
     setHasUnsavedChanges(true)
   }
 
-  const handleTemplateChange = (value: string) => {
+  const handleTemplateChange = (value: number) => {
     setSelectedTemplateId(value)
-    const option = templateOptions.find((template) => template.id === value)
+    const option = templateOptions.find((template) => template.templateId === selectedTemplateId)
 
     if (!option) {
       return

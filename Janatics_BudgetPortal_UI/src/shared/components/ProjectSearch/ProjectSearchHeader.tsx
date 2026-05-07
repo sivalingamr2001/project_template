@@ -1,5 +1,12 @@
 import DataGrid from "@/features/DynamicGrid/components/DataGrid/DataGrid"
 import CreateBudgetModal from "@/features/budget/components/CreateBudgetModal"
+import {
+  deleteBudget,
+  getBudgetById,
+  mapBudgetApiToUi,
+} from "@/features/budget/types"
+import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
+import { useBudget } from "@/providers/Budget/BudgetProvider"
 import { Button } from "@/shared/components/ui/button"
 import {
   Command,
@@ -10,17 +17,12 @@ import {
 } from "@/shared/components/ui/command"
 import { Input } from "@/shared/components/ui/input"
 import { useProjectSearch } from "@/shared/hooks/useProjectSearch"
+import { apiService } from "@/shared/lib/api-client"
+import type { ProjectData } from "@/types"
 import { FolderKanban, Package, Plus, Search, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import {
-  deleteBudget,
-  getBudgetById,
-  mapBudgetApiToUi,
-} from "@/features/budget/types"
-import { applyTemplateMetadataToBudgetData } from "@/features/budget/utils/budgetTemplates"
-import type { ProjectData } from "@/types"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,9 +33,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../ui/alert-dialog"
-import { useBudget } from "@/providers/Budget/BudgetProvider"
-import { apiService } from "@/shared/lib/api-client"
-import { se } from "date-fns/locale"
 
 export default function ProjectSearchDashboard() {
   const { state, refs, actions } = useProjectSearch()

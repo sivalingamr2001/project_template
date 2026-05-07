@@ -31,6 +31,7 @@ export interface ProjectHeaderData {
   approvalStatus?: string
   isActive?: boolean
   lastUpdated: string
+  templateId?: number
 }
 
 export interface BudgetRecord {
@@ -136,6 +137,7 @@ export type BudgetRecordResponse = {
     isActive?: boolean
     createdOn: string
     modifiedOn: string
+    templateId?: number
   }
   categories: BudgetCategoryResponse[]
   templateStructure?: BudgetTemplateCategory[]
@@ -158,14 +160,13 @@ export type CreateBudgetRequest = {
 }
 
 export type UpdateBudgetRequest = {
-  projectNumber: string
-  productNo: string
-  productName?: string
-  projectTitle?: string
+  budgetId: number
+  modifiedBy: number
+  modifedOn: string
   items: {
     itemId: number
+    categoryId: number | undefined
     planned: number
-    actual: number
   }[]
 }
 
@@ -217,7 +218,7 @@ export async function updateBudget(
   request: UpdateBudgetRequest
 ) {
   const response = await api.put<BudgetRecordResponse>(
-    `/budgets/${budgetId}`,
+    `/budgets/${budgetId}/amounts`,
     request
   )
   return response.data
