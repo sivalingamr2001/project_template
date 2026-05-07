@@ -339,7 +339,6 @@ export default function BudgetStatusProjects({
     }
   }
 
-
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-sm border bg-card p-2 px-5 shadow-sm">

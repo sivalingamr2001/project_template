@@ -25,7 +25,9 @@ export default function ProjectCostReportTable({
     const fetchReport = async () => {
       try {
         setLoading(true)
-        const response = await apiService.get(`/budgets/${budgetId}/report-data`)
+        const response = await apiService.get(
+          `/budgets/${budgetId}/report-data`
+        )
         setData(response.data)
       } catch (error) {
         console.error("Failed to fetch report data:", error)
@@ -40,14 +42,16 @@ export default function ProjectCostReportTable({
     return (
       <div className="flex flex-col items-center justify-center space-y-4 p-20">
         <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-[#0096D6]"></div>
-        <p className="text-muted-foreground animate-pulse">Loading Report Data...</p>
+        <p className="animate-pulse text-muted-foreground">
+          Loading Report Data...
+        </p>
       </div>
     )
   }
 
   if (!data || !data.categories) {
     return (
-      <div className="p-20 text-center text-red-500 font-bold uppercase tracking-wider">
+      <div className="p-20 text-center font-bold tracking-wider text-red-500 uppercase">
         No report data available for this record.
       </div>
     )
@@ -56,9 +60,18 @@ export default function ProjectCostReportTable({
   // Calculation logic including sub-category items
   const calculateTotal = (type: "estimatedAmount" | "actualAmount") => {
     return data.categories.reduce((acc: number, cat: any) => {
-      const itemTotal = cat.items?.reduce((sum: number, i: any) => sum + (i[type] || 0), 0) || 0
-      const subTotal = cat.subCategories?.reduce((sum: number, sub: any) =>
-        sum + (sub.items?.reduce((s: number, si: any) => s + (si[type] || 0), 0) || 0), 0) || 0
+      const itemTotal =
+        cat.items?.reduce((sum: number, i: any) => sum + (i[type] || 0), 0) || 0
+      const subTotal =
+        cat.subCategories?.reduce(
+          (sum: number, sub: any) =>
+            sum +
+            (sub.items?.reduce(
+              (s: number, si: any) => s + (si[type] || 0),
+              0
+            ) || 0),
+          0
+        ) || 0
       return acc + itemTotal + subTotal
     }, 0)
   }
@@ -67,14 +80,13 @@ export default function ProjectCostReportTable({
   const totalActual = calculateTotal("actualAmount")
 
   return (
-    <div className="w-full p-2 md:p-4 bg-slate-50">
-      <div className="mx-auto max-w-6xl border-2 border-black bg-white font-sans text-[10px] md:text-[11px] shadow-2xl">
-
+    <div className="w-full bg-slate-50 p-2 md:p-4">
+      <div className="mx-auto max-w-6xl border-2 border-black bg-white font-sans text-[10px] shadow-2xl md:text-[11px]">
         {/* LOGO & HEADER */}
         {/* LOGO & HEADER - SINGLE LINE TIGHT LAYOUT */}
-        <div className="flex items-center justify-between border-b-2 border-black bg-[#0096D6] h-12 text-white overflow-hidden">
+        <div className="flex h-12 items-center justify-between overflow-hidden border-b-2 border-black bg-[#0096D6] text-white">
           {/* Logo Section */}
-          <div className="px-4 flex items-center h-full">
+          <div className="flex h-full items-center px-4">
             <img
               src={Logo}
               alt="JANATICS"
@@ -83,42 +95,81 @@ export default function ProjectCostReportTable({
           </div>
 
           {/* Title Section */}
-          <div className="flex-1 text-center text-sm md:text-base font-bold tracking-[0.3em] uppercase">
+          <div className="flex-1 text-center text-sm font-bold tracking-[0.3em] uppercase md:text-base">
             Project Cost Report
           </div>
 
           {/* Req No Section */}
-          <div className="h-full flex items-center px-4 border-l border-white/30 min-w-[100px] justify-end">
-            <p className="font-bold text-[10px] whitespace-nowrap">
+          <div className="flex h-full min-w-25 items-center justify-end border-l border-white/30 px-4">
+            <p className="text-[10px] font-bold whitespace-nowrap">
               Req No : {data.budgetId}
             </p>
           </div>
         </div>
 
         {/* PROJECT INFO DETAILS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 border-b-2 border-black">
-          <div className="space-y-1 border-b sm:border-b-0 sm:border-r-2 border-black p-3">
-            <p><span className="inline-block w-24 font-bold uppercase text-gray-600">Product No :</span> {data.productNo || "—"}</p>
-            <p><span className="inline-block w-24 font-bold uppercase text-gray-600">Product Name :</span> {data.productName || "—"}</p>
-            <p><span className="inline-block w-24 font-bold uppercase text-gray-600">NPD No :</span> {data.projectNumber || "—"}</p>
+        <div className="grid grid-cols-1 border-b-2 border-black sm:grid-cols-2">
+          <div className="space-y-1 border-b border-black p-3 sm:border-r-2 sm:border-b-0">
+            <p>
+              <span className="inline-block w-24 font-bold text-gray-600 uppercase">
+                Product No :
+              </span>{" "}
+              {data.productNo || "—"}
+            </p>
+            <p>
+              <span className="inline-block w-24 font-bold text-gray-600 uppercase">
+                Product Name :
+              </span>{" "}
+              {data.productName || "—"}
+            </p>
+            <p>
+              <span className="inline-block w-24 font-bold text-gray-600 uppercase">
+                NPD No :
+              </span>{" "}
+              {data.projectNumber || "—"}
+            </p>
           </div>
-          <div className="space-y-1 p-3 bg-gray-50/50">
-            <p><span className="inline-block w-24 font-bold uppercase text-gray-600">Date :</span> {data.createdOn ? new Date(data.createdOn).toLocaleDateString("en-IN") : "—"}</p>
-            <p><span className="inline-block w-24 font-bold uppercase text-gray-600">Page No :</span> 1</p>
+          <div className="space-y-1 bg-gray-50/50 p-3">
+            <p>
+              <span className="inline-block w-24 font-bold text-gray-600 uppercase">
+                Date :
+              </span>{" "}
+              {data.createdOn
+                ? new Date(data.createdOn).toLocaleDateString("en-IN")
+                : "—"}
+            </p>
+            <p>
+              <span className="inline-block w-24 font-bold text-gray-600 uppercase">
+                Page No :
+              </span>{" "}
+              1
+            </p>
           </div>
         </div>
 
         {/* REPORT TABLE */}
         <div className="overflow-x-auto">
-          <Table className="border-collapse min-w-[800px]">
+          <Table className="min-w-200 border-collapse">
             <TableHeader>
               <TableRow className="border-b-2 border-black bg-[#004B8D] hover:bg-[#004B8D]">
-                <TableHead className="h-10 w-20 border-r border-black text-center font-bold text-white uppercase">Cost Breakup</TableHead>
-                <TableHead className="border-r border-black text-center font-bold text-white uppercase text-[10px]">Description</TableHead>
-                <TableHead className="w-32 border-r border-black text-center font-bold text-white uppercase text-[10px]">Estimated (₹)</TableHead>
-                <TableHead className="w-32 border-r border-black text-center font-bold text-white uppercase text-[10px]">Actual (₹)</TableHead>
-                <TableHead className="w-32 border-r border-black text-center font-bold text-white uppercase text-[10px]">Variance (₹)</TableHead>
-                <TableHead className="w-40 text-center font-bold text-white uppercase text-[10px]">Remarks</TableHead>
+                <TableHead className="h-10 w-20 border-r border-black text-center font-bold text-white uppercase">
+                  Cost Breakup
+                </TableHead>
+                <TableHead className="border-r border-black text-center text-[10px] font-bold text-white uppercase">
+                  Description
+                </TableHead>
+                <TableHead className="w-32 border-r border-black text-center text-[10px] font-bold text-white uppercase">
+                  Estimated (₹)
+                </TableHead>
+                <TableHead className="w-32 border-r border-black text-center text-[10px] font-bold text-white uppercase">
+                  Actual (₹)
+                </TableHead>
+                <TableHead className="w-32 border-r border-black text-center text-[10px] font-bold text-white uppercase">
+                  Variance (₹)
+                </TableHead>
+                <TableHead className="w-40 text-center text-[10px] font-bold text-white uppercase">
+                  Remarks
+                </TableHead>
               </TableRow>
             </TableHeader>
 
@@ -130,15 +181,21 @@ export default function ProjectCostReportTable({
                     <TableCell className="border-r border-black text-center font-bold text-white">
                       {cat.categoryNumber}
                     </TableCell>
-                    <TableCell colSpan={5} className="px-4 font-bold tracking-wider text-white uppercase">
+                    <TableCell
+                      colSpan={5}
+                      className="px-4 font-bold tracking-wider text-white uppercase"
+                    >
                       {cat.categoryName}
                     </TableCell>
                   </TableRow>
 
                   {/* STANDARD ITEMS (e.g., 2.1, 2.2) */}
                   {cat.items?.map((item: any) => (
-                    <TableRow key={item.itemNumber} className="h-7 border-b border-black hover:bg-slate-50 transition-colors">
-                      <TableCell className="border-r border-black text-center font-medium bg-gray-50">
+                    <TableRow
+                      key={item.itemNumber}
+                      className="h-7 border-b border-black transition-colors hover:bg-slate-50"
+                    >
+                      <TableCell className="border-r border-black bg-gray-50 text-center font-medium">
                         {item.itemNumber}
                       </TableCell>
                       <TableCell className="border-r border-black px-4 font-medium">
@@ -148,12 +205,16 @@ export default function ProjectCostReportTable({
                         {item.estimatedAmount?.toLocaleString("en-IN") || "-"}
                       </TableCell>
                       <TableCell className="border-r border-black px-4 text-right font-semibold">
-                        {item.actualAmount > 0 ? item.actualAmount.toLocaleString("en-IN") : "-"}
+                        {item.actualAmount > 0
+                          ? item.actualAmount.toLocaleString("en-IN")
+                          : "-"}
                       </TableCell>
-                      <TableCell className={`border-r border-black px-4 text-right font-bold ${parseFloat(item.variance) < 0 ? "text-red-600" : "text-green-600"}`}>
+                      <TableCell
+                        className={`border-r border-black px-4 text-right font-bold ${parseFloat(item.variance) < 0 ? "text-red-600" : "text-green-600"}`}
+                      >
                         {item.variance}
                       </TableCell>
-                      <TableCell className="px-2 text-[9px] text-gray-500 italic leading-tight">
+                      <TableCell className="px-2 text-[9px] leading-tight text-gray-500 italic">
                         {item.remarks}
                       </TableCell>
                     </TableRow>
@@ -162,34 +223,44 @@ export default function ProjectCostReportTable({
                   {/* SUB-CATEGORIES WITH NESTED NUMBERING */}
                   {cat.subCategories?.map((sub: any, subIdx: number) => {
                     // Calculate sub-category number based on main items count (e.g., 2.14)
-                    const subCatNumber = `${cat.categoryNumber}.${(cat.items?.length || 0) + subIdx + 1}`;
+                    const subCatNumber = `${cat.categoryNumber}.${(cat.items?.length || 0) + subIdx + 1}`
 
                     return (
                       <React.Fragment key={`sub-${subIdx}`}>
                         {/* Sub-Category Row */}
-                        <TableRow className="h-7 bg-[#0096D6]/5 border-b border-black">
+                        <TableRow className="h-7 border-b border-black bg-[#0096D6]/5">
                           <TableCell className="border-r border-black text-center font-bold text-gray-700">
                             {subCatNumber}
                           </TableCell>
-                          <TableCell colSpan={5} className="px-6 font-bold text-[#004B8D] italic">
+                          <TableCell
+                            colSpan={5}
+                            className="px-6 font-bold text-[#004B8D] italic"
+                          >
                             {sub.name}
                           </TableCell>
                         </TableRow>
 
                         {/* Sub-Category Items (e.g., 2.14.1, 2.14.2) */}
                         {sub.items?.map((subItem: any, siIdx: number) => (
-                          <TableRow key={`si-${siIdx}`} className="h-7 border-b border-black bg-white hover:bg-blue-50/30">
-                            <TableCell className="border-r border-black text-center text-[9px] font-medium text-gray-400 bg-gray-50/30">
+                          <TableRow
+                            key={`si-${siIdx}`}
+                            className="h-7 border-b border-black bg-white hover:bg-blue-50/30"
+                          >
+                            <TableCell className="border-r border-black bg-gray-50/30 text-center text-[9px] font-medium text-gray-400">
                               {`${subCatNumber}.${siIdx + 1}`}
                             </TableCell>
-                            <TableCell className="border-r border-black pl-12 pr-4 text-gray-700">
+                            <TableCell className="border-r border-black pr-4 pl-12 text-gray-700">
                               {subItem.name || subItem.itemName}
                             </TableCell>
                             <TableCell className="border-r border-black px-4 text-right text-gray-600">
-                              {subItem.estimatedAmount?.toLocaleString("en-IN") || "0"}
+                              {subItem.estimatedAmount?.toLocaleString(
+                                "en-IN"
+                              ) || "0"}
                             </TableCell>
                             <TableCell className="border-r border-black px-4 text-right font-semibold">
-                              {subItem.actualAmount > 0 ? subItem.actualAmount.toLocaleString("en-IN") : "-"}
+                              {subItem.actualAmount > 0
+                                ? subItem.actualAmount.toLocaleString("en-IN")
+                                : "-"}
                             </TableCell>
                             <TableCell className="border-r border-black px-4 text-right text-gray-500">
                               {subItem.variance || "0.00"}
@@ -200,15 +271,17 @@ export default function ProjectCostReportTable({
                           </TableRow>
                         ))}
                       </React.Fragment>
-                    );
+                    )
                   })}
                 </React.Fragment>
               ))}
 
               {/* GRAND TOTAL ROW */}
               <TableRow className="h-10 bg-[#004B8D] font-bold text-white hover:bg-[#004B8D]">
-                <TableCell className="border-r border-black text-center shadow-inner">Σ</TableCell>
-                <TableCell className="border-r border-black px-4 uppercase tracking-widest">
+                <TableCell className="border-r border-black text-center shadow-inner">
+                  Σ
+                </TableCell>
+                <TableCell className="border-r border-black px-4 tracking-widest uppercase">
                   Total Project Cost
                 </TableCell>
                 <TableCell className="border-r border-black px-4 text-right underline decoration-double">
@@ -220,42 +293,60 @@ export default function ProjectCostReportTable({
                 <TableCell className="border-r border-black px-4 text-right">
                   {(totalPlanned - totalActual).toLocaleString("en-IN")}
                 </TableCell>
-                <TableCell className="bg-white border-l border-black"></TableCell>
+                <TableCell className="border-l border-black bg-white"></TableCell>
               </TableRow>
             </TableBody>
-
           </Table>
         </div>
 
         {/* APPROVAL FOOTER */}
         <div className="border-t-2 border-black bg-white">
           <div className="min-h-12 border-b border-black p-3">
-            <span className="mr-2 font-bold uppercase text-[#004B8D]">Remarks / Decision:</span>
-            <span className="text-gray-700 font-medium italic">
+            <span className="mr-2 font-bold text-[#004B8D] uppercase">
+              Remarks / Decision:
+            </span>
+            <span className="font-medium text-gray-700 italic">
               {data.approvals?.comments || "No specific remarks provided."}
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x-2 divide-black text-center">
-            <div className="p-4 group">
-              <p className="mb-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Prepared By</p>
-              <span className="font-bold text-gray-800 border-b border-dashed border-gray-300 pb-1">{data.preparedBy || "—"}</span>
+          <div className="grid grid-cols-1 divide-y divide-black text-center sm:grid-cols-3 sm:divide-x-2 sm:divide-y-0">
+            <div className="group p-4">
+              <p className="mb-2 text-[9px] font-bold tracking-tighter text-gray-400 uppercase">
+                Prepared By
+              </p>
+              <span className="border-b border-dashed border-gray-300 pb-1 font-bold text-gray-800">
+                {data.preparedBy || "—"}
+              </span>
             </div>
-            <div className="p-4 bg-gray-50/30">
-              <p className="mb-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Approved On</p>
+            <div className="bg-gray-50/30 p-4">
+              <p className="mb-2 text-[9px] font-bold tracking-tighter text-gray-400 uppercase">
+                Approved On
+              </p>
               <span className="font-bold text-gray-800">
-                {data.approvals?.approvedOn ? new Date(data.approvals.approvedOn).toLocaleDateString("en-IN") : "N/A"}
+                {data.approvals?.approvedOn
+                  ? new Date(data.approvals.approvedOn).toLocaleDateString(
+                      "en-IN"
+                    )
+                  : "N/A"}
               </span>
             </div>
             <div className="p-4">
-              <p className="mb-2 text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Approved By</p>
-              <span className="font-bold text-gray-800 border-b border-dashed border-gray-300 pb-1">{data.approvals?.approverName || "N/A"}</span>
+              <p className="mb-2 text-[9px] font-bold tracking-tighter text-gray-400 uppercase">
+                Approved By
+              </p>
+              <span className="border-b border-dashed border-gray-300 pb-1 font-bold text-gray-800">
+                {data.approvals?.approverName || "N/A"}
+              </span>
             </div>
           </div>
         </div>
 
         {/* CONTROL INFO */}
-        <div className="flex flex-wrap justify-between items-center border-t border-black bg-[#F8FAFC] px-4 py-2 font-mono text-[8px] md:text-[9px] text-gray-400 uppercase tracking-widest">
-          <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-blue-400" /> Form No: F/D&D/07</span>
+        <div className="flex flex-wrap items-center justify-between border-t border-black bg-[#F8FAFC] px-4 py-2 font-mono text-[8px] tracking-widest text-gray-400 uppercase md:text-[9px]">
+          <span className="flex items-center gap-1">
+            <div className="h-1.5 w-1.5 rounded-full bg-blue-400" /> Form No:
+            F/D&D/07
+          </span>
           <span>Issue No: 4.0</span>
           <span>Rev No: 1</span>
           <span className="font-bold text-[#0096D6]">Controlled Copy</span>

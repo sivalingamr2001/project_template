@@ -18,18 +18,23 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter basename="/budget_portal">
       <LoaderProvider>
         <AppProvider>
-          <Toaster position="top-right" richColors visibleToasts={3} expand={true} />
-            <AuthProvider>
-              <ThemeProvider>
-                <NavigationBlockProvider>
-                  <BudgetProvider>
-                    <TooltipProvider>
-                      <App />
-                    </TooltipProvider>
-                  </BudgetProvider>
-                </NavigationBlockProvider>
-              </ThemeProvider>
-            </AuthProvider>
+          <Toaster
+            position="top-right"
+            richColors
+            visibleToasts={3}
+            expand={true}
+          />
+          <AuthProvider>
+            <ThemeProvider>
+              <NavigationBlockProvider>
+                <BudgetProvider>
+                  <TooltipProvider>
+                    <App />
+                  </TooltipProvider>
+                </BudgetProvider>
+              </NavigationBlockProvider>
+            </ThemeProvider>
+          </AuthProvider>
         </AppProvider>
       </LoaderProvider>
     </BrowserRouter>

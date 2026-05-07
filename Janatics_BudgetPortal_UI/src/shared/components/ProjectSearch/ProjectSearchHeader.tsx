@@ -43,7 +43,9 @@ export default function ProjectSearchDashboard() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const { fetchBudgetRecords } = useBudget()
-  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null)
+  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(
+    null
+  )
 
   useEffect(() => {
     setLoading(state.isLoading)
@@ -59,8 +61,7 @@ export default function ProjectSearchDashboard() {
 
   const handleViewDetails = useCallback(
     async (row: ProjectData) => {
-
-      setSelectedProject(row);
+      setSelectedProject(row)
 
       if (!row.budgetId) {
         toast.info(
@@ -396,7 +397,9 @@ export default function ProjectSearchDashboard() {
         onSubmit={handleNavigateToPlanEntry}
         initialData={{
           productName:
-            selectedProject?.projectname || currentProductName || state.projectSuggestions[0]?.projectname,
+            selectedProject?.projectname ||
+            currentProductName ||
+            state.projectSuggestions[0]?.projectname,
           productNo: selectedProject?.product_no || state.productNo,
           projectNumber: selectedProject?.projectnumber || state.projectNo,
         }}
