@@ -533,7 +533,7 @@ export default function ReportPage() {
         </div>
       ) : (
         /* Empty State */
-        <div className="flex h-[400px] flex-col items-center justify-center rounded-3xl border border-dashed text-center">
+        <div className="flex h-100 flex-col items-center justify-center rounded-3xl border border-dashed text-center">
           <div className="rounded-full bg-muted p-4">
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>

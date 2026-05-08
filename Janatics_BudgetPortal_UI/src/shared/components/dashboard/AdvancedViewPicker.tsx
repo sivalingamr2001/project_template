@@ -229,7 +229,10 @@ export function AdvancedViewPicker({
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent className="ml-1 w-56 p-1.5 shadow-2xl">
-              <DropdownMenuItem onClick={() => onTeamChange("")} className="flex items-center justify-between">
+              <DropdownMenuItem
+                onClick={() => onTeamChange("")}
+                className="flex items-center justify-between"
+              >
                 All Teams
                 {selectedTeam === "" && <Check className="h-3 w-3" />}
               </DropdownMenuItem>

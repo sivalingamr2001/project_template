@@ -67,11 +67,7 @@ export function useYearlyTrend(projectNumber?: string, teamName?: string) {
 }
 
 // Internal shared logic for Trends
-function useTrendData(
-  type: string,
-  projectNumber?: string,
-  teamName?: string
-) {
+function useTrendData(type: string, projectNumber?: string, teamName?: string) {
   const [data, setData] = useState<TrendPoint[]>([])
 
   useEffect(() => {
