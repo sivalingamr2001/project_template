@@ -18,6 +18,16 @@ public static class BudgetRecordsEndpoint
         .WithName("GetBudgets")
         .WithOpenApi();
 
+        group.MapGet("/teams", async (BudgetRecordsService service, CancellationToken cancellationToken) =>
+        {
+            var result = await service.GetTeamNamesAsync(cancellationToken);
+            return result.IsSuccess
+                ? Results.Ok(result.Value)
+                : ToProblem(result.Error!);
+        })
+        .WithName("GetTeamNames")
+        .WithOpenApi();
+
         group.MapGet("/search", async (string ? searchTerm, BudgetRecordsService service, IConfiguration configuration, CancellationToken cancellationToken) =>
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
@@ -38,9 +48,10 @@ public static class BudgetRecordsEndpoint
             CancellationToken cancellationToken,
             string? period = null,
             DateTime? from = null,
-            DateTime? to = null) =>
+            DateTime? to = null,
+            string? teamName = null) =>
         {
-            var result = await service.GetSummaryAsync(period, from, to, cancellationToken);
+            var result = await service.GetSummaryAsync(period, from, to, teamName, cancellationToken);
 
             return result.IsSuccess
                 ? Results.Ok(result.Value)
@@ -53,9 +64,10 @@ public static class BudgetRecordsEndpoint
             BudgetRecordsService service,
             CancellationToken cancellationToken,
             string? type = null,
-            string? projectNumber = null) =>
+            string? projectNumber = null,
+            string? teamName = null) =>
         {
-            var result = await service.GetTrendAsync(type, projectNumber, cancellationToken);
+            var result = await service.GetTrendAsync(type, projectNumber, teamName, cancellationToken);
 
             return result.IsSuccess
                 ? Results.Ok(result.Value)

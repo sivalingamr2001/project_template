@@ -50,6 +50,7 @@ export default function ReportPage() {
   const [reportConfig, setReportConfig] = useState<"summary" | "product">(
     "summary"
   )
+  const [team, setTeam] = useState<string>("")
   const [date, setDate] = useState<{ from: Date; to: Date }>({
     from: new Date(new Date().getFullYear(), 0, 1),
     to: new Date(),
@@ -64,16 +65,17 @@ export default function ReportPage() {
   const summary = useBudgetSummary(
     period,
     period === "custom" ? format(date.from, "yyyy-MM-dd") : undefined,
-    period === "custom" ? format(date.to, "yyyy-MM-dd") : undefined
+    period === "custom" ? format(date.to, "yyyy-MM-dd") : undefined,
+    team || undefined
   )
 
-  const monthlyTrend = useMonthlyTrend()
-  const quarterlyTrend = useQuarterlyTrend()
-  const yearlyTrend = useYearlyTrend()
+  const monthlyTrend = useMonthlyTrend(team)
+  const quarterlyTrend = useQuarterlyTrend(team)
+  const yearlyTrend = useYearlyTrend(team)
 
   const trendData = useMemo(() => {
-    if (period === "yearly") return yearlyTrend
-    if (period === "quarterly") return quarterlyTrend
+    if (period.includes("-")) return yearlyTrend
+    if (period.startsWith("Q")) return quarterlyTrend
     return monthlyTrend
   }, [period, monthlyTrend, quarterlyTrend, yearlyTrend])
 
@@ -329,7 +331,12 @@ export default function ReportPage() {
               </Popover>
             )}
 
-            <AdvancedViewPicker period={period} onPeriodChange={setPeriod} />
+            <AdvancedViewPicker
+              period={period}
+              selectedTeam={team}
+              onPeriodChange={setPeriod}
+              onTeamChange={setTeam}
+            />
           </div>
         </div>
       </div>

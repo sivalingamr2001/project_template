@@ -68,6 +68,18 @@ public sealed class BudgetRecordsService(
         }
     }
 
+    public async Task<Result<List<string>>> GetTeamNamesAsync(CancellationToken ct)
+    {
+        var teams = await dbContext.Employees
+            .Where(e => e.TeamName != null)
+            .Select(e => e.TeamName!)
+            .Distinct()
+            .OrderBy(t => t)
+            .ToListAsync(ct);
+
+        return Result<List<string>>.Success(teams);
+    }
+
     public async Task<Result<IReadOnlyList<BudgetRecordSummaryDtoWithplanedandactual>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var budgets = await dbContext.Budgets
@@ -224,41 +236,55 @@ public sealed class BudgetRecordsService(
     string? period,
     DateTime? from,
     DateTime? to,
+    string? teamName, // Added parameter for Team filtering
     CancellationToken ct)
     {
         var now = DateTime.UtcNow;
         DateTime startDate;
         DateTime endDate;
 
-        // 1. Resolve Timeframe Logic
+        // 1. Resolve Timeframe Logic - Handle custom period formats and relative periods
         if (from.HasValue)
         {
             startDate = from.Value.Date;
-            // If 'to' is provided, go to the end of that day. If not, go to end of today.
-            endDate = to.HasValue ? to.Value.Date.AddDays(1).AddTicks(-1) : now.Date.AddDays(1).AddTicks(-1);
+            endDate = to.HasValue 
+                ? to.Value.Date.AddDays(1).AddTicks(-1) 
+                : now.Date.AddDays(1).AddTicks(-1);
+        }
+        else if (!string.IsNullOrWhiteSpace(period))
+        {
+            (startDate, endDate) = ParsePeriod(period.Trim(), now);
         }
         else
         {
-            // Handle named presets
-            (startDate, endDate) = period?.ToLower() switch
-            {
-                "yearly" => (new DateTime(now.Year, 1, 1), new DateTime(now.Year, 12, 31, 23, 59, 59)),
-                "quarterly" => GetQuarterRange(now),
-                _ => (new DateTime(now.Year, now.Month, 1), now) // Default Monthly to current progress
-            };
+            // Default to current month
+            startDate = new DateTime(now.Year, now.Month, 1);
+            endDate = startDate.AddMonths(1).AddTicks(-1);
         }
 
-        // 2. Query and Aggregate
-        var summary = await dbContext.Budgets
+        // 2. Base Query with Initial Filters
+        var query = dbContext.Budgets
             .Where(b => b.IsActive && b.Status == BudgetStatus.Approved)
-            // Using inclusive range for clarity
-            .Where(b => b.CreatedOn >= startDate && b.CreatedOn <= endDate)
+            .Where(b => b.CreatedOn >= startDate && b.CreatedOn <= endDate);
+
+        // 3. Team Filtering Logic
+        // If a team is selected, join with the Employee table to filter by TeamName
+        if (!string.IsNullOrWhiteSpace(teamName))
+        {
+            query = from b in query
+                    join e in dbContext.Employees on b.EmployeeId equals e.EmployeeId
+                    where e.TeamName == teamName
+                    select b;
+        }
+
+        // 4. Query and Aggregate (Applied to the filtered 'query')
+        var summary = await query
             .Select(b => new
             {
                 Planned = b.Categories.SelectMany(c => c.Items).Sum(i => i.Planned),
                 Actual = b.Categories.SelectMany(c => c.Items).Sum(i => i.Actual)
             })
-            .GroupBy(x => 1)
+            .GroupBy(x => 1) // Group everything into one bucket to sum totals
             .Select(g => new BudgetSummaryDto
             {
                 TotalPlanned = g.Sum(x => x.Planned),
@@ -269,6 +295,7 @@ public sealed class BudgetRecordsService(
             })
             .FirstOrDefaultAsync(ct);
 
+        // Return the calculated summary, or a blank DTO with the date range if no records exist
         return summary ?? new BudgetSummaryDto
         {
             AppliedFrom = startDate,
@@ -285,9 +312,103 @@ public sealed class BudgetRecordsService(
         return (start, end);
     }
 
+    /// <summary>
+    /// Robust period parser that handles:
+    /// - "yearly": Current fiscal year
+    /// - "quarterly": Current quarter
+    /// - "monthly": Current month
+    /// - "Q1 2025", "Q2 2025", etc.: Specific quarter
+    /// - "January 2025", "February 2025", etc.: Specific month
+    /// - "2025-2026": Fiscal year range
+    /// - "custom": Default to current month (actual dates come from from/to params)
+    /// </summary>
+    private static (DateTime start, DateTime end) ParsePeriod(string period, DateTime now)
+    {
+        var lower = period.ToLowerInvariant().Trim();
+
+        // Handle "yearly" (current fiscal year)
+        if (lower == "yearly")
+        {
+            return (new DateTime(now.Year, 1, 1), new DateTime(now.Year, 12, 31, 23, 59, 59));
+        }
+
+        // Handle "quarterly" (current quarter)
+        if (lower == "quarterly")
+        {
+            return GetQuarterRange(now);
+        }
+
+        // Handle "monthly" (current month)
+        if (lower == "monthly" || lower == "custom")
+        {
+            return (
+                new DateTime(now.Year, now.Month, 1),
+                new DateTime(now.Year, now.Month, 1).AddMonths(1).AddTicks(-1)
+            );
+        }
+
+        // Handle specific quarter like "Q1 2025", "Q3 2025"
+        var quarterMatch = System.Text.RegularExpressions.Regex.Match(lower, @"^q(\d)\s+(\d{4})$");
+        if (quarterMatch.Success)
+        {
+            var quarter = int.Parse(quarterMatch.Groups[1].Value);
+            var year = int.Parse(quarterMatch.Groups[2].Value);
+
+            if (quarter >= 1 && quarter <= 4)
+            {
+                var startMonth = ((quarter - 1) * 3) + 1;
+                var start = new DateTime(year, startMonth, 1);
+                var end = start.AddMonths(3).AddTicks(-1);
+                return (start, end);
+            }
+        }
+
+        // Handle specific month like "January 2025", "March 2025"
+        var monthMap = new Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase)
+        {
+            { "january", 1 }, { "february", 2 }, { "march", 3 }, { "april", 4 },
+            { "may", 5 }, { "june", 6 }, { "july", 7 }, { "august", 8 },
+            { "september", 9 }, { "october", 10 }, { "november", 11 }, { "december", 12 }
+        };
+
+        var monthMatch = System.Text.RegularExpressions.Regex.Match(period, @"^(\w+)\s+(\d{4})$");
+        if (monthMatch.Success)
+        {
+            var monthName = monthMatch.Groups[1].Value.ToLowerInvariant();
+            if (int.TryParse(monthMatch.Groups[2].Value, out var year) && 
+                monthMap.TryGetValue(monthName, out var monthNum))
+            {
+                var start = new DateTime(year, monthNum, 1);
+                var end = start.AddMonths(1).AddTicks(-1);
+                return (start, end);
+            }
+        }
+
+        // Handle fiscal year range like "2025-2026"
+        var yearRangeMatch = System.Text.RegularExpressions.Regex.Match(lower, @"^(\d{4})-(\d{4})$");
+        if (yearRangeMatch.Success)
+        {
+            var startYear = int.Parse(yearRangeMatch.Groups[1].Value);
+            var endYear = int.Parse(yearRangeMatch.Groups[2].Value);
+
+            // Fiscal year typically runs April to March, or Jan to Dec depending on business
+            // Assuming Jan-Dec for now, adjust if needed
+            var start = new DateTime(startYear, 1, 1);
+            var end = new DateTime(endYear, 12, 31, 23, 59, 59);
+            return (start, end);
+        }
+
+        // Fallback to current month if parsing fails
+        return (
+            new DateTime(now.Year, now.Month, 1),
+            new DateTime(now.Year, now.Month, 1).AddMonths(1).AddTicks(-1)
+        );
+    }
+
     public async Task<Result<IReadOnlyList<BudgetTrendPointDto>>> GetTrendAsync(
         string? type,
         string? projectNumber,
+        string? teamName,
         CancellationToken ct)
     {
         var now = DateTime.UtcNow;
@@ -301,6 +422,15 @@ public sealed class BudgetRecordsService(
         {
             var trimmedprojectNumber = projectNumber.Trim();
             query = query.Where(b => b.ProjectNumber == trimmedprojectNumber);
+        }
+
+        // Apply team filtering
+        if (!string.IsNullOrWhiteSpace(teamName))
+        {
+            query = from b in query
+                    join e in dbContext.Employees on b.EmployeeId equals e.EmployeeId
+                    where e.TeamName == teamName
+                    select b;
         }
 
         var rawPoints = await query

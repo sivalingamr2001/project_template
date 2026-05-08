@@ -1,5 +1,5 @@
 import type { BudgetRecord, BudgetSummary } from "@/features/budget/types"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { apiService } from "../lib/api-client"
 
 type TrendPoint = {
@@ -13,7 +13,8 @@ type TrendPoint = {
 export function useBudgetSummary(
   period: string = "monthly",
   from?: string,
-  to?: string
+  to?: string,
+  teamName?: string
 ) {
   const [summary, setSummary] = useState<BudgetSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -22,10 +23,20 @@ export function useBudgetSummary(
     const fetchSummary = async () => {
       setLoading(true)
       try {
+        const params: Record<string, string | undefined> = {
+          period,
+          from,
+          to,
+        }
+
+        if (teamName) {
+          params.teamName = teamName
+        }
+
         const { data } = await apiService.get<BudgetSummary>(
           "/budgets/summary",
           {
-            params: { period, from, to },
+            params,
           }
         )
         setSummary(data)
@@ -37,35 +48,51 @@ export function useBudgetSummary(
     }
 
     fetchSummary()
-  }, [period, from, to])
+  }, [period, from, to, teamName])
 
   return { summary, loading }
 }
 
 // 2. Trend Hooks
-export function useMonthlyTrend(projectNumber?: string) {
-  return useTrendData("monthly", projectNumber)
+export function useMonthlyTrend(projectNumber?: string, teamName?: string) {
+  return useTrendData("monthly", projectNumber, teamName)
 }
 
-export function useQuarterlyTrend(projectNumber?: string) {
-  return useTrendData("quarterly", projectNumber)
+export function useQuarterlyTrend(projectNumber?: string, teamName?: string) {
+  return useTrendData("quarterly", projectNumber, teamName)
 }
 
-export function useYearlyTrend(projectNumber?: string) {
-  return useTrendData("yearly", projectNumber)
+export function useYearlyTrend(projectNumber?: string, teamName?: string) {
+  return useTrendData("yearly", projectNumber, teamName)
 }
 
 // Internal shared logic for Trends
-function useTrendData(type: string, projectNumber?: string) {
+function useTrendData(
+  type: string,
+  projectNumber?: string,
+  teamName?: string
+) {
   const [data, setData] = useState<TrendPoint[]>([])
 
   useEffect(() => {
     const fetchTrend = async () => {
       try {
+        const params: Record<string, string | undefined> = {
+          type,
+        }
+
+        if (projectNumber) {
+          params.projectNumber = projectNumber
+        }
+
+        if (teamName) {
+          params.teamName = teamName
+        }
+
         const { data } = await apiService.get<TrendPoint[]>(
           "/budgets/summary/trend",
           {
-            params: { type, projectNumber },
+            params,
           }
         )
         setData(data)
@@ -74,7 +101,7 @@ function useTrendData(type: string, projectNumber?: string) {
       }
     }
     fetchTrend()
-  }, [type, projectNumber])
+  }, [type, projectNumber, teamName])
 
   return data
 }
@@ -122,4 +149,26 @@ export function useProjectBudget(projectNumber: string) {
   }, [projectNumber])
 
   return budget
+}
+
+export function useBudgetTeams() {
+  const [teamsOptions, setTeamsOptions] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchTeams = async () => {
+      setLoading(true)
+      try {
+        const { data } = await apiService.get<string[]>("/budgets/teams")
+        setTeamsOptions(data)
+      } catch (error) {
+        console.error("Failed to fetch teams", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTeams()
+  }, [])
+
+  return { teamsOptions, loading }
 }

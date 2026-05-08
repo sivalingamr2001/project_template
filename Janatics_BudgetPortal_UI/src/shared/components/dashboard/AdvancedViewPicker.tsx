@@ -11,6 +11,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu"
+import { useBudgetTeams } from "@/shared/hooks/useBudget"
 import { cn } from "@/shared/lib/utils"
 import {
   CalendarDays,
@@ -18,21 +19,30 @@ import {
   Check,
   MoreHorizontal,
   PieChart,
+  Users,
 } from "lucide-react"
 import { useMemo, useState } from "react"
 
 interface Props {
   period: string // Used to show active state
+  selectedTeam: string
   onPeriodChange: (newPeriod: string) => void
+  onTeamChange: (team: string) => void
 }
 
-export function AdvancedViewPicker({ period, onPeriodChange }: Props) {
+export function AdvancedViewPicker({
+  period,
+  selectedTeam,
+  onPeriodChange,
+  onTeamChange,
+}: Props) {
   const currentYear = new Date().getFullYear()
 
-  // Selection states for internal menu logic
   const [selYear, setSelYear] = useState(currentYear.toString())
   const [selQuarter, setSelQuarter] = useState("Q1")
   const [selMonth, setSelMonth] = useState("January")
+
+  const { teamsOptions, loading } = useBudgetTeams()
 
   // Dynamic Data
   const years = useMemo(() => {
@@ -208,6 +218,35 @@ export function AdvancedViewPicker({ period, onPeriodChange }: Props) {
               >
                 Apply Monthly View
               </Button>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
+
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="py-2 text-sm">
+            <Users className="mr-2 h-4 w-4 opacity-70" />
+            <span>{loading ? "Loading..." : "Filter by Team"}</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent className="ml-1 w-56 p-1.5 shadow-2xl">
+              <DropdownMenuItem onClick={() => onTeamChange("")} className="flex items-center justify-between">
+                All Teams
+                {selectedTeam === "" && <Check className="h-3 w-3" />}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+
+              {/* 2. Map through the fetched team names */}
+              {teamsOptions.map((team) => (
+                <DropdownMenuItem
+                  key={team}
+                  onClick={() => onTeamChange(team)} // Changed from setTeams
+                  className="flex items-center justify-between"
+                >
+                  {team}
+                  {/* 3. Visual indicator for selection */}
+                  {selectedTeam === team && <Check className="h-3 w-3" />}
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>

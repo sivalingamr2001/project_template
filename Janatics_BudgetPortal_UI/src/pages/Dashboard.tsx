@@ -26,17 +26,19 @@ export default function Dashboard() {
     from: new Date(new Date().getFullYear(), 0, 1),
     to: new Date(),
   })
+  const [team, setTeam] = useState<string>("")
 
   const summary = useBudgetSummary(
     period,
     period === "custom" ? format(date.from, "yyyy-MM-dd") : undefined,
-    period === "custom" ? format(date.to, "yyyy-MM-dd") : undefined
+    period === "custom" ? format(date.to, "yyyy-MM-dd") : undefined,
+    team || undefined
   )
 
   // Trend data selectors
-  const monthlyTrend = useMonthlyTrend()
-  const quarterlyTrend = useQuarterlyTrend()
-  const yearlyTrend = useYearlyTrend()
+  const monthlyTrend = useMonthlyTrend(team)
+  const quarterlyTrend = useQuarterlyTrend(team)
+  const yearlyTrend = useYearlyTrend(team)
 
   const trendData = useMemo(() => {
     if (period.includes("-")) return yearlyTrend
@@ -95,7 +97,12 @@ export default function Dashboard() {
           )}
 
           {/* Child Component */}
-          <AdvancedViewPicker period={period} onPeriodChange={setPeriod} />
+          <AdvancedViewPicker
+            period={period}
+            selectedTeam={team}
+            onPeriodChange={setPeriod}
+            onTeamChange={setTeam}
+          />
         </div>
       </div>
 
