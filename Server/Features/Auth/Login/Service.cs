@@ -53,13 +53,17 @@ public sealed class LoginService(
     private async Task<LoginResponse?> ExecuteOldLoginLogicAsync(string identifier, string password, CancellationToken ct)
     {
         var query = dbContext.Employees.AsNoTracking();
-        if (int.TryParse(identifier, out var employeeId))
+        if (int.TryParse(identifier, out var numericIdentifier))
         {
-            query = query.Where(e => e.EmployeeId == employeeId);
+            query = query.Where(e =>
+                e.UserId == numericIdentifier ||
+                e.EmployeeId == numericIdentifier);
         }
         else
         {
-            query = query.Where(e => e.UserName == identifier);
+            query = query.Where(e =>
+                e.UserName == identifier ||
+                e.Email == identifier);
         }
 
         var user = await query
@@ -141,7 +145,7 @@ public sealed class LoginService(
                    CMPL_USER_RIGHTS as Role, MOB_NO as Mobile, MAIL_ID as Email, DEPT_ID as DeptId
             FROM it_inventory_db_new.jan_complaint_login
             WHERE deleted_flag = 0 
-              AND (CMPL_USER_NAME = @id OR emp_id = @id) 
+              AND (CMPL_USER_NAME = @id OR emp_id = @id OR CMPL_USER_ID = @id OR MAIL_ID = @id) 
               AND CMPL_USER_KEY = @pwd 
             LIMIT 1";
 

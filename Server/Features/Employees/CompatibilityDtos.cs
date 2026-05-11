@@ -43,7 +43,7 @@ public sealed record LegacyUpdateUserRequest(
     string? Role);
 
 public sealed record LegacyCreateUserRequest(
-    int EmployeeId,
+    int? EmployeeId,
     string UserName,
     string? FirstName,
     string? LastName,

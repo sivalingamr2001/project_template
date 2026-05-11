@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -11,6 +10,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { IconChevronDown, IconChevronUp, IconTrash } from "@tabler/icons-react"
+import FolderSelector from "./FolderSelector"
 import type { AccessDetailProps } from "./types"
 import { ACCESS_OPTIONS } from "./utils/accessRequestForm"
 
@@ -74,17 +74,15 @@ export default function AccessDetail({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="animate-in space-y-4 p-4 duration-200 fade-in slide-in-from-top-1">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <Label>Folder Path</Label>
-              <Input
-                value={detail.folderPath}
-                onChange={(e) => onChange(index, "folderPath", e.target.value)}
-                placeholder="D:\Workspace\Project"
-                required
-              />
-            </div>
+          <div className="grid gap-4 md:grid-cols-1">
+            <FolderSelector
+              value={detail.folderPath}
+              onChange={(path) => onChange(index, "folderPath", path)}
+              required
+            />
+          </div>
 
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Access Type</Label>
               <Select
