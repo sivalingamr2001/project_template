@@ -8,6 +8,7 @@ using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
 using Server.Features.AuditLogs.GetList;
+using Server.Features.Admin.FolderMapping;
 using Server.Features.Auth.Login;
 using Server.Features.Dashboard.GetDashboard;
 using Server.Features.Departments.Create;
@@ -38,6 +39,9 @@ public static class EndpointMappingExtensions
         //GetDepartmentHodEndpoint.Map(departmentsGroup);
         CreateDepartmentEndpoint.Map(departmentsGroup);
         UpdateDepartmentEndpoint.Map(departmentsGroup);
+
+        var adminGroup = app.MapGroup("/api/admin").WithTags("Admin");
+        FolderMappingEndpoint.Map(adminGroup);
 
         var accessRequestsGroup = app.MapGroup("/api/access-requests").WithTags("Access Requests");
         CreateAccessRequestEndpoint.Map(accessRequestsGroup);

@@ -1,11 +1,12 @@
 import {
-  IconChecklist,
-  IconClockCheck,
-  IconDashboard,
   IconBuilding,
-  IconFileInvoice,
+  IconFolder,
+  IconLayoutDashboard,
+  IconFileText,
   IconShieldCheck,
   IconUsers,
+  IconCheck,
+  IconClock,
 } from "@tabler/icons-react"
 
 import type { NavigationSection } from "../types"
@@ -15,9 +16,9 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
     title: "User",
     items: [
       {
-        label: "Dashboard",
-        to: "/dashboard",
-        icon: IconDashboard,
+        label: "My Requests",
+        to: "/my-requests",
+        icon: IconFileText,
         roles: ["User"],
       },
     ],
@@ -28,54 +29,83 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
       {
         label: "Pending Approvals",
         to: "/hod/pending-approvals",
-        icon: IconChecklist,
+        icon: IconCheck,
         roles: ["Hod"],
       },
-      // {
-      //   label: "Approval History",
-      //   to: "/hod/approval-history",
-      //   icon: IconHistory,
-      //   roles: ["Hod"],
-      // },
       {
         label: "All Requests",
         to: "/hod/all-requests",
-        icon: IconFileInvoice,
+        icon: IconFileText,
         roles: ["Hod"],
       },
     ],
   },
   {
-    title: "IT",
+    title: "Operator",
     items: [
       {
+        label: "Dashboard",
+        to: "/dashboard",
+        icon: IconLayoutDashboard,
+        roles: ["Operator"],
+      },
+      {
         label: "Approval Queue",
-        to: "/it/approval-queue",
+        to: "/operator/approval-queue",
         icon: IconShieldCheck,
-        roles: ["Admin"],
+        roles: ["Operator"],
       },
       {
         label: "Active Access",
-        to: "/it/active-access",
-        icon: IconClockCheck,
-        roles: ["Admin"],
+        to: "/operator/active-access",
+        icon: IconClock,
+        roles: ["Operator"],
       },
       {
         label: "All Requests",
-        to: "/it/all-requests",
-        icon: IconFileInvoice,
+        to: "/operator/all-requests",
+        icon: IconFileText,
+        roles: ["Operator"],
+      },
+    ],
+  },
+  {
+    title: "Admin",
+    items: [
+      {
+        label: "Dashboard",
+        to: "/admin-dashboard",
+        icon: IconLayoutDashboard,
         roles: ["Admin"],
       },
       {
         label: "Employee",
-        to: "/it/employees",
+        to: "/admin/employees",
         icon: IconUsers,
         roles: ["Admin"],
       },
       {
         label: "Departments",
-        to: "/it/departments",
+        to: "/admin/departments",
         icon: IconBuilding,
+        roles: ["Admin"],
+      },
+      {
+        label: "Roles & Permissions",
+        to: "/admin/roles-permissions",
+        icon: IconShieldCheck,
+        roles: ["Admin"],
+      },
+      {
+        label: "Folder Mapping",
+        to: "/admin/folder-mapping",
+        icon: IconFolder,
+        roles: ["Admin"],
+      },
+      {
+        label: "Audit Logs",
+        to: "/admin/audit-logs",
+        icon: IconFileText,
         roles: ["Admin"],
       },
     ],

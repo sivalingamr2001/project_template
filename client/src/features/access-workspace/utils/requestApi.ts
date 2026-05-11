@@ -360,7 +360,7 @@ export async function updateUserProfile(
 }
 
 export type CreateUserPayload = {
-  employeeId: number
+  employeeId?: number
   userName: string
   firstName?: string
   lastName?: string
@@ -566,7 +566,7 @@ export async function searchUsers(
 export async function fetchAllHod(
   page = 1,
   pageSize = 10
-): Promise<HodResponse> {
+): Promise<HodResponse[]> {
   const response = await fetch(
     `${API_URL}/hod-details?Page=${page}&PageSize=${pageSize}`
   )
@@ -582,6 +582,45 @@ export async function fetchAllHod(
     Email: item.email,
     PhoneNumber: item.phoneNumber,
   }))
+}
+
+export type FolderMappingRecord = {
+  folderName: string
+  hodId?: string
+  hodName?: string
+  hodEmail?: string
+}
+
+export async function fetchFolderMappings(): Promise<FolderMappingRecord[]> {
+  const response = await fetch(`${API_URL}/admin/folder-mapping`)
+  if (!response.ok) throw new Error("Unable to load folder mappings.")
+
+  const payload = await safeParseJson(response)
+  return payload.map((item: any) => ({
+    folderName: item.folderName,
+    hodId: item.hodId,
+    hodName: item.hodName,
+    hodEmail: item.hodEmail,
+  }))
+}
+
+export async function saveFolderMapping(
+  payload: FolderMappingRecord
+): Promise<FolderMappingRecord> {
+  const response = await fetch(`${API_URL}/admin/folder-mapping`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    const message = await safeParseJson<{ message?: string }>(response)
+      .then((data) => data?.message as string)
+      .catch(() => null)
+    throw new Error(message || "Unable to save folder mapping.")
+  }
+
+  return safeParseJson(response)
 }
 
 export async function searchAuditLogs(

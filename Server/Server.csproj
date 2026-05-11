@@ -39,5 +39,8 @@
         </ItemGroup>
         <Copy SourceFiles="@(ReactFiles)" DestinationFiles="@(ReactFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
     </Target>
-
-</Project>
+    <ItemGroup>
+        <Content Include="Infrastructure\Db\Folders.csv">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup></Project>

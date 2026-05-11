@@ -11,6 +11,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<AccessItemEntity> AccessItems => Set<AccessItemEntity>();
     public DbSet<AccessApprovalEntity> AccessApprovals => Set<AccessApprovalEntity>();
     public DbSet<AccessReqAuditEntity> AccessReqAudits => Set<AccessReqAuditEntity>();
+    public DbSet<FolderMappingEntity> FolderMappings => Set<FolderMappingEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,6 +67,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         modelBuilder.Entity<AccessItemEntity>().ToTable("jan_accessitems").HasKey(item => item.AccessItemId);
         modelBuilder.Entity<AccessApprovalEntity>().ToTable("jan_accessapproval").HasKey(approval => approval.AccessApproveId);
         modelBuilder.Entity<AccessReqAuditEntity>().ToTable("jan_accessreqaudit").HasKey(audit => audit.AuditId);
+
+        modelBuilder.Entity<FolderMappingEntity>(entity =>
+        {
+            entity.ToTable("folder_mappings").HasKey(mapping => mapping.Id);
+            entity.HasIndex(mapping => mapping.FolderName).IsUnique();
+        });
     }
 
 }

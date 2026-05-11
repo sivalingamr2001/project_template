@@ -62,6 +62,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();
         services.AddScoped<EmployeeService>();
+        services.AddScoped<FolderMappingService>();
         services.AddScoped<CreateAccessRequestService>();
         services.AddScoped<GetAccessRequestsService>();
         services.AddScoped<GetDepartmentsService>();

@@ -180,11 +180,6 @@ public sealed class EmployeeService(AppDbContext dbContext)
 
     public async Task<LegacyUserProfileDto> CreateLegacyUserAsync(LegacyCreateUserRequest request, CancellationToken cancellationToken)
     {
-        if (request.EmployeeId <= 0)
-        {
-            throw new InvalidOperationException("Employee ID is required.");
-        }
-
         if (string.IsNullOrWhiteSpace(request.UserName) ||
             string.IsNullOrWhiteSpace(request.Password) ||
             string.IsNullOrWhiteSpace(request.Email))
@@ -222,7 +217,9 @@ public sealed class EmployeeService(AppDbContext dbContext)
         var utcNow = DateTime.UtcNow;
         var employee = new EmployeeEntity
         {
-            EmployeeId = request.EmployeeId,
+            EmployeeId = request.EmployeeId.HasValue && request.EmployeeId.Value > 0
+                ? request.EmployeeId.Value
+                : await GetNextEmployeeIdAsync(cancellationToken),
             FirstName = request.FirstName?.Trim(),
             LastName = request.LastName?.Trim(),
             UserName = userName,
