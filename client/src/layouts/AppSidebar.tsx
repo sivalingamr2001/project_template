@@ -39,7 +39,7 @@ function AppSidebar({ isCollapsed, onClose, onItemClick }: AppSidebarProps) {
         </button>
       ) : null}
       <aside
-        className={`flex flex-col overflow-y-auto rounded-[0.75rem] border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground transition-all duration-300 ${isCollapsed ? "-translate-x-full opacity-0 md:flex md:w-20 md:translate-x-0 md:opacity-100" : "fixed inset-y-0 left-0 z-30 w-[min(20rem,calc(100%-2rem))] max-w-[20rem] translate-x-0 opacity-100 md:relative md:block md:w-72"}`}
+        className={`flex flex-col overflow-y-auto animate-sidebar-slide rounded-[0.75rem] border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground transition-all duration-300 ${isCollapsed ? "-translate-x-full opacity-0 md:flex md:w-20 md:translate-x-0 md:opacity-100" : "fixed inset-y-0 left-0 z-30 w-[min(20rem,calc(100%-2rem))] max-w-[20rem] translate-x-0 opacity-100 md:relative md:block md:w-72"}`}
       >
         <div
           className={`mb-6 flex items-center rounded-sm bg-sidebar-accent p-3 ${isCollapsed ? "justify-center bg-transparent" : "gap-3"}`}

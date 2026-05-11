@@ -21,7 +21,7 @@ const API_URL = import.meta.env.VITE_API_URL ?? "/access-portal/api"
  * Safely parse a JSON response, handling cases where the server
  * returns HTML error pages instead of JSON
  */
-async function safeParseJson<T>(response: Response): Promise<T> {
+async function safeParseJson<T = any>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type")
 
   // If it's not JSON content, throw an error instead of trying to parse

@@ -12,6 +12,8 @@ import type { NotificationItem } from "@/features/access-workspace/types"
 import { cn } from "@/lib/utils"
 import NotificationSheet from "./components/NotificationSheet"
 import UserMenu from "./components/UserMenu"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 
 type AppHeaderProps = {
   isSidebarCollapsed: boolean
@@ -46,11 +48,11 @@ export function AppHeader({
   }
 
   return (
-    <header className="flex min-h-14 items-center justify-between gap-3 rounded-[0.5rem] border border-border bg-card px-4">
+    <header className="animate-header-slide flex min-h-14 items-center justify-between gap-3 rounded-[0.5rem] bg-transprent px-4">
       <div className="flex items-center gap-2">
-        <button
+        <Button
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            "relative flex h-10 w-10 items-center justify-center text-black dark:text-white hover:text-white rounded-[16px] border border-border bg-background transition-colors hover:bg-accent"
           )}
           onClick={onToggleSidebar}
         >
@@ -59,18 +61,24 @@ export function AppHeader({
           ) : (
             <IconLayoutSidebarLeftCollapse className="h-5 w-5" />
           )}
-        </button>
+        </Button>
+        <div>
+          <Separator orientation="vertical" className="h-6 bg-border" />
+        </div>
+        <div >
+          <h1 className="animate-fade-in-right text-lg font-semibold tracking-tight">Dashboard</h1>
+        </div>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background transition-colors hover:bg-accent"
+        <Button
+          className="relative flex h-10 w-10 items-center justify-center text-black dark:text-white hover:text-white rounded-xl border border-border bg-background transition-colors hover:bg-accent"
           onClick={handleNotificationToggle}
         >
-          <IconBell className="size-5" />
+          <IconBell className="h-5 w-5" />
           {hasUnread ? (
             <span className="absolute top-2 right-2 size-2 rounded-full bg-red-500" />
           ) : null}
-        </button>
+        </Button>
         <UserMenu
           isOpen={isUserMenuOpen}
           name={user?.name ?? "User"}
