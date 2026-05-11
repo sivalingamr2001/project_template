@@ -15,7 +15,7 @@ export function AppLayout() {
       <UserProfileCompletionModal />
       <div
         className={cn(
-          "relative h-full w-full max-w-full gap-4 p-4 md:grid",
+          "relative h-full w-full max-w-full gap-1 p-1 md:grid",
           isSidebarCollapsed
             ? "md:grid-cols-[5rem_minmax(0,1fr)]"
             : "md:grid-cols-[18rem_minmax(0,1fr)]"
@@ -26,12 +26,12 @@ export function AppLayout() {
           onClose={() => setIsSidebarCollapsed(true)}
           onItemClick={() => setIsSidebarCollapsed(true)}
         />
-        <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
           <AppHeader
             isSidebarCollapsed={isSidebarCollapsed}
             onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
           />
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[0.75rem] border border-border bg-card p-4 shadow-sm sm:p-5">
+          <div className="animate-main-content-slide flex min-h-0 flex-1 flex-col overflow-hidden rounded-[0.75rem] bg-transparent p-4 shadow-sm sm:p-5">
             <AppContent />
           </div>
         </div>

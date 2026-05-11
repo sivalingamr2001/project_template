@@ -182,3 +182,115 @@
     background: theme('colors.muted-foreground / 50%') !important;
   }
 }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: linear-gradient(
+      135deg,
+      rgba(245, 243, 236, 0.95),
+      rgba(236, 235, 226, 0.88)
+    );
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  html {
+    @apply font-sans;
+  }
+
+  .dark body {
+    background-image: linear-gradient(
+      135deg,
+      rgba(10, 10, 10, 0.96),
+      rgba(24, 24, 27, 0.9)
+    );
+  }
+
+  .animate-fade-in-right {
+    animation: fadeInRight 0.55s ease-out forwards;
+  }
+
+  @keyframes fadeInRight {
+    from {
+      opacity: 0;
+      transform: translateX(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+@keyframes titleSlideFade {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-title-slide {
+  animation: titleSlideFade 0.4s ease forwards;
+}
+
+//add animation for header div top to bottom and fade in, and add animation for sidebar from left to right and fade in
+.animate-header-slide {
+  animation: headerSlideFade 0.4s ease forwards;
+}
+
+@keyframes headerSlideFade {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sidebar-slide {
+  animation: sidebarSlideFade 0.4s ease forwards;
+}
+
+@keyframes sidebarSlideFade {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-main-content-slide {
+  animation: mainContentSlideFade 0.4s ease forwards;
+}
+
+@keyframes mainContentSlideFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

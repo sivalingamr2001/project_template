@@ -43,7 +43,7 @@ public sealed class DatabaseInitializer(
                     FirstName = "John",
                     LastName = "Doe",
                     UserName = "johndoe",
-                    Password = "password", // In real app, hash it
+                    Password = "password",
                     Email = "john@example.com",
                     UserRole = "User",
                     IsActive = true
