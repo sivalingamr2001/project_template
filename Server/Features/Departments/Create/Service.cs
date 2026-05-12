@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 using Server.Features.Common;
 using Server.Infrastructure.Db;
 using Server.Shared.Constants;
@@ -39,7 +40,7 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
 
         var hodExists = await dbContext.Employees
             .AsNoTracking()
-            .Where(e => e.EmployeeId == request.HodId && e.UserRole == RoleNames.Hod)
+            .Where(e => e.EmployeeId == request.HodId && e.UserRole == UserRole.Hod)
             .Select(e => new { e.UserId, e.EmployeeId })
             .FirstOrDefaultAsync(cancellationToken);
 

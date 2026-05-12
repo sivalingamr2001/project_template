@@ -70,7 +70,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<FolderMappingEntity>(entity =>
         {
-            entity.ToTable("folder_mappings").HasKey(mapping => mapping.Id);
+            entity.ToTable("jan_folder_mappings").HasKey(mapping => mapping.Id);
             entity.HasIndex(mapping => mapping.FolderName).IsUnique();
         });
     }

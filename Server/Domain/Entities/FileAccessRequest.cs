@@ -6,6 +6,9 @@ namespace Server.Domain.Entities;
 
 public class BaseEntity
 {
+    [Column("is_active")]
+    public bool IsActive { get; set; } = true;
+
     [Column("created_on")]
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
 
@@ -37,9 +40,6 @@ public class AccessRequestEntity : BaseEntity
 
     [Column("itsr_no")]
     public string? ItsrNo { get; set; } = string.Empty;
-
-    [Column("is_active")]
-    public bool IsActive { get; set; } = true;
 
     public virtual ICollection<AccessItemEntity> AccessItems { get; set; } = new List<AccessItemEntity>();
 }

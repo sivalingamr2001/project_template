@@ -1,11 +1,10 @@
 namespace Server.Domain.Entities;
 
-using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-[Table("folder_mappings")]
-public sealed class FolderMappingEntity: BaseEntity
+[Table("jan_folder_mappings")]
+public sealed class FolderMappingEntity : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -16,12 +15,12 @@ public sealed class FolderMappingEntity: BaseEntity
     [Column("folder_name")]
     public string FolderName { get; set; } = null!;
 
-    [Column("hod_id")]
-    public string? HodId { get; set; }
+    // Primary/Secondary HOD Fields (Matched to TS Record)
+    [Column("primary_hod_id")] public string? PrimaryHodId { get; set; }
+    [Column("primary_hod_name")] public string? PrimaryHodName { get; set; }
+    [Column("primary_hod_email")] public string? PrimaryHodEmail { get; set; }
 
-    [Column("hod_name")]
-    public string? HodName { get; set; }
-
-    [Column("hod_email")]
-    public string? HodEmail { get; set; }
+    [Column("secondary_hod_id")] public string? SecondaryHodId { get; set; }
+    [Column("secondary_hod_name")] public string? SecondaryHodName { get; set; }
+    [Column("secondary_hod_email")] public string? SecondaryHodEmail { get; set; }
 }

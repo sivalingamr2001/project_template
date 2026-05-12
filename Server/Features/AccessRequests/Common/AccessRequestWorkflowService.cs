@@ -149,7 +149,7 @@ public sealed class AccessRequestWorkflowService(
         if (!request.Approved && string.IsNullOrWhiteSpace(request.Comments))
             throw new AppValidationException("Comments are required when HOD rejects an item.");
 
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Hod, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Hod, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
@@ -229,7 +229,7 @@ public sealed class AccessRequestWorkflowService(
         }
 
         // 2. Fetch dependencies
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Admin, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Admin, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
@@ -338,7 +338,7 @@ public sealed class AccessRequestWorkflowService(
             throw new AppValidationException("Comments are required when revoking access.");
         }
 
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, RoleNames.Admin, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Admin, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
@@ -650,7 +650,7 @@ public sealed class AccessRequestWorkflowService(
                 approval.AccessApproveId,
                 approval.ApproverId,
                 approval.UserName,
-                string.IsNullOrWhiteSpace(approval.UserRole) ? "User" : approval.UserRole!,
+                approval.UserRole.ToString(),
                 approval.ApprovalStatus,
                 approval.Comments,
                 approval.CreatedOn))
@@ -682,7 +682,7 @@ public sealed class AccessRequestWorkflowService(
             requester.Department?.DepartmentName ?? string.Empty,
             accessRequest.ReqTo,
             currentApprover?.UserName ?? string.Empty,
-            string.IsNullOrWhiteSpace(currentApprover?.UserRole) ? "User" : currentApprover!.UserRole!,
+            currentApprover?.UserRole.ToString() ?? "User",
             accessRequest.ItsrNo,
             accessRequest.CreatedOn,
             accessRequest.ModifiedOn,
@@ -982,11 +982,11 @@ public sealed class AccessRequestWorkflowService(
             ?? throw new AppValidationException($"Employee {employeeId} was not found.");
     }
 
-    private async Task<EmployeeEntity> EnsureRoleAsync(int employeeId, string role, CancellationToken cancellationToken)
+    private async Task<EmployeeEntity> EnsureRoleAsync(int employeeId, UserRole role, CancellationToken cancellationToken)
     {
         var employee = await GetEmployeeOrThrowAsync(employeeId, cancellationToken);
 
-        if (!string.Equals(employee.UserRole, role, StringComparison.OrdinalIgnoreCase))
+        if (employee.UserRole != role)
         {
             throw new AppValidationException($"Employee {employeeId} is not authorized for this action.");
         }
@@ -1042,7 +1042,7 @@ public sealed class AccessRequestWorkflowService(
             return new List<EmployeeEntity>();
         }
 
-        if (!string.Equals(hod.UserRole, RoleNames.Hod, StringComparison.OrdinalIgnoreCase))
+        if (hod.UserRole != UserRole.Hod)
         {
             return new List<EmployeeEntity>();
         }
@@ -1053,7 +1053,7 @@ public sealed class AccessRequestWorkflowService(
     private async Task<EmployeeEntity> ResolveItApproverAsync(CancellationToken cancellationToken)
     {
         return await dbContext.Employees
-            .Where(employee => employee.UserRole == RoleNames.Admin)
+            .Where(employee => employee.UserRole == UserRole.Admin)
             .OrderBy(employee => employee.EmployeeId)
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new AppValidationException("No IT approver is configured.");
@@ -1062,7 +1062,7 @@ public sealed class AccessRequestWorkflowService(
     private async Task<List<EmployeeEntity>> GetItApproversAsync(CancellationToken cancellationToken)
     {
         var admins = await dbContext.Employees
-            .Where(employee => employee.UserRole == RoleNames.Admin)
+            .Where(employee => employee.UserRole == UserRole.Admin)
             .OrderBy(employee => employee.EmployeeId)
             .ToListAsync(cancellationToken);
 
@@ -1076,12 +1076,12 @@ public sealed class AccessRequestWorkflowService(
 
     private static void EnsureCanView(EmployeeEntity viewer, EmployeeEntity requester, AccessRequestEntity accessRequest)
     {
-        if (viewer.UserRole == RoleNames.Admin)
+        if (viewer.UserRole == UserRole.Admin)
         {
             return;
         }
 
-        if (viewer.UserRole == RoleNames.Hod && viewer.DeptId == requester.DeptId)
+        if (viewer.UserRole == UserRole.Hod && viewer.DeptId == requester.DeptId)
         {
             return;
         }
@@ -1166,7 +1166,7 @@ public sealed class AccessRequestWorkflowService(
                 Message = message,
                 RecipientEmpId = recipient.EmployeeId,
                 RecipientName = recipient.UserName,
-                RecipientRole = string.IsNullOrWhiteSpace(recipient.UserRole) ? "User" : recipient.UserRole!,
+                RecipientRole = recipient.UserRole.ToString(),
                 IsRead = false,
                 CreatedBy = actor,
                 CreatedOn = utcNow,

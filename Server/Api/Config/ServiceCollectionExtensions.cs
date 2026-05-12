@@ -16,6 +16,7 @@ using Server.Shared.Constants;
 using Server.Features.AccessRequests.GetList;
 using Server.Features.HOD;
 using Server.Shared.Helpers;
+using Server.Features.Admin.FolderMapping;
 
 namespace Server.Api.Config;
 
@@ -62,6 +63,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();
         services.AddScoped<EmployeeService>();
+        services.AddScoped<FolderService>();
         services.AddScoped<FolderMappingService>();
         services.AddScoped<CreateAccessRequestService>();
         services.AddScoped<GetAccessRequestsService>();

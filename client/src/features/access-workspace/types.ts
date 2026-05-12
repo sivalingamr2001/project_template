@@ -90,11 +90,9 @@ export type EmployeeRecord = {
 
 export interface HodResponse {
   EmployeeId: string
-  FirstName: string
-  LastName: string
+  Name: string
   Email: string
   PhoneNumber: string
-  DepartmentId: number
 }
 
 export type AuditLogItem = {

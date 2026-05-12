@@ -1,38 +1,34 @@
-using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
 using Server.Infrastructure.Db;
+using Server.Shared.Helpers;
 
 namespace Server.Features.Admin.FolderMapping;
 
-public sealed class FolderMappingService(
-    AppDbContext dbContext,
-    IConfiguration configuration)
+public sealed class FolderMappingService(FolderService folderService, AppDbContext dbContext)
 {
-    private readonly string _csvFilePath = Path.Combine(AppContext.BaseDirectory, "Folders.csv");
-
     public async Task<IReadOnlyList<FolderMappingDto>> GetFolderMappingsAsync(CancellationToken cancellationToken)
     {
-        var existingMappings = await dbContext.Set<FolderMappingEntity>()
+        return await dbContext.Set<FolderMappingEntity>()
             .AsNoTracking()
-            .ToDictionaryAsync(x => x.FolderName, x => x, cancellationToken);
-
-        var folders = ReadFoldersFromCsv();
-
-        var response = folders.Select(folder =>
-        {
-            if (existingMappings.TryGetValue(folder, out var mapped))
-            {
-                return new FolderMappingDto(folder, mapped.HodId, mapped.HodName, mapped.HodEmail);
-            }
-
-            return new FolderMappingDto(folder, null, null, null);
-        }).ToList();
-
-        return response;
+            .Select(m => new FolderMappingDto(
+                m.Id,
+                m.FolderName,
+                m.PrimaryHodId,
+                m.PrimaryHodName,
+                m.PrimaryHodEmail,
+                m.SecondaryHodId,
+                m.SecondaryHodName,
+                m.SecondaryHodEmail,
+                m.IsActive,
+                m.CreatedOn,
+                m.CreatedBy,
+                m.ModifiedOn,
+                m.ModifiedBy))
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<FolderMappingDto> SaveFolderMappingAsync(FolderMappingUpdateRequest request, CancellationToken cancellationToken)
+    public async Task<FolderMappingDto> SaveFolderMappingAsync(FolderMappingCreateOrUpdateRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.FolderName))
         {
@@ -40,54 +36,84 @@ public sealed class FolderMappingService(
         }
 
         var folderName = request.FolderName.Trim();
+
+        // 1. Try to find by ID first
         var mapping = await dbContext.Set<FolderMappingEntity>()
-            .FirstOrDefaultAsync(x => x.FolderName == folderName, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
 
         if (mapping is null)
         {
+            // 2. If creating new, ensure the name isn't already taken
+            var exists = await dbContext.Set<FolderMappingEntity>()
+                .AnyAsync(x => x.FolderName == folderName, cancellationToken);
+
+            if (exists) throw new InvalidOperationException($"Folder '{folderName}' already exists.");
+
             mapping = new FolderMappingEntity
             {
                 FolderName = folderName,
-                HodId = string.IsNullOrWhiteSpace(request.HodId) ? null : request.HodId.Trim(),
-                HodName = string.IsNullOrWhiteSpace(request.HodName) ? null : request.HodName.Trim(),
-                HodEmail = string.IsNullOrWhiteSpace(request.HodEmail) ? null : request.HodEmail.Trim(),
                 CreatedOn = DateTime.UtcNow,
-                UpdatedOn = DateTime.UtcNow,
+                CreatedBy = request.ModifiedBy ?? "System" // Use modifier as creator for new records
             };
             dbContext.Set<FolderMappingEntity>().Add(mapping);
         }
         else
         {
-            mapping.HodId = string.IsNullOrWhiteSpace(request.HodId) ? null : request.HodId.Trim();
-            mapping.HodName = string.IsNullOrWhiteSpace(request.HodName) ? null : request.HodName.Trim();
-            mapping.HodEmail = string.IsNullOrWhiteSpace(request.HodEmail) ? null : request.HodEmail.Trim();
-            mapping.UpdatedOn = DateTime.UtcNow;
+            // 3. If updating, check if the name change conflicts with another record
+            var nameConflict = await dbContext.Set<FolderMappingEntity>()
+                .AnyAsync(x => x.FolderName == folderName && x.Id != request.Id, cancellationToken);
+
+            if (nameConflict) throw new InvalidOperationException($"Cannot rename to '{folderName}'; name already in use.");
         }
+
+        // Map fields (Shared for both Create and Update)
+        mapping.FolderName = folderName;
+        mapping.PrimaryHodId = request.PrimaryHodId?.Trim();
+        mapping.PrimaryHodName = request.PrimaryHodName?.Trim();
+        mapping.PrimaryHodEmail = request.PrimaryHodEmail?.Trim();
+        mapping.SecondaryHodId = request.SecondaryHodId?.Trim();
+        mapping.SecondaryHodName = request.SecondaryHodName?.Trim();
+        mapping.SecondaryHodEmail = request.SecondaryHodEmail?.Trim();
+        mapping.IsActive = request.IsActive;
+        mapping.ModifiedOn = DateTime.UtcNow;
+        mapping.ModifiedBy = request.ModifiedBy ?? "System";
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return new FolderMappingDto(
+            mapping.Id,
             mapping.FolderName,
-            mapping.HodId,
-            mapping.HodName,
-            mapping.HodEmail);
+            mapping.PrimaryHodId,
+            mapping.PrimaryHodName,
+            mapping.PrimaryHodEmail,
+            mapping.SecondaryHodId,
+            mapping.SecondaryHodName,
+            mapping.SecondaryHodEmail,
+            mapping.IsActive,
+            mapping.CreatedOn,
+            mapping.CreatedBy,
+            mapping.ModifiedOn,
+            mapping.ModifiedBy);
     }
 
-    private IReadOnlyList<string> ReadFoldersFromCsv()
+    public async Task DeleteFolderMappingAsync(int id, CancellationToken cancellationToken)
     {
-        if (!File.Exists(_csvFilePath))
-        {
-            return Array.Empty<string>();
-        }
+        var mapping = await dbContext.Set<FolderMappingEntity>()
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken)
+            ?? throw new InvalidOperationException($"Folder mapping with Id '{id}' does not exist.");
 
-        var lines = File.ReadAllLines(_csvFilePath)
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Skip(1)
-            .Select(line => line.Trim())
-            .Where(line => !string.IsNullOrWhiteSpace(line))
-            .Select(line => line.Trim('"'))
-            .ToList();
+        mapping.IsActive = false;
 
-        return lines;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<List<FolderResponse>> GetParentFoldersAsync(CancellationToken cancellationToken)
+    {
+        return await folderService.GetParentFoldersAsync(cancellationToken);
+    }
+
+    public Task<List<FolderResponse>> GetFolderHierarchyAsync()
+    {
+        return Task.FromResult(folderService.GetStrictFolderHierarchy());
     }
 }

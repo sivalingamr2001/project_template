@@ -7,7 +7,7 @@ namespace Server.Features.HOD;
 public class HODService
 {
     public async Task<List<HodResponse>> GetHodAsync(GetEmployeesQuery query, IConfiguration configuration, CancellationToken cancellationToken)
-    { 
+    {
         var provider = configuration["Database:Provider"];
         if (provider != "MySql")
         {
@@ -23,13 +23,13 @@ public class HODService
         }
 
         const string sql = @"
-        SELECT 
-            id AS EmployeeId, 
-            hodname AS FirstName, 
-            Email_ID AS Email, 
-            Mob_no AS PhoneNumber
-        FROM it_inventory_db_new.hod_master
-        WHERE deleted = 0";
+            SELECT 
+                    id AS EmployeeId, 
+                    hodname AS Name, 
+                    Email_ID AS Email, 
+                    Mob_no AS PhoneNumber
+                FROM it_inventory_db_new.hod_master
+                WHERE deleted = 0";
 
         try
         {

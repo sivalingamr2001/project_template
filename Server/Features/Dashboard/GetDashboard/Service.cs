@@ -24,7 +24,7 @@ public sealed class GetDashboardService(AppDbContext dbContext)
                 // Use ?. to handle cases where Department might be null
                 DepartmentName = e.Department != null ? e.Department.DeptName : string.Empty,
                 DeptId = e.DeptId,
-                Role = e.UserRole ?? string.Empty
+                Role = e.UserRole
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -36,7 +36,7 @@ public sealed class GetDashboardService(AppDbContext dbContext)
         IQueryable<AccessRequestEntity> requestQuery = dbContext.AccessRequests.AsNoTracking();
 
         // 2. Role-based filtering logic
-        if (profile.Role == RoleNames.Hod)
+        if (profile.Role == UserRole.Hod)
         {
             // If HOD, show all requests from their department
             requestQuery = requestQuery
@@ -47,7 +47,7 @@ public sealed class GetDashboardService(AppDbContext dbContext)
                 .Where(x => x.emp.DeptId == profile.DeptId)
                 .Select(x => x.req);
         }
-        else if (profile.Role != RoleNames.Admin)
+        else if (profile.Role != UserRole.Admin)
         {
             // Regular users only see their own requests
             requestQuery = requestQuery.Where(request => request.EmpId == employeeId);

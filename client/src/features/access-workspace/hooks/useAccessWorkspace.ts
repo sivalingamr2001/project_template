@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 
 import { useAuth } from "@/context/AuthContext"
 
-import type { AccessRequest, NotificationItem, QueueMode } from "../types"
+import type { AccessRequest, NotificationItem, QueueMode, AppRole } from "../types"
 import {
   getDefaultRoute,
   getRequestsByMode,
@@ -17,8 +17,7 @@ import {
 export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   const { user } = useAuth()
   const employeeId = user?.employeeId ?? 0
-  const role =
-    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
+  const role = (user?.role as AppRole) || "User"
   const [apiRequests, setApiRequests] = useState<AccessRequest[]>([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)

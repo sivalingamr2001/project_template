@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 using Server.Infrastructure.Db;
 
 public sealed class DatabaseInitializer(
@@ -45,7 +46,7 @@ public sealed class DatabaseInitializer(
                     UserName = "johndoe",
                     Password = "password",
                     Email = "john@example.com",
-                    UserRole = "User",
+                    UserRole = UserRole.User,
                     IsActive = true
                 },
                 new()
@@ -56,18 +57,29 @@ public sealed class DatabaseInitializer(
                     UserName = "janesmith",
                     Password = "password",
                     Email = "jane@example.com",
-                    UserRole = "Hod",
+                    UserRole = UserRole.Hod,
                     IsActive = true
                 },
                 new()
                 {
                     EmployeeId = 3,
+                    FirstName = "Rose",
+                    LastName = "Merry",
+                    UserName = "rosemerry",
+                    Password = "password",
+                    Email = "rose@example.com",
+                    UserRole = UserRole.Operator,
+                    IsActive = true
+                },
+                new()
+                {
+                    EmployeeId = 4,
                     FirstName = "Admin",
-                    LastName = "IT",
-                    UserName = "ItAdmin",
+                    LastName = "Dev",
+                    UserName = "DevAdmin",
                     Password = "password",
                     Email = "admin@example.com",
-                    UserRole = "Admin",
+                    UserRole = UserRole.Admin,
                     IsActive = true
                 }
             };

@@ -2,6 +2,7 @@ import { useState, useEffect, type ChangeEvent, type FormEvent } from "react" //
 import { Navigate, Link } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
+import type { AppRole } from "@/features/access-workspace/types"
 import { useAuth } from "@/context/AuthContext"
 import { getDefaultRoute } from "@/features/access-workspace/utils/accessSelectors"
 
@@ -38,7 +39,7 @@ function RegisterPage() {
   }, [formData.password, formData.confirmPassword])
 
   const role =
-    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
+    (user?.role as AppRole) || "User"
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })

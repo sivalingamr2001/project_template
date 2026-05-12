@@ -577,18 +577,35 @@ export async function fetchAllHod(
 
   return payload.map((item: any) => ({
     EmployeeId: item.employeeId,
-    FirstName: item.firstName,
-    LastName: item.lastName,
+    Name: item.name,
     Email: item.email,
     PhoneNumber: item.phoneNumber,
   }))
 }
 
 export type FolderMappingRecord = {
+  id: number
   folderName: string
+
+  // HOD Details
   hodId?: string
   hodName?: string
   hodEmail?: string
+
+  primaryHodId?: string
+  primaryHodName?: string
+  primaryHodEmail?: string
+
+  secondaryHodId?: string
+  secondaryHodName?: string
+  secondaryHodEmail?: string
+
+  // Base Entity Fields
+  isActive: boolean
+  createdBy: string
+  createdOn: string | Date
+  modifiedBy?: string
+  modifiedOn?: string | Date
 }
 
 export async function fetchFolderMappings(): Promise<FolderMappingRecord[]> {
@@ -597,10 +614,25 @@ export async function fetchFolderMappings(): Promise<FolderMappingRecord[]> {
 
   const payload = await safeParseJson(response)
   return payload.map((item: any) => ({
+    id: item.id,
     folderName: item.folderName,
-    hodId: item.hodId,
-    hodName: item.hodName,
-    hodEmail: item.hodEmail,
+
+    // Primary HOD
+    primaryHodId: item.primaryHodId,
+    primaryHodName: item.primaryHodName,
+    primaryHodEmail: item.primaryHodEmail,
+
+    // Secondary HOD
+    secondaryHodId: item.secondaryHodId,
+    secondaryHodName: item.secondaryHodName,
+    secondaryHodEmail: item.secondaryHodEmail,
+
+    // Audit Fields
+    isActive: item.isActive,
+    createdBy: item.createdBy,
+    createdOn: item.createdOn,
+    modifiedBy: item.modifiedBy,
+    modifiedOn: item.modifiedOn,
   }))
 }
 
@@ -621,6 +653,35 @@ export async function saveFolderMapping(
   }
 
   return safeParseJson(response)
+}
+
+//create function to delete folder mapping
+export async function deleteFolderMapping(id: number): Promise<void> {
+  const response = await fetch(`${API_URL}/admin/folder-mapping/${id}`, {
+    method: "DELETE",
+  })
+  if (!response.ok) {
+    const message = await safeParseJson<{ message?: string }>(response)
+      .then((data) => data?.message as string)
+      .catch(() => null)
+    throw new Error(message || "Unable to delete folder mapping.")
+  }
+}
+
+export async function fetchFolderHierarchy(): Promise<
+  { name: string; children: any[] }[]
+> {
+  const response = await fetch(`${API_URL}/admin/folder-mapping/hierarchy`)
+  if (!response.ok) throw new Error("Unable to load folder hierarchy.")
+  const payload = await safeParseJson(response)
+  return payload
+}
+
+export async function fetchParentFolders(): Promise<string[]> {
+  const response = await fetch(`${API_URL}/admin/folder-mapping/export`)
+  if (!response.ok) throw new Error("Unable to load parent folders.")
+  const payload = await safeParseJson(response)
+  return payload.map((item: any) => item.name)
 }
 
 export async function searchAuditLogs(

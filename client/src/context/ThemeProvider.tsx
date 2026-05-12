@@ -145,15 +145,15 @@ export function ThemeProvider({
         return
       }
 
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
+      // if (event.metaKey || event.ctrlKey || event.altKey) {
+      //   return
+      // }
 
       if (isEditableTarget(event.target)) {
         return
       }
 
-      if (event.key.toLowerCase() !== "d") {
+      if (!(event.altKey && event.key.toLowerCase() === "t")) {
         return
       }
 

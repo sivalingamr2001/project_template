@@ -3,6 +3,7 @@ namespace Server.Domain.Entities;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Server.Domain.Enums;
 
 [Table("jan_portal_users")]
 public sealed class EmployeeEntity
@@ -48,7 +49,7 @@ public sealed class EmployeeEntity
 
     [Required]
     [Column("user_role")]
-    public string UserRole { get; set; } = null!;
+    public UserRole UserRole { get; set; } = UserRole.User;
 
     [Column("IsActive")]
     public bool IsActive { get; set; } = true;

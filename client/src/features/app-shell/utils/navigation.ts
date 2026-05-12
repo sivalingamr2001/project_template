@@ -91,12 +91,6 @@ export const NAVIGATION_SECTIONS: NavigationSection[] = [
         roles: ["Admin"],
       },
       {
-        label: "Roles & Permissions",
-        to: "/admin/roles-permissions",
-        icon: IconShieldCheck,
-        roles: ["Admin"],
-      },
-      {
         label: "Folder Mapping",
         to: "/admin/folder-mapping",
         icon: IconFolder,

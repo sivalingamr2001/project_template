@@ -114,6 +114,7 @@ export function getSummaryCards(
 
 export function getDefaultRoute(role: AppRole) {
   if (role === "Hod") return "/hod/pending-approvals"
-  if (role === "Admin") return "/it/approval-queue"
-  return "/dashboard"
+  if (role === "Admin") return "/admin-dashboard"
+  if (role === "Operator") return "/dashboard"
+  return "/my-requests"
 }

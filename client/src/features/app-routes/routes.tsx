@@ -107,7 +107,6 @@ export const router = createBrowserRouter(
                 { path: "admin-dashboard", element: <AdminDashboardPage /> },
                 { path: "admin/employees", element: <EmployeePage /> },
                 { path: "admin/departments", element: <DepartmentsPage /> },
-                { path: "admin/roles-permissions", element: <AdminDashboardPage /> },
                 { path: "admin/folder-mapping", element: <FolderMappingPage /> },
                 { path: "admin/audit-logs", element: <AuditLogPage /> },
               ],

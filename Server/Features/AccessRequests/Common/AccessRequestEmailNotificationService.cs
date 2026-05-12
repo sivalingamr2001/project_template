@@ -193,7 +193,7 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
 
     private static string BuildRecipientLabel(EmployeeEntity employee)
     {
-        var role = string.IsNullOrWhiteSpace(employee.UserRole) ? "User" : employee.UserRole;
+        var role = employee.UserRole.ToString();
         return $"{BuildDisplayName(employee)} ({role})";
     }
 

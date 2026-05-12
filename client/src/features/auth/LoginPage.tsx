@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react"
 import { Link, Navigate } from "react-router-dom"
 
 import { Button } from "@/components/ui/button"
+import type { AppRole } from "@/features/access-workspace/types"
 import { useAuth } from "@/context/AuthContext"
 import { getDefaultRoute } from "@/features/access-workspace/utils/accessSelectors"
 
@@ -13,8 +14,7 @@ function LoginPage() {
   const [identifier, setIdentifier] = useState("")
   const [password, setPassword] = useState("")
   const [errorMessage, setErrorMessage] = useState("")
-  const role =
-    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
+  const role = (user?.role as AppRole) || "User"
   const handleIdentifierChange = (event: ChangeEvent<HTMLInputElement>) =>
     setIdentifier(event.target.value)
   const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) =>

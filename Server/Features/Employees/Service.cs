@@ -1,6 +1,7 @@
 using Janatics.Application.Features.Employees.Dtos;
 using Microsoft.EntityFrameworkCore;
 using Server.Domain.Entities;
+using Server.Domain.Enums;
 using Server.Infrastructure.Db;
 using Server.Shared.Helpers;
 
@@ -26,7 +27,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
                 BuildDisplayName(employee.FirstName, employee.LastName, employee.UserName),
                 employee.Email,
                 employee.Department != null ? employee.Department.DepartmentName : string.Empty,
-                string.IsNullOrWhiteSpace(employee.UserRole) ? "User" : employee.UserRole))
+                employee.UserRole.ToString()))
             .ToListAsync(cancellationToken);
 
         return new PaginatedResponse<LegacyUserListItemDto>(
@@ -159,7 +160,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
             Email = request.Email,
             Mobile = request.Mobile,
             Location = request.Location,
-            UserRole = request.Role,
+            UserRole = Enum.Parse<UserRole>(request.Role, ignoreCase: true),
             DeptId = request.DepartmentId,
             IsActive = true,
             CreatedOn = now,
@@ -227,7 +228,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
             Email = request.Email.Trim(),
             Mobile = request.Phone?.Trim(),
             Location = string.Empty,
-            UserRole = string.IsNullOrWhiteSpace(request.Role) ? "User" : request.Role.Trim(),
+            UserRole = string.IsNullOrWhiteSpace(request.Role) ? UserRole.User : Enum.Parse<UserRole>(request.Role.Trim(), ignoreCase: true),
             DeptId = request.DepartmentId.Value,
             IsActive = true,
             CreatedOn = utcNow,
@@ -288,7 +289,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
 
         if (!string.IsNullOrWhiteSpace(request.Role))
         {
-            employee.UserRole = request.Role;
+            employee.UserRole = Enum.Parse<UserRole>(request.Role, ignoreCase: true);
         }
 
         employee.IsActive = request.IsActive;
@@ -359,7 +360,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
 
         employee.Mobile = request.Phone?.Trim();
         employee.Location = request.Location?.Trim() ?? employee.Location;
-        employee.UserRole = string.IsNullOrWhiteSpace(request.Role) ? employee.UserRole : request.Role.Trim();
+        employee.UserRole = string.IsNullOrWhiteSpace(request.Role) ? employee.UserRole : Enum.Parse<UserRole>(request.Role.Trim(), ignoreCase: true);
 
         if (request.DepartmentId.HasValue)
         {
@@ -438,7 +439,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
             employee.Email,
             employee.Mobile ?? string.Empty,
             employee.Location ?? string.Empty,
-            employee.UserRole,
+            employee.UserRole.ToString(),
             employee.IsActive,
             employee.CreatedOn,
             employee.UpdatedOn,
@@ -458,7 +459,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
                             employee.Department.Hod.Email,
                             employee.Department.Hod.Mobile ?? string.Empty,
                             employee.Department.Hod.Location ?? string.Empty,
-                            employee.Department.Hod.UserRole,
+                            employee.Department.Hod.UserRole.ToString(),
                             employee.Department.Hod.IsActive)));
     }
 
@@ -473,7 +474,7 @@ public sealed class EmployeeService(AppDbContext dbContext)
             employee.Mobile ?? string.Empty,
             employee.DeptId ?? 0,
             employee.Department?.DepartmentName ?? string.Empty,
-            string.IsNullOrWhiteSpace(employee.UserRole) ? "User" : employee.UserRole,
+            employee.UserRole.ToString(),
             employee.Department?.Hod is null
                 ? null
                 : new LegacyDepartmentHodDto(

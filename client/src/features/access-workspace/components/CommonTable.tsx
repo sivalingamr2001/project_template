@@ -117,7 +117,7 @@ function CommonTable<T>({
           <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             aria-label="Search table"
-            className="rounded-2xl border-input/80 bg-background pr-4 pl-10 text-sm shadow-sm placeholder:text-muted-foreground/80"
+            className="rounded-2xl max-w-[20rem] border-input/80 bg-background pr-4 pl-10 text-sm shadow-sm placeholder:text-muted-foreground/80"
             onChange={(event) => {
               const value = event.target.value
               setSearchTerm(value)
@@ -131,6 +131,7 @@ function CommonTable<T>({
           />
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {toolbarActions}
           {onRefresh ? (
             <Button
               size="sm"
@@ -142,7 +143,6 @@ function CommonTable<T>({
               Refresh
             </Button>
           ) : null}
-          {toolbarActions}
         </div>
       </div>
       <div className="relative space-y-4 md:hidden">
