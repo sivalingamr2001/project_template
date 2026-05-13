@@ -3,7 +3,7 @@ const path = require('path');
 const readline = require('readline');
 
 // Hardcoded path based on your image and structure
-const PROJECT_ROOT = 'D:\\New Workspace\\Budget Portal\\Janatics_BudgetPortal_UI';
+const PROJECT_ROOT = 'D:\\New Workspace\\Access Portal\\client';
 const SRC_DIR = path.join(PROJECT_ROOT, 'src');
 
 // Supported React extensions

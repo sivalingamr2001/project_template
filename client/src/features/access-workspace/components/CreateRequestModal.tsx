@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 
-import { createAccessRequest, type AccessRequestFormPayload } from "@/lib/access-request-api"
+import { createAccessRequest } from "@/lib/access-request-api"
+import { type AccessRequestPayload } from "@/lib/access-request-schema"
 import { fetchFolderHierarchy } from "../utils/requestApi"
 import { useApp } from "@/hooks/useApp"
 import { Button } from "@/components/ui/button"
@@ -12,13 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Form } from "@/components/ui/form"
 import { AccessDetailsSection } from "../access-request/access-details-section"
 import { AgreementCheckbox } from "../access-request/agreement-checkbox"
 import { EmployeeSection } from "../access-request/employee-section"
-import { ReasonField } from "../access-request/reason-field"
 
 type CreateRequestModalProps = {
-  initialData?: AccessRequestFormPayload
+  initialData?: AccessRequestPayload
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
@@ -26,38 +27,50 @@ type CreateRequestModalProps = {
   title?: string
 }
 
-type FolderNode = {
-  id: string
-  name: string
-  path: string
-  children?: FolderNode[]
-}
-
 const DEFAULT_ITEM = {
-  accessType: 1,
+  accessType: 0,
   confirmAccessTypeByHOD: 0,
   folderPath: "",
   reason: "",
 }
 
+interface FolderResponse {
+  name: string;
+  driveName: string;
+  children: FolderResponse[];
+}
+
+interface FolderNode {
+  id: string;
+  name: string;
+  path: string;
+  driveName: string;
+  children?: FolderNode[];
+}
+
 function mapFolderHierarchy(
-  folders: { name: string; children: any[] }[],
+  folders: FolderResponse[],
   parentPath = ""
 ): FolderNode[] {
   return folders.map((folder) => {
-    const path = parentPath ? `${parentPath}/${folder.name}` : folder.name
+    // Standardized network drive pathing
+    const path = parentPath 
+      ? `${parentPath}\\${folder.name}` 
+      : `${folder.driveName}\\${folder.name}`;
+
     return {
       id: path,
       name: folder.name,
-      path,
-      children: folder.children
+      path: path,
+      driveName: folder.driveName,
+      children: folder.children && folder.children.length > 0
         ? mapFolderHierarchy(folder.children, path)
         : undefined,
-    }
-  })
+    };
+  });
 }
 
-function getDefaultFormValues(initialData?: AccessRequestFormPayload) {
+function getDefaultFormValues(initialData?: AccessRequestPayload) {
   return {
     accessReqId: initialData?.accessReqId,
     empId: initialData?.empId ?? 0,
@@ -65,7 +78,7 @@ function getDefaultFormValues(initialData?: AccessRequestFormPayload) {
     itsrNo: initialData?.itsrNo ?? "",
     reqTo: initialData?.reqTo ?? 0,
     items: initialData?.items && initialData.items.length > 0 ? initialData.items : [DEFAULT_ITEM],
-  } satisfies AccessRequestFormPayload
+  } satisfies AccessRequestPayload
 }
 
 function CreateRequestModal({
@@ -77,24 +90,27 @@ function CreateRequestModal({
   title = "Create Access Request",
 }: CreateRequestModalProps) {
   const { currentUser } = useApp()
-  const currentUserId = currentUser?.employeeId ?? 0
   const [errorMessage, setErrorMessage] = useState("")
   const [isPending, setIsPending] = useState(false)
   const [folders, setFolders] = useState<FolderNode[]>([])
   const [isLoadingFolders, setIsLoadingFolders] = useState(false)
 
-  const form = useForm<AccessRequestFormPayload>({
+  const form = useForm<AccessRequestPayload>({
     defaultValues: getDefaultFormValues(initialData),
   })
 
   useEffect(() => {
-    form.reset(getDefaultFormValues(initialData))
-  }, [initialData, form])
+    if (isOpen) {
+      form.reset(getDefaultFormValues(initialData))
+      setErrorMessage("")
+    }
+  }, [isOpen, initialData, form])
 
+  // FIX: Type assertion applied inside the data fetch chain
   useEffect(() => {
     setIsLoadingFolders(true)
     fetchFolderHierarchy()
-      .then((data) => setFolders(mapFolderHierarchy(data)))
+      .then((data) => setFolders(mapFolderHierarchy(data as FolderResponse[])))
       .catch(() => setFolders([]))
       .finally(() => setIsLoadingFolders(false))
   }, [])
@@ -104,11 +120,12 @@ function CreateRequestModal({
     [folders]
   )
 
-  const handleSubmit = async (values: AccessRequestFormPayload) => {
+  const handleSubmit = async (values: AccessRequestPayload) => {
     setErrorMessage("")
     setIsPending(true)
     try {
       await createAccessRequest(values)
+      form.reset(getDefaultFormValues())
       onSuccess?.()
       onClose()
     } catch (error) {
@@ -124,9 +141,9 @@ function CreateRequestModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[90vh] w-full max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] w-[90vw]! max-w-5xl! overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle className="text-4xl text-primary">{title}</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
             Request access to a folder by filling in the details below.
           </DialogDescription>
@@ -138,37 +155,37 @@ function CreateRequestModal({
           </div>
         ) : null}
 
-        <form
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className="space-y-5 py-4"
-        >
-          <EmployeeSection form={form} currentUserId={currentUserId} />
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-5 py-4"
+          >
+            <EmployeeSection form={form} currentUser={currentUser} />
 
-          <AccessDetailsSection form={form} folders={folderData} />
+            <AccessDetailsSection form={form} folders={folderData} />
 
-          <ReasonField form={form} />
+            <AgreementCheckbox form={form} />
 
-          <AgreementCheckbox form={form} />
-
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isPending}
-              className="w-full sm:w-auto"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              className="w-full sm:w-auto"
-              disabled={isPending || isLoadingFolders}
-            >
-              {isPending ? "Submitting..." : submitLabel}
-            </Button>
-          </div>
-        </form>
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={isPending}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={isPending || isLoadingFolders}
+              >
+                {isPending ? "Submitting..." : submitLabel}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   )

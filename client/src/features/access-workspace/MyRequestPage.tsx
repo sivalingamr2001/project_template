@@ -1,20 +1,20 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import CommonTable from "./components/CommonTable"
 import CreateRequestModal from "./components/CreateRequestModal"
 import PageSection from "./components/PageSection"
 import { useAccessWorkspace } from "./hooks/useAccessWorkspace"
 import { requestColumns } from "./utils/tableColumns"
+import CommonTable from "./components/CommonTable"
+import type { AccessRequest } from "./types"
 
-function DashboardPage() {
+function MyRequestPage() {
   const { errorMessage, isLoading, refetch, requests } =
     useAccessWorkspace("dashboard")
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
     <div className="space-y-4">
-      {/* <StatsGrid cards={summaryCards} /> */}
       <PageSection title="My Requests" description="">
         {errorMessage && (
           <p className="mb-4 text-sm text-destructive">{errorMessage}</p>
@@ -22,8 +22,8 @@ function DashboardPage() {
 
         <CommonTable
           columns={requestColumns}
-          getRowId={(row) =>
-            `${row.accessReqId}-${row.accessItems[0]?.accessItemId ?? "request"}`
+          getRowId={(row: AccessRequest) =>
+            `${row.accessReqId}-${row.accessItems?.[0]?.accessItemId ?? "request"}`
           }
           pageSize={5}
           rows={isLoading ? [] : requests}
@@ -51,4 +51,4 @@ function DashboardPage() {
   )
 }
 
-export default DashboardPage
+export default MyRequestPage

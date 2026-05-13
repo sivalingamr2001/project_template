@@ -71,6 +71,7 @@ public sealed class GetDashboardService(AppDbContext dbContext)
                     .Where(ai => ai.AccessReqId == request.AccessReqId)
                     .Select(ai => new AccessItemDto(
                         ai.AccessItemId,
+                        ai.TicketNumber,
                         ai.Status,
                         ai.FolderPath,
                         ai.Reason,

@@ -1,5 +1,5 @@
 import type { AccessRequestDetails } from "../../../types"
-import type { AccessRequestFormPayload } from "@/lib/access-request-api"
+import type { AccessRequestPayload } from "@/lib/access-request-schema"
 
 export const REPORT_POLICIES = [
   "Access is granted strictly for business-related purposes. Unauthorized access, sharing, or modification of data is prohibited.",
@@ -12,7 +12,7 @@ export const REPORT_POLICIES = [
 
 export function buildResubmitPayload(
   details: AccessRequestDetails
-): AccessRequestFormPayload {
+): AccessRequestPayload {
   return {
     accessReqId: details.accessReqId,
     empId: details.empId,

@@ -2,7 +2,7 @@ import { createBrowserRouter } from "react-router-dom"
 
 import AdminDashboardPage from "@/features/access-workspace/AdminDashboardPage"
 import AuditLogPage from "@/features/access-workspace/AuditLogPage"
-import DashboardPage from "@/features/access-workspace/DashboardPage"
+import DashboardPage from "@/features/access-workspace/MyRequestPage"
 import DepartmentsPage from "@/features/access-workspace/DepartmentsPage"
 import EmployeePage from "@/features/access-workspace/EmployeePage"
 import FolderMappingPage from "@/features/access-workspace/FolderMappingPage"
@@ -19,6 +19,7 @@ import {
 } from "@/features/auth"
 import { AppLayout } from "@/layouts"
 import RegisterPage from "../auth/RegisterPage"
+import CreateRequestModal from "../access-workspace/components/CreateRequestModal"
 
 export const router = createBrowserRouter(
   [
@@ -38,6 +39,9 @@ export const router = createBrowserRouter(
               children: [
                 { path: "my-requests", element: <DashboardPage /> },
                 { path: "requests/new", element: <RequestCreatePage /> },
+                { path: "requests/create", element: <CreateRequestModal isOpen={false} onClose={function (): void {
+                  throw new Error("Function not implemented.")
+                } }/>}
               ],
             },
             {

@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-import type { AccessRequestFormPayload } from "@/lib/access-request-api"
-
 import type { AccessRequestDetails } from "../../types"
+import type { AccessRequestPayload } from "@/lib/access-request-schema"
 import { buildResubmitPayload } from "../report/utils/requestReport"
 import { findInitialItemId } from "../utils/requestDetails"
 import { getDefaultRoute } from "../../utils/accessSelectors"
@@ -132,7 +131,7 @@ export function useRequestDetailsPage(
     isResubmitOpen,
     isReviewOpen,
     isRevokeOpen,
-    resubmitPayload: resubmitPayload as AccessRequestFormPayload | undefined,
+    resubmitPayload: resubmitPayload as AccessRequestPayload | undefined,
     reviewAction,
     selectedItem,
     selectedItemId,

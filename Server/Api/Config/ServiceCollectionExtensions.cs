@@ -4,6 +4,7 @@ using Server.Features.AccessRequests.Common;
 using Server.Features.AccessRequests.Create;
 using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
+using Server.Features.Dashboard.AccessRequestDashboard;
 using Server.Features.Dashboard.GetDashboard;
 using Server.Features.Departments.Create;
 using Server.Features.Departments.GetList;
@@ -54,6 +55,7 @@ public static class ServiceCollectionExtensions
             options.UseSqlite(databaseOptions.SqliteConnectionString);
         });
 
+        services.AddMemoryCache();
         services.AddEndpointsApiExplorer();
         services.AddSignalR();
         services.AddSwaggerGen();
@@ -72,6 +74,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UpdateDepartmentService>();
         services.AddScoped<HODService>();
         services.AddScoped<GetDashboardService>();
+        services.AddScoped<AccessRequestDashboardService>();
         services.AddScoped<GetAuditLogsService>();
         services.AddScoped<IOracleService, OracleService>();
         services.AddScoped<IEmailService, EmailService>();

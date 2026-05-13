@@ -246,7 +246,6 @@
   animation: titleSlideFade 0.4s ease forwards;
 }
 
-//add animation for header div top to bottom and fade in, and add animation for sidebar from left to right and fade in
 .animate-header-slide {
   animation: headerSlideFade 0.4s ease forwards;
 }

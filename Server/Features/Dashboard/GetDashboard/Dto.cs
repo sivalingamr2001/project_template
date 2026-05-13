@@ -16,6 +16,7 @@ public sealed record DashboardAccessRequestDto(
 
 public record AccessItemDto(
     int AccessItemId,
+    string TicketNumber,
     RequestStatus Status,
     string FolderPath,
     string Reason,

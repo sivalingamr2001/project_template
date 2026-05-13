@@ -18,6 +18,7 @@ using Server.Features.Employees;
 using Server.Features.HOD;
 using Server.Features.Notifications.GetList;
 using Server.Features.Notifications.MarkRead;
+using Server.Features.Dashboard.AccessRequestDashboard;
 
 namespace Server.Api.Config;
 
@@ -55,6 +56,7 @@ public static class EndpointMappingExtensions
 
         var dashboardGroup = app.MapGroup("/api/dashboard").WithTags("Dashboard");
         GetDashboardEndpoint.Map(dashboardGroup);
+        GetAccessRequestDashboardEndpoint.Map(dashboardGroup);
 
         var notificationsGroup = app.MapGroup("/api/notifications").WithTags("Notifications");
         GetNotificationsEndpoint.Map(notificationsGroup);

@@ -19,23 +19,9 @@ async function safeParseJson<T>(response: Response): Promise<T> {
   }
 }
 
-export type AccessRequestItemPayload = {
-  accessType: number
-  confirmAccessTypeByHOD: number
-  folderPath: string
-  reason: string
-}
+import { type AccessRequestPayload } from "./access-request-schema"
 
-export type AccessRequestFormPayload = {
-  accessReqId?: number
-  empId: number
-  isAgree: boolean
-  items: AccessRequestItemPayload[]
-  itsrNo: string
-  reqTo: number
-}
-
-export async function createAccessRequest(payload: AccessRequestFormPayload) {
+export async function createAccessRequest(payload: AccessRequestPayload) {
   const response = await fetch(`${API_URL}/access-requests`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

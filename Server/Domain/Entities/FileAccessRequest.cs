@@ -51,6 +51,9 @@ public class AccessItemEntity : BaseEntity
     [Column("accessitem_id")]
     public int AccessItemId { get; set; }
 
+    [Column("ticket_number")]
+    public string TicketNumber { get; set; } = string.Empty;
+
     [Column("accessreq_id")]
     public int AccessReqId { get; set; }
 

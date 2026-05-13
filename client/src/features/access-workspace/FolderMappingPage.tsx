@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { IconCancel, IconPencil, IconPlus, IconTrash } from "@tabler/icons-react"
+import { IconCancel, IconPencil, IconPlus } from "@tabler/icons-react"
 
 import {
   AlertDialog,

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using MySqlConnector;
 using Server.Common.Realtime;
 using Server.Domain.Entities;
 using Server.Domain.Enums;
@@ -12,7 +14,6 @@ using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
 using Server.Features.Notifications.GetList;
 using Server.Infrastructure.Db;
-using Server.Shared.Constants;
 using Server.Shared.Exceptions;
 
 namespace Server.Features.AccessRequests.Common;
@@ -43,29 +44,34 @@ public sealed class AccessRequestWorkflowService(
 
         if (isUpdate)
         {
-            // 1. Fetch parent INCLUDING existing items
+            // 1. Fetch parent including existing items
             accessRequest = await dbContext.AccessRequests
-                .Include(x => x.AccessItems) // Ensure items are loaded for replacement
+                .Include(x => x.AccessItems)
                 .FirstOrDefaultAsync(x => x.AccessReqId == request.AccessReqId, cancellationToken)
                 ?? throw new Exception($"Request {request.AccessReqId} not found.");
 
-            // 2. Clear existing items from the tracked collection
-            // EF will handle the deletion of orphans if configured, or you can RemoveRange
-            dbContext.AccessItems.RemoveRange(accessRequest.AccessItems);
-            accessRequest.AccessItems.Clear();
+            // 2. WORLD-CLASS OPTIMIZATION FOR UPDATES:
+            // Update statuses on existing items instead of dropping and regenerating tracking keys
+            foreach (var existingItem in accessRequest.AccessItems)
+            {
+                existingItem.Status = RequestStatus.PendingHOD; // Or your specific target workflow enum state
+                existingItem.ModifiedBy = requester.EmployeeId.ToString();
+                existingItem.ModifiedOn = utcNow;
+            }
         }
         else
         {
+            // Initialize an empty container profile for pristine target creation
             accessRequest = new AccessRequestEntity
             {
                 CreatedBy = requester.EmployeeId.ToString(),
                 CreatedOn = utcNow,
-                AccessItems = new List<AccessItemEntity>() // Initialize list
+                AccessItems = new List<AccessItemEntity>()
             };
             dbContext.AccessRequests.Add(accessRequest);
         }
 
-        // 3. Update Parent Properties (Updates the existing tracked object)
+        // 3. Sync Parent State Parameters
         accessRequest.EmpId = requester.EmployeeId;
         accessRequest.ReqTo = hodApprover.EmployeeId;
         accessRequest.ItsrNo = request.ItsrNo?.Trim() ?? string.Empty;
@@ -73,28 +79,71 @@ public sealed class AccessRequestWorkflowService(
         accessRequest.ModifiedBy = requester.EmployeeId.ToString();
         accessRequest.ModifiedOn = utcNow;
 
-        // 4. Map and Add New Items to the collection
-        foreach (var item in request.Items)
+        // 4. Handle child folder item mapping
+        if (!isUpdate)
         {
-            accessRequest.AccessItems.Add(new AccessItemEntity
+            // EXCLUSIVE ENTRY GATE: Allocate seed token FROM database ONLY during brand-new submission requests
+            var connection = dbContext.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
             {
-                AccessReqId = accessRequest.AccessReqId, // This will be set correctly by EF for new or existing parent
-                Status = RequestStatus.PendingHOD,
-                FolderPath = item.FolderPath.Trim(),
-                AccessType = (AccessTypes)item.AccessType,
-                ConfirmAccessType = (AccessTypes)item.ConfirmAccessTypeByHOD,
-                Reason = item.Reason.Trim(),
-                CreatedBy = requester.EmployeeId.ToString(),
-                CreatedOn = utcNow,
-                ModifiedBy = requester.EmployeeId.ToString(),
-                ModifiedOn = utcNow
-            });
+                await connection.OpenAsync(cancellationToken);
+            }
+
+            string baseTicketNumber;
+            using (var command = connection.CreateCommand())
+            {
+                // Lock the active transaction scope immediately so concurrent submissions are queued
+                command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+                command.CommandText = "GetNextTicketNumber";
+                command.CommandType = System.Data.CommandType.StoredProcedure;
+
+                var outParam = new MySqlParameter
+                {
+                    ParameterName = "out_ticket_number",
+                    MySqlDbType = MySqlDbType.VarChar,
+                    Size = 50,
+                    Direction = System.Data.ParameterDirection.Output
+                };
+                command.Parameters.Add(outParam);
+
+                await command.ExecuteNonQueryAsync(cancellationToken);
+                baseTicketNumber = outParam.Value?.ToString()
+                    ?? throw new Exception("Database sequence generation engine returned empty result.");
+            }
+
+            // Deconstruct the structured string cleanly: "NAS-REQ-20260513-001"
+            int dashIndex = baseTicketNumber.LastIndexOf('-');
+            string prefixPart = baseTicketNumber.Substring(0, dashIndex + 1); // Yields: "NAS-REQ-20260513-"
+            string sequencePart = baseTicketNumber.Substring(dashIndex + 1);  // Yields: "001"
+            int currentSequence = int.Parse(sequencePart);
+
+            // Process item iterations entirely in-memory using our sequence baseline
+            foreach (var item in request.Items)
+            {
+                string generatedTicketNumber = $"{prefixPart}{currentSequence:D3}";
+                currentSequence++; // Increment sequence internally for subsequent items
+
+                accessRequest.AccessItems.Add(new AccessItemEntity
+                {
+                    AccessReqId = accessRequest.AccessReqId,
+                    TicketNumber = generatedTicketNumber,
+                    Status = RequestStatus.PendingHOD,
+                    FolderPath = item.FolderPath.Trim(),
+                    AccessType = (AccessTypes)item.AccessType,
+                    ConfirmAccessType = (AccessTypes)item.ConfirmAccessTypeByHOD,
+                    Reason = item.Reason.Trim(),
+                    CreatedBy = requester.EmployeeId.ToString(),
+                    CreatedOn = utcNow,
+                    ModifiedBy = requester.EmployeeId.ToString(),
+                    ModifiedOn = utcNow
+                });
+            }
         }
 
-        // 5. Single SaveChanges handles both Table updates (Delete old, Update Parent, Insert New)
+        // 5. Commit all entity graph modifications to the database in a single round-trip call
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        // 6. Audit and Finalize
+        // 6. Audit Logging Execution Block
         var actionKey = isUpdate ? "request.updated" : "request.submitted";
         var message = $"{requester.UserName} {(isUpdate ? "updated" : "submitted")} access request #{accessRequest.AccessReqId}.";
         var recipients = BuildStageRecipients(requester, new[] { hodApprover }, itRecipients);
@@ -104,6 +153,7 @@ public sealed class AccessRequestWorkflowService(
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
+        // 7. Background Messaging Notifications Routing Dispatcher Pipeline
         await PushNotificationsAsync(recipients, accessRequest.AccessReqId, actionKey, message, utcNow, cancellationToken);
         await SendStageEmailAsync(
             actionKey,
@@ -130,13 +180,13 @@ public sealed class AccessRequestWorkflowService(
                 .OrderBy(item => item.AccessItemId)
                 .Select(item => new CreateAccessItemResponse(
                     item.AccessItemId,
+                    item.TicketNumber,
                     item.Status,
                     item.FolderPath,
                     item.AccessType,
                     item.ConfirmAccessType,
                     item.Reason))
                 .ToList());
-
     }
 
     public async Task<ReviewAccessRequestResponse> ReviewByHodAsync(int accessReqId, int accessItemId, ReviewByHodRequest request, CancellationToken cancellationToken)

@@ -11,7 +11,6 @@ import {
 } from "@tabler/icons-react"
 
 import CommonTablePagination from "./CommonTablePagination"
-import CommonTableRow from "./CommonTableRow"
 import type { TableColumn } from "../types"
 
 type ServerPagination = {
@@ -35,6 +34,7 @@ type CommonTableProps<T> = {
   toolbarActions?: React.ReactNode
   renderExpandedRow?: (row: T) => React.ReactNode
   rows: T[]
+  showSno?: boolean // 👈 Feature flag to toggle S.No display dynamically
 }
 
 function CommonTable<T>({
@@ -50,6 +50,7 @@ function CommonTable<T>({
   toolbarActions,
   renderExpandedRow,
   rows,
+  showSno = true, // 👈 Enabled by default
 }: CommonTableProps<T>) {
   const isServerPaginated = Boolean(pagination)
   const [currentPage, setCurrentPage] = useState(pagination?.page ?? 1)
@@ -112,6 +113,7 @@ function CommonTable<T>({
 
   return (
     <div className="space-y-4">
+      {/* Toolbar & Search Controls */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full sm:max-w-xl">
           <IconSearch className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -133,18 +135,15 @@ function CommonTable<T>({
         <div className="flex flex-wrap items-center justify-end gap-2">
           {toolbarActions}
           {onRefresh ? (
-            <Button
-              size="sm"
-              type="button"
-              variant="outline"
-              onClick={onRefresh}
-            >
+            <Button size="sm" type="button" variant="outline" onClick={onRefresh}>
               <IconRefresh className="mr-2 size-4" />
               Refresh
             </Button>
           ) : null}
         </div>
       </div>
+
+      {/* Mobile Responsive Layout View */}
       <div className="relative space-y-4 md:hidden">
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[0.6rem] bg-background/50 backdrop-blur-sm">
@@ -160,13 +159,25 @@ function CommonTable<T>({
             const isExpanded = expandedRowId === rowId
             const isExpandable = Boolean(renderExpandedRow)
 
+            // Calculate the absolute sequential number across mobile item cards
+            const currentSno = (currentPage - 1) * resolvedPageSize + index + 1
+
             return (
-              <div
-                key={rowId}
-                className="rounded-[0.6rem] border border-border bg-background p-4"
-              >
+              <div key={rowId} className="rounded-[0.6rem] border border-border bg-background p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 space-y-4">
+                    {/* Inject S.No field into Mobile stack view */}
+                    {showSno && (
+                      <div>
+                        <p className="text-[0.65rem] font-semibold tracking-[0.22em] text-muted-foreground uppercase">
+                          S.No
+                        </p>
+                        <div className="mt-1 text-sm tabular-nums font-medium text-muted-foreground">
+                          {currentSno}
+                        </div>
+                      </div>
+                    )}
+                    
                     {columns.map((column) => (
                       <div key={column.key}>
                         <p className="text-[0.65rem] font-semibold tracking-[0.22em] text-muted-foreground uppercase">
@@ -184,16 +195,10 @@ function CommonTable<T>({
                       size="icon-xs"
                       type="button"
                       variant="outline"
-                      onClick={() =>
-                        setExpandedRowId(isExpanded ? null : rowId)
-                      }
+                      onClick={() => setExpandedRowId(isExpanded ? null : rowId)}
                       className="self-start"
                     >
-                      {isExpanded ? (
-                        <IconMinus className="size-3.5" />
-                      ) : (
-                        <IconPlus className="size-3.5" />
-                      )}
+                      {isExpanded ? <IconMinus className="size-3.5" /> : <IconPlus className="size-3.5" />}
                     </Button>
                   ) : null}
                 </div>
@@ -212,6 +217,7 @@ function CommonTable<T>({
         )}
       </div>
 
+      {/* Desktop Structural Layout View */}
       <div className="relative hidden overflow-hidden rounded-[0.4rem] border border-border md:block">
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[0.4rem] bg-background/50 backdrop-blur-sm">
@@ -226,6 +232,8 @@ function CommonTable<T>({
             <thead className="bg-muted text-left text-xs tracking-[0.18em] text-muted-foreground uppercase">
               <tr>
                 {renderExpandedRow ? <th className="w-12 px-3 py-3" /> : null}
+                {/* 1. Header Insertion */}
+                {showSno && <th className="w-16 px-4 py-3">S.No</th>}
                 {columns.map((column) => (
                   <th key={column.key} className="px-4 py-3">
                     {column.header}
@@ -237,28 +245,38 @@ function CommonTable<T>({
               {hasRows ? (
                 visibleRows.map((row, index) => {
                   const rowId = getRowId?.(row, index) ?? index
-                  const isExpanded = expandedRowId === rowId
-                  const isExpandable = Boolean(renderExpandedRow)
-
+                  
+                  // 2. Continuous Row Number Calculation
+                  const currentSno = (currentPage - 1) * resolvedPageSize + index + 1
+                  
                   return (
-                    <CommonTableRow
-                      key={rowId}
-                      columns={columns}
-                      isExpandable={isExpandable}
-                      isExpanded={isExpanded}
-                      onToggle={() =>
-                        setExpandedRowId(isExpanded ? null : rowId)
-                      }
-                      renderExpandedRow={renderExpandedRow}
-                      row={row}
-                    />
+                    <tr key={rowId} className="hover:bg-muted/30 transition-colors">
+                      {renderExpandedRow && (
+                        <td className="px-3 py-3 text-center">
+                          {/* Expanded toggle button placeholder matching setup */}
+                        </td>
+                      )}
+                      
+                      {/* 3. Row Cell Insertion */}
+                      {showSno && (
+                        <td className="px-4 py-3 text-muted-foreground font-medium text-xs tabular-nums">
+                          {currentSno}
+                        </td>
+                      )}
+
+                      {columns.map((column) => (
+                        <td key={column.key} className="px-4 py-3">
+                          {column.render(row, index)}
+                        </td>
+                      ))}
+                    </tr>
                   )
                 })
               ) : (
                 <tr>
-                  <td
-                    colSpan={columns.length + (renderExpandedRow ? 1 : 0)}
-                    className="p-6 text-center text-sm text-muted-foreground"
+                  <td 
+                    colSpan={columns.length + (showSno ? 1 : 0) + (renderExpandedRow ? 1 : 0)} 
+                    className="px-4 py-8 text-center text-sm text-muted-foreground"
                   >
                     {emptyMessage}
                   </td>
@@ -268,25 +286,20 @@ function CommonTable<T>({
           </table>
         </div>
       </div>
-
-      {hasRows ? (
+      
+      {/* Pagination Controls Hook placement */}
+      {hasRows && (
         <CommonTablePagination
           currentPage={currentPage}
+          totalPages={totalPages}
           onPageChange={handlePageChange}
+          pageSize={pagination?.pageSize ?? pageSize}
+          totalCount={pagination?.totalCount ?? rows.length}
           onPageSizeChange={pagination?.onPageSizeChange}
-          pageSize={resolvedPageSize}
-          totalCount={pagination?.totalCount}
-          totalPages={
-            isServerPaginated
-              ? Math.ceil(
-                  (pagination?.totalCount ?? 0) / (resolvedPageSize ?? 10)
-                )
-              : totalPages
-          }
         />
-      ) : null}
+      )}
     </div>
   )
 }
 
-export default CommonTable
+export default CommonTable;

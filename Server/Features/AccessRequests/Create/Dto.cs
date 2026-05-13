@@ -27,6 +27,7 @@ public sealed record CreateAccessRequestResponse(
 
 public sealed record CreateAccessItemResponse(
     int AccessItemId,
+    string TicketNumber,
     RequestStatus Status,
     string FolderPath,
     AccessTypes AccessType,

@@ -31,7 +31,6 @@
 
     <ItemGroup>
       <Folder Include="Features\AccessRequests\GetList\" />
-      <Folder Include="Infrastructure\Db\Excel Data\" />
     </ItemGroup>
 
     <Target Name="CopyReactBuild" AfterTargets="Publish">
@@ -41,7 +40,7 @@
         <Copy SourceFiles="@(ReactFiles)" DestinationFiles="@(ReactFiles->'$(PublishDir)wwwroot\%(RecursiveDir)%(Filename)%(Extension)')" />
     </Target>
     <ItemGroup>
-        <Content Include="Infrastructure\Db\Folders.csv">
+        <Content Include="Infrastructure\Db\Excel Data\Folders.csv">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup></Project>

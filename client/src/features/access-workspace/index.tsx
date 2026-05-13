@@ -1,5 +1,5 @@
 export { default as AuditLogPage } from "./AuditLogPage"
-export { default as DashboardPage } from "./DashboardPage"
+export { default as DashboardPage } from "./MyRequestPage"
 export { default as DepartmentsPage } from "./DepartmentsPage"
 export { default as EmployeePage } from "./EmployeePage"
 export { default as ProfilePage } from "./ProfilePage"

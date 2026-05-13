@@ -31,7 +31,7 @@ export function AppLayout() {
             isSidebarCollapsed={isSidebarCollapsed}
             onToggleSidebar={() => setIsSidebarCollapsed((current) => !current)}
           />
-          <div className="animate-main-content-slide flex min-h-0 flex-1 flex-col overflow-hidden rounded-[0.75rem] bg-transparent p-4 shadow-sm sm:p-5">
+          <div className="animate-main-content-slide z-0 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[0.75rem] bg-transparent p-4 shadow-sm sm:p-5">
             <AppContent />
           </div>
         </div>

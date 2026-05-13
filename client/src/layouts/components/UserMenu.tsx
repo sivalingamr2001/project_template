@@ -1,4 +1,5 @@
 import { IconUserCircle } from "@tabler/icons-react"
+import { useEffect, useRef } from "react"
 
 import DropdownPanel from "./DropdownPanel"
 
@@ -17,8 +18,23 @@ function UserMenu({
   onOpenChange,
   onProfile,
 }: UserMenuProps) {
+  const menuRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (!menuRef.current?.contains(event.target as Node) && isOpen) {
+        onOpenChange()
+      }
+    }
+
+    document.addEventListener("mousedown", handleDocumentClick)
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick)
+    }
+  }, [isOpen, onOpenChange])
+
   return (
-    <div className="relative">
+    <div ref={menuRef} className="relative z-100">
       <button
         className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2 transition-colors hover:bg-accent"
         onClick={onOpenChange}

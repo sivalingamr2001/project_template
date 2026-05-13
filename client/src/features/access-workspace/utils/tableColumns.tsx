@@ -11,10 +11,9 @@ const userData = GetCurrentUser()
 
 export const requestColumns: TableColumn<AccessRequest>[] = [
   {
-    key: "accessItems",
-    header: "Items",
-    render: (row) =>
-      row.accessItems.map((item) => item.accessItemId).join(", "),
+    key: "ticketNumber",
+    header: "Ticket Number",
+    render: (row) => row.accessItems.map((item) => item.ticketNumber).join(", "),
   },
   {
     key: "folderPath",

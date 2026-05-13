@@ -5,6 +5,7 @@ namespace Server.Shared.Helpers;
 // --- API RESPONSE DTO ---
 public class FolderResponse
 {
+    public string DriveName { get; set; } = @"\\10.30.50.15\jipl";
     public string Name { get; set; } = string.Empty;
     public List<FolderResponse> Children { get; set; } = new();
 }
@@ -13,15 +14,16 @@ public class FolderResponse
 internal class FolderNode
 {
     public string Name { get; set; } = string.Empty;
+    public string DriveName { get; set; } = string.Empty;
     public Dictionary<string, FolderNode> Children { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
 
 public class FolderService
 {
-    // Static configuration paths as requested
+    // Static configuration paths
     private const string TargetRoot = @"\\10.30.50.15\jipl";
-    private const string ConfigFilePath = @"D:\New Workspace\Access Portal\Server\Infrastructure\Db\Folders.csv";
-    private const string AuditFilePath = @"D:\New Workspace\Access Portal\Server\Infrastructure\Db\ntfs_permissions_audit.csv";
+    private const string ConfigFilePath = @"D:\New Workspace\Access Portal\Server\Infrastructure\Db\Excel Data\Folders.csv";
+    private const string AuditFilePath = @"D:\New Workspace\Access Portal\Server\Infrastructure\Db\Excel Data\ntfs_permissions_audit.csv";
 
     /// <summary>
     /// Professional Scoped Service method to generate folder hierarchy.
@@ -74,7 +76,11 @@ public class FolderService
 
                         if (!currentNode.Children.TryGetValue(segmentName, out var childNode))
                         {
-                            childNode = new FolderNode { Name = segmentName };
+                            childNode = new FolderNode
+                            {
+                                Name = segmentName,
+                                DriveName = TargetRoot
+                            };
                             currentNode.Children[segmentName] = childNode;
                         }
                         currentNode = childNode;
@@ -94,7 +100,6 @@ public class FolderService
     {
         if (!File.Exists(ConfigFilePath)) return [];
 
-        // Read all lines asynchronously to avoid blocking
         var lines = await File.ReadAllLinesAsync(ConfigFilePath, cancellationToken);
 
         return lines
@@ -103,7 +108,11 @@ public class FolderService
             .Select(line => line.Split(',')[0].Trim('"').Trim())
             .Distinct()
             .OrderBy(name => name)
-            .Select(name => new FolderResponse { Name = name })
+            .Select(name => new FolderResponse
+            {
+                Name = name,
+                DriveName = TargetRoot
+            })
             .ToList();
     }
 
@@ -117,7 +126,11 @@ public class FolderService
             var name = line.Trim('"', ' ', '\r', '\n');
             if (!string.IsNullOrWhiteSpace(name) && !map.ContainsKey(name))
             {
-                map[name] = new FolderNode { Name = name };
+                map[name] = new FolderNode
+                {
+                    Name = name,
+                    DriveName = TargetRoot
+                };
             }
         }
         return map;
@@ -128,6 +141,7 @@ public class FolderService
         return new FolderResponse
         {
             Name = node.Name,
+            DriveName = node.DriveName,
             Children = node.Children.Values
                 .OrderBy(x => x.Name)
                 .Select(MapToResponse)

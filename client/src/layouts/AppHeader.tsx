@@ -48,7 +48,7 @@ export function AppHeader({
   }
 
   return (
-    <header className="animate-header-slide flex min-h-14 items-center justify-between gap-3 rounded-[0.5rem] bg-transprent px-4">
+    <header className="relative z-10 overflow-visible animate-header-slide flex min-h-14 items-center justify-between gap-3 rounded-[0.5rem] bg-transprent px-4">
       <div className="flex items-center gap-2">
         <Button
           className={cn(

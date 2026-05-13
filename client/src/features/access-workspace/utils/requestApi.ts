@@ -6,6 +6,8 @@ import type {
   AggregateStatus,
   AppRole,
   AuditLogItem,
+  DashboardQuery,
+  DashboardResponse,
   Department,
   EmployeeRecord,
   HodResponse,
@@ -736,6 +738,33 @@ export async function getExpiredAccessItems(
     return expirationDate
   } catch (error) {
     console.error("Failed to get expiration date:", error)
+    throw error
+  }
+}
+
+export async function fetchDashboard(
+  params: DashboardQuery
+): Promise<DashboardResponse> {
+  try {
+    // Convert object params into a query string
+    const queryString = new URLSearchParams(params as any).toString()
+    const url = `${API_URL}/dashboard/access-requests${queryString ? `?${queryString}` : ""}`
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error fetching dashboard: ${response.statusText}`)
+    }
+
+    const data: DashboardResponse = await response.json()
+    return data
+  } catch (error) {
+    console.error("Failed to fetch dashboard data:", error)
     throw error
   }
 }
