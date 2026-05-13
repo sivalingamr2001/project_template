@@ -118,6 +118,9 @@ export function EmployeeSection({
             readOnly
             className="bg-muted text-sm"
           />
+          <p className="text-xs text-muted-foreground/70">
+            Your request will be sent to this HOD first. Folder-specific HODs may also be notified if the selected folder maps to a different owner.
+          </p>
         </div>
 
         <FormField

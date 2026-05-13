@@ -54,8 +54,8 @@ function mapFolderHierarchy(
 ): FolderNode[] {
   return folders.map((folder) => {
     // Standardized network drive pathing
-    const path = parentPath 
-      ? `${parentPath}\\${folder.name}` 
+    const path = parentPath
+      ? `${parentPath}\\${folder.name}`
       : `${folder.driveName}\\${folder.name}`;
 
     return {
@@ -144,11 +144,13 @@ function CreateRequestModal({
       <DialogContent className="max-h-[90vh] w-[90vw]! max-w-5xl! overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-4xl text-primary">{title}</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground">
-            Request access to a folder by filling in the details below.
-          </DialogDescription>
         </DialogHeader>
-
+        <DialogDescription className="text-sm text-muted-foreground space-y-2">
+          <p>Request access to a folder by filling in the details below.</p>
+          <p className="text-xs text-muted-foreground/80">
+            Submissions are routed to your department HOD first. If the folder maps to a different folder HOD, that HOD will also receive notification. Final approval is performed by the operator/IT team after HOD approval.
+          </p>
+        </DialogDescription>
         {errorMessage ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
             {errorMessage}

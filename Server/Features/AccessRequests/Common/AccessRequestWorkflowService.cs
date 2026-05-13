@@ -34,6 +34,7 @@ public sealed class AccessRequestWorkflowService(
 
         var requester = await GetEmployeeOrThrowAsync(request.EmpId, cancellationToken);
         var hodApprover = await ResolveHodApproverAsync(requester.DeptId, request.ReqTo, cancellationToken);
+        var folderHodRecipients = await GetFolderHodRecipientsAsync(request.Items.Select(item => item.FolderPath), cancellationToken);
         var itRecipients = await GetItApproversAsync(cancellationToken);
         var utcNow = DateTime.UtcNow;
 
@@ -146,7 +147,8 @@ public sealed class AccessRequestWorkflowService(
         // 6. Audit Logging Execution Block
         var actionKey = isUpdate ? "request.updated" : "request.submitted";
         var message = $"{requester.UserName} {(isUpdate ? "updated" : "submitted")} access request #{accessRequest.AccessReqId}.";
-        var recipients = BuildStageRecipients(requester, new[] { hodApprover }, itRecipients);
+        var hodRecipients = new[] { hodApprover }.Concat(folderHodRecipients).DistinctBy(employee => employee.EmployeeId);
+        var recipients = BuildStageRecipients(requester, hodRecipients, itRecipients);
 
         await AddAuditEntriesAsync(accessRequest.AccessReqId, null, null, actionKey, message, recipients, requester.EmployeeId.ToString(), utcNow, cancellationToken);
 
@@ -209,6 +211,8 @@ public sealed class AccessRequestWorkflowService(
         var accessItem = await dbContext.AccessItems
             .FirstOrDefaultAsync(x => x.AccessReqId == accessReqId && x.AccessItemId == accessItemId, cancellationToken);
 
+        var folderHodRecipients = accessItem is null ? new List<EmployeeEntity>() : await GetFolderHodRecipientsAsync(new[] { accessItem.FolderPath }, cancellationToken);
+
         if (accessItem == null)
             throw new AppValidationException($"Access Item ID {accessItemId} not found for this request.");
 
@@ -241,7 +245,12 @@ public sealed class AccessRequestWorkflowService(
             ? $"HOD approved item {accessItemId} in request #{accessReqId}."
             : $"HOD rejected item {accessItemId} in request #{accessReqId}.";
 
-        var recipients = BuildStageRecipients(requester, hodRecipients.Append(reviewer), itRecipients);
+        var recipients = BuildStageRecipients(requester, hodRecipients.Append(reviewer).Concat(folderHodRecipients), itRecipients);
+
+        if (request.Approved)
+        {
+            accessRequest.ReqTo = itRecipients.First().EmployeeId;
+        }
 
         // 6. Persistence
         await AddAuditEntriesAsync(accessReqId, accessItemId, null, eventType, message, recipients, reviewer.EmployeeId.ToString(), utcNow, cancellationToken);
@@ -291,6 +300,7 @@ public sealed class AccessRequestWorkflowService(
             .ToListAsync(cancellationToken);
 
         var currentAccessItem = accessItems.FirstOrDefault(x => x.AccessItemId == accessItemId);
+        var folderHodRecipients = currentAccessItem is null ? new List<EmployeeEntity>() : await GetFolderHodRecipientsAsync(new[] { currentAccessItem.FolderPath }, cancellationToken);
 
         if (currentAccessItem == null)
         {
@@ -343,7 +353,7 @@ public sealed class AccessRequestWorkflowService(
             : $"IT rejected access for item #{accessItemId}. Comments: {request.Comments!.Trim()}";
 
         // 9. Audit and Notifications
-        var distinctRecipients = BuildStageRecipients(requester, hodRecipients, itRecipients.Append(reviewer));
+        var distinctRecipients = BuildStageRecipients(requester, hodRecipients.Concat(folderHodRecipients), itRecipients.Append(reviewer));
 
         await AddAuditEntriesAsync(
             accessRequest.AccessReqId,
@@ -1122,6 +1132,131 @@ public sealed class AccessRequestWorkflowService(
         }
 
         return admins;
+    }
+
+    private async Task<List<EmployeeEntity>> GetFolderHodRecipientsAsync(IEnumerable<string> folderPaths, CancellationToken cancellationToken)
+    {
+        var normalizedPaths = folderPaths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(NormalizeFolderPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (normalizedPaths.Count == 0)
+        {
+            return new List<EmployeeEntity>();
+        }
+
+        var mappings = await dbContext.FolderMappings
+            .AsNoTracking()
+            .Where(mapping => !string.IsNullOrWhiteSpace(mapping.FolderName))
+            .ToListAsync(cancellationToken);
+
+        if (mappings.Count == 0)
+        {
+            return new List<EmployeeEntity>();
+        }
+
+        var folderHodEmployeeIds = new HashSet<int>();
+        var folderHodEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var folderHodUserNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var normalizedPath in normalizedPaths)
+        {
+            foreach (var mapping in mappings)
+            {
+                if (!FolderMappingMatchesPath(mapping.FolderName, normalizedPath))
+                {
+                    continue;
+                }
+
+                AddFolderHodIdentifiers(mapping.PrimaryHodId, mapping.PrimaryHodEmail, folderHodEmployeeIds, folderHodEmails, folderHodUserNames);
+                AddFolderHodIdentifiers(mapping.SecondaryHodId, mapping.SecondaryHodEmail, folderHodEmployeeIds, folderHodEmails, folderHodUserNames);
+            }
+        }
+
+        if (folderHodEmployeeIds.Count == 0 && folderHodEmails.Count == 0 && folderHodUserNames.Count == 0)
+        {
+            return new List<EmployeeEntity>();
+        }
+
+        var employees = await dbContext.Employees
+            .AsNoTracking()
+            .Where(employee => folderHodEmployeeIds.Contains(employee.EmployeeId)
+                               || folderHodEmails.Contains(employee.Email)
+                               || folderHodUserNames.Contains(employee.UserName))
+            .ToListAsync(cancellationToken);
+
+        return employees.DistinctBy(employee => employee.EmployeeId).ToList();
+    }
+
+    private static void AddFolderHodIdentifiers(
+        string? hodId,
+        string? hodEmail,
+        HashSet<int> employeeIds,
+        HashSet<string> emails,
+        HashSet<string> usernames)
+    {
+        if (!string.IsNullOrWhiteSpace(hodId))
+        {
+            var trimmedId = hodId.Trim();
+            if (int.TryParse(trimmedId, out var parsedEmployeeId))
+            {
+                employeeIds.Add(parsedEmployeeId);
+            }
+            else if (trimmedId.Contains("@"))
+            {
+                emails.Add(trimmedId);
+            }
+            else
+            {
+                usernames.Add(trimmedId);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(hodEmail))
+        {
+            emails.Add(hodEmail.Trim());
+        }
+    }
+
+    private static bool FolderMappingMatchesPath(string mappingFolder, string normalizedPath)
+    {
+        var normalizedMapping = NormalizeFolderPath(mappingFolder);
+
+        if (string.Equals(normalizedPath, normalizedMapping, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(normalizedMapping) && normalizedPath.Contains(normalizedMapping, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var pathSegments = normalizedPath.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+        return pathSegments.Any(segment => string.Equals(segment, normalizedMapping, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeFolderPath(string folderPath)
+    {
+        if (string.IsNullOrWhiteSpace(folderPath))
+        {
+            return string.Empty;
+        }
+
+        var normalized = folderPath.Trim().Replace('/', '\\');
+        while (normalized.Contains("\\\\", StringComparison.Ordinal))
+        {
+            normalized = normalized.Replace("\\\\", "\\", StringComparison.Ordinal);
+        }
+
+        if (normalized.EndsWith("\\", StringComparison.Ordinal))
+        {
+            normalized = normalized[..^1];
+        }
+
+        return normalized.Trim();
     }
 
     private static void EnsureCanView(EmployeeEntity viewer, EmployeeEntity requester, AccessRequestEntity accessRequest)

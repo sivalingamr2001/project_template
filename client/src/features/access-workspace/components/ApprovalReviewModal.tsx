@@ -82,13 +82,13 @@ function ApprovalReviewModal({
       <DialogContent className="max-w-4xl! sm:max-w-4xl!">
         <DialogHeader>
           <DialogTitle>
-            {role === "Hod" ? "HOD Review & Approval" : "IT Review & Approval"}{" "}
+            {role === "Hod" ? "HOD Review & Approval" : "Operator / IT Review & Approval"} 
             • Request #{details.accessReqId}
           </DialogTitle>
           <DialogDescription>
             {actionType === "approve"
-              ? `Click approve to ${role === "Hod" ? "verify access types and" : ""} authorize this request`
-              : `Click reject to deny this access request`}
+              ? `Click approve to ${role === "Hod" ? "verify access types and" : "authorize"} this request.`
+              : `Click reject to deny this access request.`}
           </DialogDescription>
         </DialogHeader>
 
