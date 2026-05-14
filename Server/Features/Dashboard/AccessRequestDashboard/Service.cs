@@ -1,16 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Server.Domain.Entities;
 using Server.Domain.Enums;
+using Server.Features.Dashboard.AccessRequestDashboard;
 using Server.Infrastructure.Db;
 
-namespace Server.Features.Dashboard.AccessRequestDashboard;
-
-public sealed class AccessRequestDashboardService
+public class AccessRequestDashboardService
 {
     private readonly AppDbContext _dbContext;
     private readonly IMemoryCache _cache;
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
     public AccessRequestDashboardService(AppDbContext dbContext, IMemoryCache cache)
     {
@@ -31,7 +35,6 @@ public sealed class AccessRequestDashboardService
         var requests = BuildRequestQuery(normalizedQuery);
         var items = BuildItemQuery(requests);
 
-        // Architectural Win: Sequential processing is preserved, but total DB roundtrips are sliced in half
         var summary = await FetchSummaryAsync(requests, items, normalizedQuery, cancellationToken);
         var statusBreakdown = await FetchStatusBreakdownAsync(items, cancellationToken);
         var accessTypeBreakdown = await FetchAccessTypeBreakdownAsync(items, cancellationToken);
@@ -74,6 +77,7 @@ public sealed class AccessRequestDashboardService
                 "pending" => requestQuery.Where(r => r.AccessItems.Any(i => i.Status == RequestStatus.Submitted || i.Status == RequestStatus.PendingHOD || i.Status == RequestStatus.PendingIT)),
                 "approved" => requestQuery.Where(r => r.AccessItems.Any(i => i.Status == RequestStatus.ApprovedHOD || i.Status == RequestStatus.ApprovedIT || i.Status == RequestStatus.AccessGranted)),
                 "rejected" => requestQuery.Where(r => r.AccessItems.Any(i => i.Status == RequestStatus.RejectedHOD || i.Status == RequestStatus.RejectedIT || i.Status == RequestStatus.AccessRejected)),
+                "revoked" => requestQuery.Where(r => r.AccessItems.Any(i => i.Status == RequestStatus.Revoked)),
                 _ => requestQuery
             };
         }
@@ -83,10 +87,11 @@ public sealed class AccessRequestDashboardService
 
     private IQueryable<AccessItemEntity> BuildItemQuery(IQueryable<AccessRequestEntity> requests)
     {
-        return _dbContext.AccessItems
-            .AsNoTracking()
-            .Where(i => i.IsActive)
-            .Join(requests, i => i.AccessReqId, r => r.AccessReqId, (i, r) => i);
+        // FIXED: Replaced standard Join method chain with explicit LINQ query format
+        return from item in _dbContext.AccessItems.AsNoTracking()
+               join req in requests on item.AccessReqId equals req.AccessReqId
+               where item.IsActive
+               select item;
     }
 
     private async Task<DashboardSummaryDto> FetchSummaryAsync(
@@ -95,7 +100,6 @@ public sealed class AccessRequestDashboardService
         DashboardQuery query,
         CancellationToken cancellationToken)
     {
-        // Architectural Win: Consolidates multiple queries into a single SQL execution block
         var metrics = await requests
             .Select(r => new
             {
@@ -103,6 +107,7 @@ public sealed class AccessRequestDashboardService
                 IsPending = r.AccessItems.Any(i => i.Status == RequestStatus.Submitted || i.Status == RequestStatus.PendingHOD || i.Status == RequestStatus.PendingIT) ? 1 : 0,
                 IsApproved = r.AccessItems.Any(i => i.Status == RequestStatus.ApprovedHOD || i.Status == RequestStatus.ApprovedIT || i.Status == RequestStatus.AccessGranted) ? 1 : 0,
                 IsRejected = r.AccessItems.Any(i => i.Status == RequestStatus.RejectedHOD || i.Status == RequestStatus.RejectedIT || i.Status == RequestStatus.AccessRejected) ? 1 : 0,
+                IsRevoked = r.AccessItems.Any(i => i.Status == RequestStatus.Revoked) ? 1 : 0,
                 IsAgreedValue = r.IsAgreed ? 1 : 0
             })
             .GroupBy(_ => 1)
@@ -112,6 +117,7 @@ public sealed class AccessRequestDashboardService
                 PendingCount = g.Sum(x => x.IsPending),
                 ApprovedCount = g.Sum(x => x.IsApproved),
                 RejectedCount = g.Sum(x => x.IsRejected),
+                RevokedCount = g.Sum(x => x.IsRevoked),
                 AgreedCount = g.Sum(x => x.IsAgreedValue)
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -129,6 +135,7 @@ public sealed class AccessRequestDashboardService
             PendingCount: metrics?.PendingCount ?? 0,
             ApprovedCount: metrics?.ApprovedCount ?? 0,
             RejectedCount: metrics?.RejectedCount ?? 0,
+            RevokedCount: metrics?.RevokedCount ?? 0,
             AgreedCount: metrics?.AgreedCount ?? 0,
             TotalItems: totalItems,
             UnreadNotifications: unreadNotifications
@@ -138,7 +145,6 @@ public sealed class AccessRequestDashboardService
     private async Task<IReadOnlyList<StatusBreakdownDto>> FetchStatusBreakdownAsync(
         IQueryable<AccessItemEntity> items, CancellationToken cancellationToken)
     {
-        // Architectural Win: Raw grouping execution occurs on database server instance
         var databaseRows = await items
             .GroupBy(i => i.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
@@ -146,7 +152,6 @@ public sealed class AccessRequestDashboardService
 
         var total = databaseRows.Sum(r => r.Count);
 
-        // Local memory transformation mapping logic
         return databaseRows
             .GroupBy(r => NormalizeStatus(r.Status))
             .Select(g => new StatusBreakdownDto(
@@ -159,7 +164,6 @@ public sealed class AccessRequestDashboardService
     private async Task<IReadOnlyList<AccessTypeBreakdownDto>> FetchAccessTypeBreakdownAsync(
         IQueryable<AccessItemEntity> items, CancellationToken cancellationToken)
     {
-        // Architectural Win: Raw grouping execution occurs on database server instance
         var databaseRows = await items
             .GroupBy(i => i.AccessType)
             .Select(g => new { AccessType = g.Key, Count = g.Count() })
@@ -167,7 +171,6 @@ public sealed class AccessRequestDashboardService
 
         var total = databaseRows.Sum(r => r.Count);
 
-        // Local memory transformation mapping logic
         return databaseRows
             .GroupBy(r => NormalizeAccessType(r.AccessType))
             .Select(g => new AccessTypeBreakdownDto(
@@ -180,22 +183,26 @@ public sealed class AccessRequestDashboardService
     private async Task<IReadOnlyList<RecentRequestDto>> FetchRecentRequestsAsync(
         IQueryable<AccessRequestEntity> requests, CancellationToken cancellationToken)
     {
-        return await requests
-            .OrderByDescending(r => r.CreatedOn)
-            .Take(10)
-            .Select(r => new RecentRequestDto(
-                r.AccessReqId,
-                r.EmpId,
-                r.ReqTo,
-                r.IsAgreed,
-                r.ItsrNo,
-                r.CreatedOn,
-                r.CreatedBy,
-                r.AccessItems.Count(i => i.IsActive),
-                r.AccessItems.Any(i => i.Status == RequestStatus.Submitted || i.Status == RequestStatus.PendingHOD || i.Status == RequestStatus.PendingIT) ? "Pending" :
-                r.AccessItems.Any(i => i.Status == RequestStatus.RejectedHOD || i.Status == RequestStatus.RejectedIT || i.Status == RequestStatus.AccessRejected) ? "Rejected" : "Approved"
-            ))
-            .ToListAsync(cancellationToken);
+        // FIXED: Swapped fluent syntax chain out for clean explicit LINQ queries
+        var query = from r in requests
+                    join emp in _dbContext.Employees.AsNoTracking() on r.EmpId equals emp.UserId
+                    join app in _dbContext.Employees.AsNoTracking() on r.ReqTo equals app.UserId
+                    orderby r.CreatedOn descending
+                    select new RecentRequestDto(
+                        r.AccessReqId,
+                        emp.UserName,
+                        app.UserName,
+                        r.IsAgreed,
+                        r.ItsrNo,
+                        r.CreatedOn,
+                        r.CreatedBy,
+                        r.AccessItems.Count(i => i.IsActive),
+                        r.AccessItems.Any(i => i.Status == RequestStatus.Submitted || i.Status == RequestStatus.PendingHOD || i.Status == RequestStatus.PendingIT) ? "Pending" :
+                        r.AccessItems.Any(i => i.Status == RequestStatus.RejectedHOD || i.Status == RequestStatus.RejectedIT || i.Status == RequestStatus.AccessRejected) ? "Rejected" :
+                        r.AccessItems.Any(i => i.Status == RequestStatus.Revoked) ? "Revoked" : "Approved"
+                    );
+
+        return await query.Take(10).ToListAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<PendingApprovalDto>> FetchPendingApprovalsAsync(
@@ -203,32 +210,31 @@ public sealed class AccessRequestDashboardService
     {
         var requestIds = await requests.Select(r => r.AccessReqId).ToListAsync(cancellationToken);
 
-        return await _dbContext.AccessApprovals
-            .AsNoTracking()
-            .Where(a => a.IsActive && requestIds.Contains(a.AccessReqId) && (a.ApprovalStatus == RequestStatus.PendingHOD || a.ApprovalStatus == RequestStatus.PendingIT))
-            .Join(_dbContext.AccessItems.AsNoTracking().Where(i => i.IsActive),
-                approval => approval.AccessItemId,
-                item => item.AccessItemId,
-                (approval, item) => new { approval, item })
-            .Join(_dbContext.AccessRequests.AsNoTracking().Where(r => r.IsActive),
-                pair => pair.approval.AccessReqId,
-                request => request.AccessReqId,
-                (pair, request) => new { pair, request })
-            .OrderBy(x => x.pair.approval.CreatedOn)
-            .Take(20)
-            .Select(x => new PendingApprovalDto(
-                x.pair.approval.AccessApproveId,
-                x.pair.approval.AccessReqId,
-                x.pair.approval.AccessItemId,
-                x.pair.approval.ApproverId,
-                "Pending",
-                x.pair.item.TicketNumber,
-                x.pair.item.FolderPath,
-                x.pair.item.AccessType.ToString(),
-                x.request.CreatedBy,
-                x.pair.approval.CreatedOn
-            ))
-            .ToListAsync(cancellationToken);
+        // FIXED: Flat query block guarantees key validation checks type matching across models
+        var query = from approval in _dbContext.AccessApprovals.AsNoTracking()
+                    where approval.IsActive && requestIds.Contains(approval.AccessReqId) &&
+                          (approval.ApprovalStatus == RequestStatus.PendingHOD || approval.ApprovalStatus == RequestStatus.PendingIT)
+                    join item in _dbContext.AccessItems.AsNoTracking() on approval.AccessItemId equals item.AccessItemId
+                    where item.IsActive
+                    join req in _dbContext.AccessRequests.AsNoTracking() on approval.AccessReqId equals req.AccessReqId
+                    where req.IsActive
+                    join approverUser in _dbContext.Employees.AsNoTracking() on approval.ApproverId equals approverUser.UserId
+                    join requestorUser in _dbContext.Employees.AsNoTracking() on req.EmpId equals requestorUser.UserId
+                    orderby approval.CreatedOn
+                    select new PendingApprovalDto(
+                        approval.AccessApproveId,
+                        approval.AccessReqId,
+                        approval.AccessItemId,
+                        approverUser.UserName,
+                        "Pending",
+                        item.TicketNumber,
+                        item.FolderPath,
+                        item.AccessType.ToString(),
+                        requestorUser.UserName,
+                        approval.CreatedOn
+                    );
+
+        return await query.Take(20).ToListAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<AuditLogDto>> FetchAuditLogsAsync(
@@ -271,7 +277,8 @@ public sealed class AccessRequestDashboardService
                 DateKey = g.Key,
                 Count = g.Count(),
                 ApprovedCount = g.Count(r => r.AccessItems.Any(i => i.Status == RequestStatus.ApprovedHOD || i.Status == RequestStatus.ApprovedIT || i.Status == RequestStatus.AccessGranted)),
-                RejectedCount = g.Count(r => r.AccessItems.Any(i => i.Status == RequestStatus.RejectedHOD || i.Status == RequestStatus.RejectedIT || i.Status == RequestStatus.AccessRejected))
+                RejectedCount = g.Count(r => r.AccessItems.Any(i => i.Status == RequestStatus.RejectedHOD || i.Status == RequestStatus.RejectedIT || i.Status == RequestStatus.AccessRejected)),
+                RevokedCount = g.Count(r => r.AccessItems.Any(i => i.Status == RequestStatus.Revoked))
             })
             .ToListAsync(cancellationToken);
 
@@ -279,7 +286,8 @@ public sealed class AccessRequestDashboardService
             t.DateKey.ToString("yyyy-MM-dd"),
             t.Count,
             t.ApprovedCount,
-            t.RejectedCount
+            t.RejectedCount,
+            t.RevokedCount
         )).ToList();
     }
 
@@ -295,6 +303,7 @@ public sealed class AccessRequestDashboardService
         RequestStatus.Submitted or RequestStatus.PendingHOD or RequestStatus.PendingIT => "Pending",
         RequestStatus.ApprovedHOD or RequestStatus.ApprovedIT or RequestStatus.AccessGranted => "Approved",
         RequestStatus.RejectedHOD or RequestStatus.RejectedIT or RequestStatus.AccessRejected => "Rejected",
+        RequestStatus.Revoked => "Revoked",
         _ => "Unknown"
     };
 

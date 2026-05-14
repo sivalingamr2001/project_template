@@ -19,7 +19,7 @@ public sealed class LoginService(
             return null;
 
         // 1. Validate against CMPL DB (Source of Truth for Identity)
-        var cmplUser = await GetCmplUserAsync(identifier, request.Password, ct);
+        var cmplUser = await GetCmplUserAsync(ct);
         if (cmplUser == null)
         {
             logger.LogWarning("Authentication failed for identifier: {Identifier}", identifier);
@@ -42,29 +42,51 @@ public sealed class LoginService(
         return MapToLoginResponse(cmplUser, localUser);
     }
 
-    private async Task<CmplUserRecord?> GetCmplUserAsync(string identifier, string password, CancellationToken ct)
+    private async Task<CmplUserRecord?> GetCmplUserAsync(CancellationToken ct)
     {
         var connectionString = configuration["Database:MySqlConnectionString_Cmpl"];
 
-        // CMPL DB Logic: Support login via UserName, EmpId, or Email
         const string sql = @"
-            SELECT 
-                CMPL_USER_ID as UserId, 
-                emp_id as EmployeeId, 
-                CMPL_USER_NAME as UserName, 
-                MAIL_ID as Email,
-                MOB_NO as Mobile
-            FROM it_inventory_db_new.jan_complaint_login
-            WHERE deleted_flag = 0 
-              AND (CMPL_USER_NAME = @id OR emp_id = @id OR MAIL_ID = @id) 
-              AND CMPL_USER_KEY = @pwd 
-            LIMIT 1";
+        SELECT 
+            CMPL_USER_ID AS CmplUserId,
+            CMPL_USER_RIGHTS AS CmplUserRights,
+            CREATION_DATE AS CreationDate,
+            CREATED_BY AS CreatedBy,
+            LAST_UPDATE_DATE AS LastUpdateDate,
+            LAST_UPDATE_BY AS LastUpdateBy,
+            MOB_NO AS MobNo,
+            MAIL_ID AS MailId,
+            DEPT_ID AS DeptId,
+            REGION AS Region,
+            CMPL_USER_FLAG AS CmplUserFlag,
+            RESOLUTION_CENTER AS ResolutionCenter,
+            RESOLUTION_FOR AS ResolutionFor,
+            auto_creation_flag AS AutoCreationFlag,
+            registered_by AS RegisteredBy,
+            task_center_filter_flag AS TaskCenterFilterFlag,
+            rg_code AS RgCode,
+            branch_ems_tc_id AS BranchEmsTcId,
+            task_center_id AS TaskCenterId,
+            user_worked_frm_home AS UserWorkedFrmHome,
+            view_project_flag AS ViewProjectFlag,
+            hw_spare_flag AS HwSpareFlag,
+            it_sr_flag AS ItSrFlag,
+            mis_flag AS MisFlag,
+            master_mis AS MasterMis,
+            emp_id AS EmpId,
+            erfa_flag AS ErfaFlag,
+            erfa_permission AS ErfaPermission,
+            erfa_user_type AS ErfaUserType,
+            erfa_status AS ErfaStatus,
+            deleted_flag AS DeletedFlag,
+            JITAM_USER_RIGHTS AS JitamUserRights
+        FROM it_inventory_db_new.jan_complaint_login";
 
         try
         {
             using var connection = new MySqlConnection(connectionString);
             return await connection.QueryFirstOrDefaultAsync<CmplUserRecord>(
-                new CommandDefinition(sql, new { id = identifier, pwd = password }, cancellationToken: ct));
+                new CommandDefinition(sql, cancellationToken: ct));
         }
         catch (Exception ex)
         {

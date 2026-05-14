@@ -4,6 +4,7 @@ import { formatRequestDate } from "../../utils/requestDetails"
 import ReportSectionHeading from "./ReportSectionHeading"
 import { getItProvisionDate, getItReviewer } from "../utils/requestReport"
 import { useEffect } from "react"
+import { useParams } from "react-router-dom"
 import { toast } from "sonner"
 
 type RequestReportItSectionProps = {
@@ -12,16 +13,24 @@ type RequestReportItSectionProps = {
 
 function RequestReportItSection({ details }: RequestReportItSectionProps) {
   const itReviewer = getItReviewer(details)
+  const { itemId } = useParams<{ itemId: string }>()
 
-  // FIX 1: Handle potential null from getItProvisionDate before formatting
-  const provisionDateRaw = getItProvisionDate(details)
+  // Find the exact item matching the URL itemId parameter
+  const currentItem = details.items?.find(
+    (item) => String(item.accessItemId) === itemId
+  )
+
+  const status = currentItem?.status?.toLowerCase() || ""
+  const isAccessGranted = status.includes("Access Granted") || status.includes("approved")
+
+  // Only calculate dates if the item is not pending
+  const provisionDateRaw = isAccessGranted ? getItProvisionDate(details) : null
   const approvedDateStr = provisionDateRaw
     ? formatRequestDate(provisionDateRaw)
     : "—"
 
   const getAccessExpiryInfo = (dateInput: string | number | Date | null) => {
-    // FIX 2: Early return if dateInput is null or invalid
-    if (!dateInput || dateInput === "—")
+    if (!dateInput || dateInput === "—" || isAccessGranted)
       return { expiryDate: null, shouldNotify: false }
 
     const expiry = new Date(dateInput)
@@ -47,13 +56,31 @@ function RequestReportItSection({ details }: RequestReportItSectionProps) {
     }
   }, [expiryInfo.shouldNotify])
 
+  // Helper function to get dynamic label based on URL item's status
+  const getActionLabelAndValue = () => {
+    const approver = itReviewer?.approverName || "—"
+
+    if (status === "approved") {
+      return ["Access Granted By", approver]
+    }
+    if (status === "rejected") {
+      return ["Access Rejected By", approver]
+    }
+    if (status === "revoked") {
+      return ["Access Revoked By", approver.toUpperCase()]
+    }
+    
+    // Fallback row if status is pending (e.g., "pending hod") or unknown
+    return ["Processed By", approver]
+  }
+
+  const [actionLabel, actionValue] = getActionLabelAndValue()
+
   const rows = [
     ["Date Received", formatRequestDate(details.createdOn)],
     ["Date Access Provided", approvedDateStr],
-    ["Access Granted By", itReviewer?.approverName || "—"],
-    ["Access Level Assigned", details.items[0]?.accessType || "Not Applicable"],
-    // FIX 3: Ensure we pass a string to the table cell.
-    // Use .toISOString() if formatRequestDate only accepts strings.
+    [actionLabel, actionValue], 
+    ["Access Level Assigned", currentItem?.accessType || "Not Applicable"],
     [
       "Expiry Date",
       expiryInfo.expiryDate

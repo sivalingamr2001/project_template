@@ -288,7 +288,7 @@ public sealed class AccessRequestWorkflowService(
         }
 
         // 2. Fetch dependencies
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Admin, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Operator, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
@@ -398,7 +398,7 @@ public sealed class AccessRequestWorkflowService(
             throw new AppValidationException("Comments are required when revoking access.");
         }
 
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Admin, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Operator, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
         var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(requester.DeptId, cancellationToken);
@@ -1110,28 +1110,14 @@ public sealed class AccessRequestWorkflowService(
         return new List<EmployeeEntity> { hod };
     }
 
-    private async Task<EmployeeEntity> ResolveItApproverAsync(CancellationToken cancellationToken)
-    {
-        return await dbContext.Employees
-            .Where(employee => employee.UserRole == UserRole.Admin)
-            .OrderBy(employee => employee.EmployeeId)
-            .FirstOrDefaultAsync(cancellationToken)
-            ?? throw new AppValidationException("No IT approver is configured.");
-    }
-
     private async Task<List<EmployeeEntity>> GetItApproversAsync(CancellationToken cancellationToken)
     {
-        var admins = await dbContext.Employees
-            .Where(employee => employee.UserRole == UserRole.Admin)
+        var operators = await dbContext.Employees
+            .Where(employee => employee.UserRole == UserRole.Operator)
             .OrderBy(employee => employee.EmployeeId)
             .ToListAsync(cancellationToken);
 
-        if (admins.Count == 0)
-        {
-            throw new AppValidationException("No IT approver is configured.");
-        }
-
-        return admins;
+        return operators.Count == 0 ? throw new AppValidationException("No IT approver is configured.") : operators;
     }
 
     private async Task<List<EmployeeEntity>> GetFolderHodRecipientsAsync(IEnumerable<string> folderPaths, CancellationToken cancellationToken)
@@ -1261,7 +1247,7 @@ public sealed class AccessRequestWorkflowService(
 
     private static void EnsureCanView(EmployeeEntity viewer, EmployeeEntity requester, AccessRequestEntity accessRequest)
     {
-        if (viewer.UserRole == UserRole.Admin)
+        if (viewer.UserRole == UserRole.Admin || viewer.UserRole == UserRole.Operator)
         {
             return;
         }

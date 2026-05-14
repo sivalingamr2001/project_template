@@ -54,9 +54,6 @@ function AppSidebar({ isCollapsed, onClose, onItemClick }: AppSidebarProps) {
                 alt="Janatics"
                 className="h-6 w-auto rounded-sm object-contain"
               />
-              <p className="text-sm tracking-widest text-muted-foreground">
-                Access Portal
-              </p>
             </div>
           )}
         </div>

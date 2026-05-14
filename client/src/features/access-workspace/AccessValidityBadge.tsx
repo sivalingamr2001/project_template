@@ -26,7 +26,10 @@ function AccessValidityBadge({ itemId }: { itemId?: number }) {
   useEffect(() => {
     if (!expiryData?.expiresOn) return
 
-    const targetDate = new Date(expiryData.expiresOn)
+    const dateStr = expiryData.expiresOn.endsWith('Z')
+      ? expiryData.expiresOn
+      : `${expiryData.expiresOn}Z`
+    const targetDate = new Date(dateStr)
 
     const interval = setInterval(() => {
       const now = new Date()
@@ -38,19 +41,21 @@ function AccessValidityBadge({ itemId }: { itemId?: number }) {
         return
       }
 
-      let businessDaysRemaining = 0
-      let tempDate = new Date(now)
+      // Calculate total complete 24-hour day blocks remaining
+      const totalDaysRemaining = Math.floor(distance / (1000 * 60 * 60 * 24))
 
-      while (tempDate < targetDate) {
-        tempDate.setDate(tempDate.getDate() + 1)
-        if (tempDate.getDay() !== 0 && tempDate <= targetDate) {
+      let businessDaysRemaining = 0
+      let startChecking = new Date(now.getTime())
+
+      // FIX: Start at 1 instead of 0 to prevent double-counting today
+      for (let i = 1; i <= totalDaysRemaining; i++) {
+        startChecking.setUTCDate(startChecking.getUTCDate() + 1)
+        if (startChecking.getUTCDay() !== 0) {
           businessDaysRemaining++
         }
       }
 
-      const h = Math.floor(
-        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-      )
+      const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
       const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
       const s = Math.floor((distance % (1000 * 60)) / 1000)
 
@@ -59,6 +64,7 @@ function AccessValidityBadge({ itemId }: { itemId?: number }) {
 
     return () => clearInterval(interval)
   }, [expiryData])
+
   return (
     <div className="rounded-[0.5rem] border border-dashed border-destructive bg-destructive/5 shadow-sm">
       <div className="flex flex-col items-center gap-1">

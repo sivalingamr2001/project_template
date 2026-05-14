@@ -23,7 +23,7 @@ function RequestDetailsPage() {
   const selectedItemFromUrl = itemId ? Number(itemId) : undefined
   const reviewerEmployeeId = user?.employeeId ?? 0
   const role =
-    user?.role === "Hod" || user?.role === "Admin" ? user.role : "User"
+    user?.role === "Hod" || user?.role === "Operator" ? user.role : "User"
   const { details, errorMessage, isLoading, refetch } = useRequestDetails(
     accessReqId,
     reviewerEmployeeId

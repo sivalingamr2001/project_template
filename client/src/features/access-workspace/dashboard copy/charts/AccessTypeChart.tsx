@@ -33,7 +33,7 @@ export default function AccessTypeChart({ data }: AccessTypeChartProps) {
               style={{ fontSize: '12px' }}
             />
             <YAxis
-              dataKey="type"
+              dataKey="accessType"
               type="category"
               stroke="hsl(var(--color-muted-foreground))"
               style={{ fontSize: '12px' }}

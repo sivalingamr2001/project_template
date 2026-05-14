@@ -35,22 +35,17 @@ public sealed class GetDashboardService(AppDbContext dbContext)
 
         IQueryable<AccessRequestEntity> requestQuery = dbContext.AccessRequests.AsNoTracking();
 
-        // 2. Role-based filtering logic
-        if (profile.Role == UserRole.Hod)
+        if (profile.Role != UserRole.Admin && profile.Role != UserRole.Operator)
         {
-            // If HOD, show all requests from their department
-            requestQuery = requestQuery
-                .Join(dbContext.Employees,
-                    req => req.EmpId,
-                    emp => emp.EmployeeId,
-                    (req, emp) => new { req, emp })
-                .Where(x => x.emp.DeptId == profile.DeptId)
-                .Select(x => x.req);
-        }
-        else if (profile.Role != UserRole.Admin)
-        {
-            // Regular users only see their own requests
-            requestQuery = requestQuery.Where(request => request.EmpId == employeeId);
+            requestQuery = profile.Role == UserRole.Hod
+                ? requestQuery
+                    .Join(dbContext.Employees,
+                        req => req.EmpId,
+                        emp => emp.EmployeeId,
+                        (req, emp) => new { req, emp })
+                    .Where(x => x.emp.DeptId == profile.DeptId)
+                    .Select(x => x.req)
+                : requestQuery.Where(request => request.EmpId == employeeId);
         }
 
         var totalCount = await requestQuery.CountAsync(cancellationToken);
@@ -66,7 +61,6 @@ public sealed class GetDashboardService(AppDbContext dbContext)
                 request.ReqTo,
                 request.ItsrNo,
                 request.IsAgreed,
-                // Sub-collection projection (EF Core handles this efficiently)
                 dbContext.AccessItems
                     .Where(ai => ai.AccessReqId == request.AccessReqId)
                     .Select(ai => new AccessItemDto(

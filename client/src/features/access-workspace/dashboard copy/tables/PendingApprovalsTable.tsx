@@ -18,7 +18,7 @@ interface PendingApprovalsTableProps {
 
 export default function PendingApprovalsTable({ data }: PendingApprovalsTableProps) {
   return (
-    <Card className="col-span-full lg:col-span-1 border-border/50">
+    <Card className="col-span-full border-border/50">
       <CardHeader>
         <CardTitle className="text-base">Pending Approvals</CardTitle>
         <CardDescription>Awaiting review</CardDescription>
@@ -34,36 +34,44 @@ export default function PendingApprovalsTable({ data }: PendingApprovalsTablePro
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((approval) => (
-                <TableRow key={approval.accessApproveId} className="hover:bg-muted/30 text-xs">
-                  <TableCell className="font-medium truncate">{approval.approverId}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {approval.accessType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0 hover:bg-green-500/20"
-                        title="Approve"
-                      >
-                        <Check className="w-3 h-3 text-green-600" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0 hover:bg-red-500/20"
-                        title="Reject"
-                      >
-                        <X className="w-3 h-3 text-red-600" />
-                      </Button>
-                    </div>
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                    No pending approvals at the moment.
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                data.map((approval) => (
+                  <TableRow key={approval.accessApproveId} className="hover:bg-muted/30 text-xs">
+                    <TableCell className="font-medium truncate">{approval.approverId}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {approval.accessType}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-green-500/20"
+                          title="Approve"
+                        >
+                          <Check className="w-3 h-3 text-green-600" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-red-500/20"
+                          title="Reject"
+                        >
+                          <X className="w-3 h-3 text-red-600" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>

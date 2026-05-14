@@ -3,6 +3,7 @@ export interface DashboardSummary {
   pendingCount: number;
   approvedCount: number;
   rejectedCount: number;
+  revokedCount: number;
   agreedCount: number;
   totalItems: number;
   unreadNotifications: number;
@@ -22,10 +23,10 @@ export interface AccessTypeBreakdown {
 
 export interface RecentRequest {
   accessReqId: number;
-  empId: number;
-  reqTo: number;
+  empName: string;
+  approverName: string;
   isAgreed: boolean;
-  itsrNo: string | null;
+  itsrNo: string;
   createdOn: string;
   createdBy: string;
   itemCount: number;
@@ -62,6 +63,7 @@ export interface TrendPoint {
   submitted: number;
   approved: number;
   rejected: number;
+  revoked: number;
 }
 
 export interface DashboardQuery {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 
-import type { AccessRequestDetails } from "../../types"
+import type { AccessRequestDetails, AppRole } from "../../types"
 import type { AccessRequestPayload } from "@/lib/access-request-schema"
 import { buildResubmitPayload } from "../report/utils/requestReport"
 import { findInitialItemId } from "../utils/requestDetails"
@@ -12,12 +12,10 @@ import {
   revokeAccessRequest,
 } from "../../utils/requestApi"
 
-type Role = "Hod" | "Admin" | "User"
-
 export function useRequestDetailsPage(
   details: AccessRequestDetails | null,
   reviewerEmployeeId: number,
-  role: Role,
+  role: AppRole,
   refetch: () => Promise<void>
 ) {
   const navigate = useNavigate()
@@ -34,7 +32,7 @@ export function useRequestDetailsPage(
     details?.items[0] ??
     null
   const canRevoke =
-    details && selectedItem?.status === "Access Granted" && role === "Admin"
+    details && selectedItem?.status === "Access Granted" && role === "Operator"
   const canResubmit =
     role === "User" &&
     details?.empId === reviewerEmployeeId &&
@@ -50,7 +48,7 @@ export function useRequestDetailsPage(
   const canReviewAsHod =
     role === "Hod" && selectedItem?.status === "Pending HOD"
   const canReviewAsIt =
-    role === "Admin" && selectedItem?.status === "Pending IT"
+    role === "Operator" && selectedItem?.status === "Pending IT"
   const resubmitPayload = details ? buildResubmitPayload(details) : undefined
   const handleBack = () => navigate(-1)
   const handleResubmitSuccess = () => navigate(getDefaultRoute("User"))

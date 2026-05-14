@@ -172,27 +172,40 @@ export async function fetchAccessRequests(
 
   const payload = await safeParseJson(response)
 
-  return payload.data.map((request: any) => ({
-    ...request,
-    // Explicitly cast to the Map types so TS is happy
-    status: (typeof request.status === "number"
-      ? STATUS_MAP[request.status]
-      : request.status) as RequestStatus,
+  // Ensure payload and payload.data exist before mapping
+  if (!payload || !Array.isArray(payload.data)) {
+    return [];
+  }
 
-    accessItems: request.accessItems.map((item: any) => ({
-      ...item,
-      status: (typeof item.status === "number"
-        ? STATUS_MAP[item.status]
-        : item.status) as RequestStatus,
-      accessType: (typeof item.accessType === "number"
-        ? ACCESS_TYPE_MAP[item.accessType]
-        : item.accessType) as AccessRequestItem["accessType"],
-    })),
+  return payload.data.map((request: any) => {
+    // FIX: Fallback to a default status if request.status doesn't exist in DTO
+    const rawStatus = request.status !== undefined ? request.status : 0; 
+    
+    return {
+      ...request,
+      status: (typeof rawStatus === "number"
+        ? STATUS_MAP[rawStatus]
+        : rawStatus) as RequestStatus,
 
-    aggregateStatus: (typeof request.aggregateStatus === "number"
-      ? AGGREGATE_STATUS_MAP[request.aggregateStatus]
-      : request.aggregateStatus) as AggregateStatus,
-  }))
+      // Match C# backend property name 'accessItems'
+      accessItems: Array.isArray(request.accessItems) 
+        ? request.accessItems.map((item: any) => ({
+            ...item,
+            status: (typeof item.status === "number"
+              ? STATUS_MAP[item.status]
+              : item.status) as RequestStatus,
+            accessType: (typeof item.accessType === "number"
+              ? ACCESS_TYPE_MAP[item.accessType]
+              : item.accessType) as AccessRequestItem["accessType"],
+          }))
+        : [],
+
+      // FIX: Handle missing aggregateStatus safely
+      aggregateStatus: (typeof request.aggregateStatus === "number"
+        ? AGGREGATE_STATUS_MAP[request.aggregateStatus]
+        : request.aggregateStatus || "Pending") as AggregateStatus,
+    };
+  })
 }
 
 export async function fetchAccessRequestDetails(

@@ -36,7 +36,7 @@ const statusConfig = {
 
 export default function NotificationsTable({ data }: NotificationsTableProps) {
   return (
-    <Card className="col-span-full lg:col-span-1 border-border/50">
+    <Card className="col-span-full border-border/50">
       <CardHeader>
         <CardTitle className="text-base">Recent Activity</CardTitle>
         <CardDescription>System notifications</CardDescription>
@@ -52,28 +52,36 @@ export default function NotificationsTable({ data }: NotificationsTableProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((log) => {
-                const config = statusConfig.success // Default to success
-                const Icon = config.icon
-                return (
-                  <TableRow key={log.auditId} className="hover:bg-muted/30 text-xs">
-                    <TableCell className="font-medium truncate max-w-[150px]">
-                      {log.eventType}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Icon className="w-3 h-3" />
-                        <Badge variant={config.variant} className="text-xs px-1.5 py-0">
-                          {config.label}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {formatDistanceToNow(new Date(log.createdOn), { addSuffix: false })} ago
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
+              {data.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-sm text-muted-foreground py-6">
+                    No recent activity available.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                data.map((log) => {
+                  const config = statusConfig.success // Default to success
+                  const Icon = config.icon
+                  return (
+                    <TableRow key={log.auditId} className="hover:bg-muted/30 text-xs">
+                      <TableCell className="font-medium truncate max-w-[150px]">
+                        {log.eventType}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Icon className="w-3 h-3" />
+                          <Badge variant={config.variant} className="text-xs px-1.5 py-0">
+                            {config.label}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatDistanceToNow(new Date(log.createdOn), { addSuffix: false })} ago
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
             </TableBody>
           </Table>
         </div>

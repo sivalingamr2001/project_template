@@ -27,6 +27,7 @@ public sealed record DashboardSummaryDto(
     int PendingCount,
     int ApprovedCount,
     int RejectedCount,
+    int RevokedCount,
     int AgreedCount,
     int TotalItems,
     int UnreadNotifications
@@ -37,8 +38,8 @@ public sealed record AccessTypeBreakdownDto(string AccessType, int Count, double
 
 public sealed record RecentRequestDto(
     int AccessReqId,
-    int EmpId,
-    int ReqTo,
+    string EmpName,
+    string ApproverName,
     bool IsAgreed,
     string? ItsrNo,
     DateTime CreatedOn,
@@ -51,7 +52,7 @@ public sealed record PendingApprovalDto(
     int AccessApproveId,
     int AccessReqId,
     int AccessItemId,
-    int ApproverId,
+    string ApproverName,
     string ApprovalStatus,
     string TicketNumber,
     string FolderPath,
@@ -76,5 +77,6 @@ public sealed record TrendPointDto(
     string Date,
     int Submitted,
     int Approved,
-    int Rejected
+    int Rejected,
+    int Revoked
 );

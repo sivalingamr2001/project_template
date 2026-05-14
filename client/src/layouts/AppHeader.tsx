@@ -66,7 +66,7 @@ export function AppHeader({
           <Separator orientation="vertical" className="h-6 bg-border" />
         </div>
         <div >
-          <h1 className="animate-fade-in-right text-lg font-semibold tracking-tight">Dashboard</h1>
+          <h1 className="animate-fade-in-right text-lg font-semibold tracking-tight">Access Portal</h1>
         </div>
       </div>
       <div className="flex items-center gap-2">

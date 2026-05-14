@@ -30,10 +30,14 @@ export default function TrendChart({ data }: TrendChartProps) {
       label: 'Rejected',
       color: 'hsl(var(--color-chart-3))',
     },
+    revoked: {
+      label: 'Revoked',
+      color: 'hsl(var(--color-red-500))',
+    },
   }
 
   return (
-    <Card className="col-span-full lg:col-span-2 border-border/50">
+    <Card className="col-span-full xl:col-span-2 border-border/50">
       <CardHeader>
         <CardTitle>Access Requests Trend</CardTitle>
         <CardDescription>
@@ -129,6 +133,14 @@ export default function TrendChart({ data }: TrendChartProps) {
               fillOpacity={1}
               fill="url(#colorRejected)"
               name={chartConfig.rejected.label}
+            />
+            <Area
+              type="monotone"
+              dataKey="revoked"
+              stroke={chartConfig.revoked.color}
+              fillOpacity={0.15}
+              fill={chartConfig.revoked.color}
+              name={chartConfig.revoked.label}
             />
           </AreaChart>
         </ResponsiveContainer>
