@@ -55,6 +55,10 @@ namespace Application.Implementation
 
         public async Task<RequisitionResponseDto> CreateAsync(CreateRequisitionDto dto)
         {
+            var monthlyQty = int.TryParse(dto.MonthlyQty, out var parsedMonthlyQty)
+                ? parsedMonthlyQty
+                : 0;
+
             var requisitionDomain = new RequisitionDomain
             {
                 Date = dto.Date,
@@ -66,12 +70,12 @@ namespace Application.Implementation
                 ProjectNo = dto.ProjectNo,
                 ProductName = dto.ProductName,
                 Purpose = dto.Purpose,
-                MonthlyQty = int.Parse(dto.MonthlyQty),
+                MonthlyQty = monthlyQty,
                 Status = "draft",
                 PreparedBy = dto.Prepared.Name,
-                PreparedDate = DateTime.Parse(dto.Prepared.Date),
-                CheckedBy = null,
-                CheckedDate = null,
+                PreparedDate = ParseDateOrDefault(dto.Prepared.Date, DateTime.UtcNow),
+                CheckedBy = string.IsNullOrWhiteSpace(dto.Checked.Name) ? null : dto.Checked.Name,
+                CheckedDate = ParseDateOrNull(dto.Checked.Date),
                 ApprovedBy = null,
                 ApprovedDate = null,
                 ReceivedBy = null,
@@ -123,7 +127,13 @@ namespace Application.Implementation
             requisition.ProjectNo = dto.ProjectNo;
             requisition.ProductName = dto.ProductName;
             requisition.Purpose = dto.Purpose;
-            requisition.MonthlyQty = int.Parse(dto.MonthlyQty);
+            requisition.MonthlyQty = int.TryParse(dto.MonthlyQty, out var parsedMonthlyQty)
+                ? parsedMonthlyQty
+                : 0;
+            requisition.PreparedBy = dto.Prepared.Name;
+            requisition.PreparedDate = ParseDateOrDefault(dto.Prepared.Date, requisition.PreparedDate ?? DateTime.UtcNow);
+            requisition.CheckedBy = string.IsNullOrWhiteSpace(dto.Checked.Name) ? null : dto.Checked.Name;
+            requisition.CheckedDate = ParseDateOrNull(dto.Checked.Date);
             requisition.UpdatedAt = DateTime.UtcNow;
 
             // Update parts
@@ -243,6 +253,21 @@ namespace Application.Implementation
                 .Count();
 
             return $"REC-{year}-{(currentYearCount + 1).ToString("D3")}";
+        }
+
+        private static DateTime ParseDateOrDefault(string value, DateTime fallback)
+        {
+            return DateTime.TryParse(value, out var parsedDate) ? parsedDate : fallback;
+        }
+
+        private static DateTime? ParseDateOrNull(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            return DateTime.TryParse(value, out var parsedDate) ? parsedDate : null;
         }
     }
 }

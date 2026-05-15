@@ -19,8 +19,9 @@ export interface RequisitionDocument {
   productRev: string;
   projectNo: string;
   productName: string;
-  purpose: "new-product-validation" | "sales";
+  purpose: string;
   monthlyQty: number;
+  status: string;
   parts: Part[];
   preparedBy?: string;
   preparedDate?: Date;

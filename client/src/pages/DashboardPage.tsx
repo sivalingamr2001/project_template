@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import type { ColumnDef, CellContext } from "@tanstack/react-table";
 import { DynamicGrid } from "@/components/DynamicGrid";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/utils/date-format";
+import { Button } from "@/components/ui/button";
 import { useRequestionApi } from "@/core/api/useRequestionApi";
 import type { RequisitionDocument } from "@/types";
+import { formatDate } from "@/utils/date-format";
+import type { CellContext, ColumnDef } from "@tanstack/react-table";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -20,6 +20,7 @@ const getStatusColor = (status: string) => {
 };
 
 const getDocStatus = (doc: RequisitionDocument): string => {
+  if (doc.status) return doc.status;
   if (doc.approvedBy) return "approved";
   if (doc.checkedBy) return "pending";
   return "draft";
@@ -117,6 +118,7 @@ export const DashboardPage = () => {
         canSorting={true}
         canPagination={true}
         canRowSelection={false}
+        isFetching={isLoading}
         pageSize={10}
         emptyMessage="No documents found"
         onRefresh={handleRefresh}

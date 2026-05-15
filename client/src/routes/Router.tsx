@@ -1,18 +1,10 @@
 import { PageLoader } from "@/components/LoadingSpinner/LoadingSpinner";
 import { RouteErrorBoundary } from "@/core/error/RouteErrorBoundary";
 import { AppLayout } from "@/layouts/AppLayout";
-import { AuthLayout } from "@/layouts/AuthLayout";
 import { BlankLayout } from "@/layouts/BlankLayout";
 import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
-import { ProtectedRoute } from "./ProtectedRoute";
 
-// Lazy-loaded feature pages
-const LoginPage = lazy(() =>
-  import("@/pages/LoginPage").then((m) => ({
-    default: m.LoginPage,
-  })),
-);
 const DashboardPage = lazy(() =>
   import("@/pages/DashboardPage").then((m) => ({
     default: m.DashboardPage,
@@ -38,21 +30,13 @@ const withSuspense = (Component: React.ComponentType) => (
 const router = createBrowserRouter(
   [
     {
-      element: <AuthLayout />,
-      errorElement: <RouteErrorBoundary />,
-      children: [{ path: "/login", element: withSuspense(LoginPage) }],
-    },
-    {
-      element: (
-        <ProtectedRoute>
-          <AppLayout />
-        </ProtectedRoute>
-      ),
+      element: <AppLayout />,
       errorElement: <RouteErrorBoundary />,
       children: [
         { index: true, element: <Navigate to="/dashboard" replace /> },
         { path: "/dashboard", element: withSuspense(DashboardPage) },
         { path: "/form-details/:recordId?", element: withSuspense(FormDetailsPage) },
+        { path: "/login", element: <Navigate to="/dashboard" replace /> },
       ],
     },
     // Catch-all

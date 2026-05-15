@@ -36,6 +36,7 @@ export const mockRequisitions: RequisitionDocument[] = [
     productName: "Smart IoT Device v2",
     purpose: "new-product-validation",
     monthlyQty: 5000,
+    status: "approved",
     parts: mockParts,
     preparedBy: "John Doe",
     preparedDate: new Date("2024-06-01"),
@@ -58,6 +59,7 @@ export const mockRequisitions: RequisitionDocument[] = [
     productName: "Wireless Sensor Module",
     purpose: "sales",
     monthlyQty: 10000,
+    status: "draft",
     parts: mockParts,
   },
 ];

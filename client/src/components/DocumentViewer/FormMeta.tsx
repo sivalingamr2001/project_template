@@ -18,7 +18,7 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
         >
           Rec. No.
         </Label>
-        <Input id="recNo" {...register("recNo")} className="h-9 font-mono" />
+        <Input id="recNo" {...register("recNo")} className="h-9 font-mono" disabled />
       </div>
       <div className="space-y-1.5">
         <Label

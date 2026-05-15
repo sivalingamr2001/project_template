@@ -31,6 +31,7 @@ export const Signatures: React.FC<SignaturesProps> = ({ register }) => {
             />
             <Input
               {...register(`signatures.${role.key}.date` as const)}
+              type="datetime-local"
               placeholder="Signature Date"
               className="text-muted-foreground h-8 font-mono text-[11px]"
             />

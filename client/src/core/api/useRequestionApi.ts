@@ -1,6 +1,19 @@
 import { axiosInstance } from "./axiosInstance";
-import type { AuthResponse, LoginPayload } from "@/types/common.types";
 import type { RequisitionDocument } from "@/types";
+
+interface ApiEnvelope<T> {
+  data: T;
+}
+
+interface ApiListEnvelope<T> {
+  data: T[];
+  pagination?: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+}
 
 interface ApiRequisitionPart {
   sNo: number;
@@ -25,16 +38,56 @@ interface ApiRequisition {
   productName: string;
   purpose: string;
   monthlyQty: number;
+  status: string;
   parts: ApiRequisitionPart[];
-  preparedBy?: string;
-  preparedDate?: string;
-  checkedBy?: string;
-  checkedDate?: string;
-  approvedBy?: string;
-  approvedDate?: string;
-  receivedBy?: string;
-  receivedDate?: string;
+  preparedBy?: string | null;
+  preparedDate?: string | null;
+  checkedBy?: string | null;
+  checkedDate?: string | null;
+  approvedBy?: string | null;
+  approvedDate?: string | null;
+  receivedBy?: string | null;
+  receivedDate?: string | null;
 }
+
+export interface RequisitionSignaturePayload {
+  name: string;
+  date: string;
+}
+
+export interface RequisitionPartPayload {
+  partNo: string;
+  rev: string;
+  partName: string;
+  qty: number;
+  requiredDate: string | null;
+  committedDate: string | null;
+  actualCompletionDate: string | null;
+}
+
+export interface RequisitionPayload {
+  date: string;
+  pageNo: string;
+  fromTeam: string;
+  toTeam: string;
+  productNo: string;
+  productRev: string;
+  projectNo: string;
+  productName: string;
+  purpose: string;
+  monthlyQty: string;
+  parts: RequisitionPartPayload[];
+  prepared: RequisitionSignaturePayload;
+  checked: RequisitionSignaturePayload;
+  moqWarningAccepted?: boolean;
+}
+
+const toDate = (value?: string | null): Date | undefined => {
+  if (!value) return undefined;
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
 
 const mapRequisition = (item: ApiRequisition): RequisitionDocument => ({
   recNo: item.recNo,
@@ -46,66 +99,101 @@ const mapRequisition = (item: ApiRequisition): RequisitionDocument => ({
   productRev: item.productRev,
   projectNo: item.projectNo,
   productName: item.productName,
-  purpose: item.purpose as RequisitionDocument["purpose"],
+  purpose: item.purpose,
   monthlyQty: item.monthlyQty,
-  parts: item.parts.map((part) => ({
+  status: item.status,
+  parts: (item.parts ?? []).map((part) => ({
     ...part,
-    requiredDate: part.requiredDate ? new Date(part.requiredDate) : null,
-    committedDate: part.committedDate ? new Date(part.committedDate) : null,
-    actualCompletionDate: part.actualCompletionDate ? new Date(part.actualCompletionDate) : null,
+    requiredDate: toDate(part.requiredDate) ?? null,
+    committedDate: toDate(part.committedDate) ?? null,
+    actualCompletionDate: toDate(part.actualCompletionDate) ?? null,
   })),
-  preparedBy: item.preparedBy,
-  preparedDate: item.preparedDate ? new Date(item.preparedDate) : undefined,
-  checkedBy: item.checkedBy,
-  checkedDate: item.checkedDate ? new Date(item.checkedDate) : undefined,
-  approvedBy: item.approvedBy,
-  approvedDate: item.approvedDate ? new Date(item.approvedDate) : undefined,
-  receivedBy: item.receivedBy,
-  receivedDate: item.receivedDate ? new Date(item.receivedDate) : undefined,
+  preparedBy: item.preparedBy ?? undefined,
+  preparedDate: toDate(item.preparedDate),
+  checkedBy: item.checkedBy ?? undefined,
+  checkedDate: toDate(item.checkedDate),
+  approvedBy: item.approvedBy ?? undefined,
+  approvedDate: toDate(item.approvedDate),
+  receivedBy: item.receivedBy ?? undefined,
+  receivedDate: toDate(item.receivedDate),
 });
 
-const normalizeList = (response: unknown): ApiRequisition[] => {
-  if (Array.isArray(response)) return response as ApiRequisition[];
-  if (response && typeof response === "object") {
-    const value = (response as Record<string, unknown>).data ?? response;
-    if (Array.isArray(value)) return value as ApiRequisition[];
+const unwrapList = (response: ApiRequisition[] | ApiListEnvelope<ApiRequisition>): ApiRequisition[] => {
+  if (Array.isArray(response)) return response;
+  return Array.isArray(response?.data) ? response.data : [];
+};
+
+const unwrapItem = (response: ApiRequisition | ApiEnvelope<ApiRequisition>): ApiRequisition => {
+  if ("data" in response) {
+    return response.data;
   }
-  return [];
+
+  return response;
 };
 
 export const useRequestionApi = {
-  login: async (payload: LoginPayload): Promise<AuthResponse> => {
-    const response = await axiosInstance.post<AuthResponse>("/auth/login", payload);
-    return response.data;
-  },
-
   fetchRequisitions: async (): Promise<RequisitionDocument[]> => {
-    const response = await axiosInstance.get<unknown>("/requisitions");
-    return normalizeList(response.data).map(mapRequisition);
+    const response = await axiosInstance.get<ApiRequisition[] | ApiListEnvelope<ApiRequisition>>(
+      "/requisitions",
+    );
+
+    return unwrapList(response.data).map(mapRequisition);
   },
 
   fetchRequisition: async (recNo: string): Promise<RequisitionDocument> => {
-    const response = await axiosInstance.get<ApiRequisition>(`/requisitions/${encodeURIComponent(recNo)}`);
-    return mapRequisition(response.data);
+    const response = await axiosInstance.get<ApiRequisition | ApiEnvelope<ApiRequisition>>(
+      `/requisitions/${encodeURIComponent(recNo)}`,
+    );
+
+    return mapRequisition(unwrapItem(response.data));
   },
 
-  createRequisition: async (payload: unknown): Promise<void> => {
-    await axiosInstance.post("/requisitions", payload);
+  createRequisition: async (payload: RequisitionPayload): Promise<RequisitionDocument> => {
+    const response = await axiosInstance.post<ApiEnvelope<ApiRequisition>>(
+      "/requisitions",
+      payload,
+    );
+
+    return mapRequisition(response.data.data);
   },
 
-  updateRequisition: async (recNo: string, payload: unknown): Promise<void> => {
-    await axiosInstance.put(`/requisitions/${encodeURIComponent(recNo)}`, payload);
+  updateRequisition: async (
+    recNo: string,
+    payload: RequisitionPayload,
+  ): Promise<RequisitionDocument> => {
+    const response = await axiosInstance.put<ApiEnvelope<ApiRequisition>>(
+      `/requisitions/${encodeURIComponent(recNo)}`,
+      payload,
+    );
+
+    return mapRequisition(response.data.data);
   },
 
   deleteRequisition: async (recNo: string): Promise<void> => {
     await axiosInstance.delete(`/requisitions/${encodeURIComponent(recNo)}`);
   },
 
-  submitRequisition: async (recNo: string, payload: unknown): Promise<void> => {
-    await axiosInstance.post(`/requisitions/${encodeURIComponent(recNo)}/submit`, payload);
+  submitRequisition: async (
+    recNo: string,
+    payload: { checkedBy: string; checkDate: string },
+  ): Promise<RequisitionDocument> => {
+    const response = await axiosInstance.post<ApiEnvelope<ApiRequisition>>(
+      `/requisitions/${encodeURIComponent(recNo)}/submit`,
+      payload,
+    );
+
+    return mapRequisition(response.data.data);
   },
 
-  approveRequisition: async (recNo: string, payload: unknown): Promise<void> => {
-    await axiosInstance.post(`/requisitions/${encodeURIComponent(recNo)}/approve`, payload);
+  approveRequisition: async (
+    recNo: string,
+    payload: { approvedBy: string; approvalDate: string; comments: string },
+  ): Promise<RequisitionDocument> => {
+    const response = await axiosInstance.post<ApiEnvelope<ApiRequisition>>(
+      `/requisitions/${encodeURIComponent(recNo)}/approve`,
+      payload,
+    );
+
+    return mapRequisition(response.data.data);
   },
 };

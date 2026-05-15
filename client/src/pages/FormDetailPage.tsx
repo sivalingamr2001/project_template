@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
 
-import { useAuthStore, selectUser } from "@/core/store/authStore";
 import { FormHeader } from "@/components/DocumentViewer/FormHeader";
 import { FormMeta } from "@/components/DocumentViewer/FormMeta";
 import { PartTable } from "@/components/DocumentViewer/PartTable";
@@ -12,6 +11,7 @@ import { ProductInfo } from "@/components/DocumentViewer/ProductInfo";
 import { Signatures } from "@/components/DocumentViewer/Signatures";
 import { useRequestionApi } from "@/core/api/useRequestionApi";
 import type { RequisitionFormData, PartItem } from "@/components/DocumentViewer/types";
+import type { RequisitionDocument } from "@/types";
 
 const steps = ["Document Details", "Product & Components", "Signatures"];
 
@@ -20,9 +20,10 @@ const getTodayDate = () => new Date().toISOString().split("T")[0];
 export const FormDetailPage = () => {
   const { recordId } = useParams<{ recordId?: string }>();
   const navigate = useNavigate();
-  const currentUser = useAuthStore(selectUser);
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const today = useMemo(getTodayDate, []);
 
@@ -42,13 +43,13 @@ export const FormDetailPage = () => {
       parts: [],
       moqWarningAccepted: true,
       signatures: {
-        prepared: { name: currentUser?.name ?? "", date: `${today} 09:00 AM` },
+        prepared: { name: "", date: `${today}T09:00:00` },
         checked: { name: "", date: "" },
         approved: { name: "", date: "" },
         received: { name: "", date: "" },
       },
     }),
-    [currentUser?.name, today],
+    [today],
   );
 
   const { register, control, handleSubmit, reset } = useForm<RequisitionFormData>({
@@ -56,66 +57,14 @@ export const FormDetailPage = () => {
   });
 
   useEffect(() => {
-    const buildFormValues = (record: any): RequisitionFormData => {
-      const mapDate = (value: string | Date | null | undefined) => {
-        if (!value) return "";
-        const date = value instanceof Date ? value : new Date(value);
-        return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
-      };
-
-      return {
-        recNo: record.recNo ?? "",
-        date: mapDate(record.date) || today,
-        pageNo: record.pageNo ?? "1 of 1",
-        from: record.fromTeam ?? record.from ?? "",
-        to: record.toTeam ?? record.to ?? "",
-        productNo: record.productNo ?? "",
-        rev: record.productRev ?? record.rev ?? "",
-        projectNo: record.projectNo ?? "",
-        productName: record.productName ?? "",
-        purpose: record.purpose ?? "",
-        monthlyQty: record.monthlyQty?.toString() ?? "",
-        parts: Array.isArray(record.parts)
-          ? record.parts.map((part: any) => ({
-              sNo: part.sNo,
-              partNo: part.partNo,
-              rev: part.rev,
-              partName: part.partName,
-              qty: part.qty,
-              requiredDate: mapDate(part.requiredDate),
-              committedDate: mapDate(part.committedDate),
-              actualCompletionDate: mapDate(part.actualCompletionDate),
-            }))
-          : [],
-        moqWarningAccepted: true,
-        signatures: {
-          prepared: {
-            name: record.preparedBy ?? record.prepared?.name ?? currentUser?.name ?? "",
-            date: mapDate(record.preparedDate ?? record.prepared?.date) || `${today} 09:00 AM`,
-          },
-          checked: {
-            name: record.checkedBy ?? record.checked?.name ?? "",
-            date: mapDate(record.checkedDate ?? record.checked?.date),
-          },
-          approved: {
-            name: record.approvedBy ?? record.approved?.name ?? "",
-            date: mapDate(record.approvedDate ?? record.approved?.date),
-          },
-          received: {
-            name: record.receivedBy ?? record.received?.name ?? "",
-            date: mapDate(record.receivedDate ?? record.received?.date),
-          },
-        },
-      };
-    };
-
     const loadRequisition = async () => {
       setIsLoading(true);
+      setSaveMessage(null);
 
       try {
         if (recordId) {
           const record = await useRequestionApi.fetchRequisition(recordId);
-          reset(buildFormValues(record));
+          reset(buildFormValues(record, today));
         } else {
           reset(createFormValues);
         }
@@ -128,19 +77,43 @@ export const FormDetailPage = () => {
     };
 
     void loadRequisition();
-  }, [recordId, reset, createFormValues, currentUser?.name, today]);
+  }, [recordId, reset, createFormValues, today]);
 
   const handleResetBlank = () => {
     reset(createFormValues);
     setCurrentStep(1);
+    setSaveMessage(null);
   };
 
   const handleNext = () => setCurrentStep((step) => Math.min(step + 1, steps.length));
   const handlePrevious = () => setCurrentStep((step) => Math.max(step - 1, 1));
 
-  const onSubmit = (data: RequisitionFormData) => {
-    console.log("Saving Form Requisition Data Payload:", data);
-    alert(`Document Requisition ${data.recNo || "Draft"} saved completely!`);
+  const onSubmit = async (data: RequisitionFormData) => {
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    try {
+      const payload = buildSavePayload(data, today);
+      const savedRecord = recordId
+        ? await useRequestionApi.updateRequisition(recordId, payload)
+        : await useRequestionApi.createRequisition(payload);
+
+      reset(buildFormValues(savedRecord, today));
+      setSaveMessage(
+        recordId
+          ? `Requisition ${savedRecord.recNo} updated successfully.`
+          : `Requisition ${savedRecord.recNo} created successfully.`,
+      );
+
+      if (!recordId) {
+        navigate(`/form-details/${encodeURIComponent(savedRecord.recNo)}`, { replace: true });
+      }
+    } catch (error) {
+      console.error("Failed to save requisition:", error);
+      setSaveMessage("Unable to save the requisition right now. Please verify the form data and try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const isLastStep = currentStep === steps.length;
@@ -172,12 +145,18 @@ export const FormDetailPage = () => {
         <Button
           type="button"
           onClick={handleResetBlank}
-          disabled={isLoading}
+          disabled={isLoading || isSaving}
           className="h-9 px-4"
         >
           {isLoading ? "Loading..." : "Reset Blank"}
         </Button>
       </div>
+
+      {saveMessage ? (
+        <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+          {saveMessage}
+        </div>
+      ) : null}
 
       <Card className="border-2 shadow-lg">
         <FormHeader />
@@ -209,13 +188,19 @@ export const FormDetailPage = () => {
 
             <div className="flex flex-wrap gap-2">
               {!isLastStep && (
-                <Button type="button" onClick={handleNext}>
+                <Button type="button" onClick={handleNext} disabled={isSaving}>
                   Next
                 </Button>
               )}
               {isLastStep && (
-                <Button type="submit" className="px-6">
-                  Submit Requisition
+                <Button type="submit" className="px-6" disabled={isSaving}>
+                  {isSaving
+                    ? recordId
+                      ? "Updating..."
+                      : "Saving..."
+                    : recordId
+                      ? "Update Requisition"
+                      : "Create Requisition"}
                 </Button>
               )}
             </div>
@@ -224,4 +209,105 @@ export const FormDetailPage = () => {
       </Card>
     </div>
   );
+};
+
+const buildFormValues = (
+  record: RequisitionDocument,
+  today: string,
+): RequisitionFormData => {
+  const mapDate = (value: string | Date | null | undefined) => {
+    if (!value) return "";
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
+  };
+
+  const mapDateTime = (value: string | Date | null | undefined, fallback = "") => {
+    if (!value) return fallback;
+
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? fallback : date.toISOString().slice(0, 16);
+  };
+
+  return {
+    recNo: record.recNo ?? "",
+    date: mapDate(record.date) || today,
+    pageNo: record.pageNo ?? "1 of 1",
+    from: record.fromTeam ?? "",
+    to: record.toTeam ?? "",
+    productNo: record.productNo ?? "",
+    rev: record.productRev ?? "",
+    projectNo: record.projectNo ?? "",
+    productName: record.productName ?? "",
+    purpose: record.purpose ?? "",
+    monthlyQty: record.monthlyQty?.toString() ?? "",
+    parts: Array.isArray(record.parts)
+      ? record.parts.map((part) => ({
+          sNo: part.sNo,
+          partNo: part.partNo,
+          rev: part.rev,
+          partName: part.partName,
+          qty: part.qty,
+          requiredDate: mapDate(part.requiredDate),
+          committedDate: mapDate(part.committedDate),
+          actualCompletionDate: mapDate(part.actualCompletionDate),
+        }))
+      : [],
+    moqWarningAccepted: true,
+    signatures: {
+      prepared: {
+        name: record.preparedBy ?? "",
+        date: mapDateTime(record.preparedDate, `${today}T09:00`),
+      },
+      checked: {
+        name: record.checkedBy ?? "",
+        date: mapDateTime(record.checkedDate),
+      },
+      approved: {
+        name: record.approvedBy ?? "",
+        date: mapDateTime(record.approvedDate),
+      },
+      received: {
+        name: record.receivedBy ?? "",
+        date: mapDateTime(record.receivedDate),
+      },
+    },
+  };
+};
+
+const buildSavePayload = (data: RequisitionFormData, today: string) => {
+  const preparedDate = data.signatures.prepared.date || `${today}T09:00`;
+  const checkedDate = data.signatures.checked.date || preparedDate;
+
+  return {
+    date: data.date,
+    pageNo: data.pageNo || "1 of 1",
+    fromTeam: data.from,
+    toTeam: data.to,
+    productNo: data.productNo,
+    productRev: data.rev,
+    projectNo: data.projectNo,
+    productName: data.productName,
+    purpose: data.purpose,
+    monthlyQty: data.monthlyQty || "0",
+    parts: data.parts.map((part: PartItem, index) => ({
+      sNo: index + 1,
+      partNo: part.partNo,
+      rev: part.rev,
+      partName: part.partName,
+      qty: Number(part.qty) || 0,
+      requiredDate: part.requiredDate || null,
+      committedDate: part.committedDate || null,
+      actualCompletionDate: part.actualCompletionDate || null,
+    })),
+    prepared: {
+      name: data.signatures.prepared.name.trim(),
+      date: preparedDate,
+    },
+    checked: {
+      name: data.signatures.checked.name.trim(),
+      date: checkedDate,
+    },
+    moqWarningAccepted: data.moqWarningAccepted,
+  };
 };
