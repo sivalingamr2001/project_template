@@ -12,6 +12,7 @@ import { Signatures } from "@/components/DocumentViewer/Signatures";
 import { useRequestionApi } from "@/core/api/useRequestionApi";
 import type { RequisitionFormData, PartItem } from "@/components/DocumentViewer/types";
 import type { RequisitionDocument } from "@/types";
+import { ArrowLeft } from "lucide-react";
 
 const steps = ["Document Details", "Product & Components", "Signatures"];
 
@@ -119,10 +120,10 @@ export const FormDetailPage = () => {
   const isLastStep = currentStep === steps.length;
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
       <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <Button variant="outline" onClick={() => navigate("/dashboard")}>
-          ← Back to Dashboard
+          <ArrowLeft className="border-none" />
         </Button>
 
         <div className="flex-1">
