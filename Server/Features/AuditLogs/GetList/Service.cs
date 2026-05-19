@@ -39,8 +39,8 @@ public sealed class GetAuditLogsService(AppDbContext dbContext)
 
         var actorNames = await dbContext.Employees
             .AsNoTracking()
-            .Where(employee => actorIds.Contains(employee.EmployeeId))
-            .ToDictionaryAsync(employee => employee.EmployeeId, employee => employee.UserName, cancellationToken);
+            .Where(employee => employee.EmployeeId.HasValue && actorIds.Contains(employee.EmployeeId.Value))
+            .ToDictionaryAsync(employee => employee.EmployeeId!.Value, employee => employee.Email, cancellationToken);
 
         var data = rows
             .Select(row =>

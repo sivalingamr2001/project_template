@@ -93,44 +93,32 @@ public sealed class DatabaseInitializer(
             {
                 new()
                 {
+                    UserId = 1,
                     EmployeeId = 1,
-                    FirstName = "John",
-                    LastName = "Doe",
-                    UserName = "johndoe",
-                    Password = "password",
                     Email = "john@example.com",
                     UserRole = UserRole.User,
                     IsActive = true
                 },
                 new()
                 {
+                    UserId = 2,
                     EmployeeId = 2,
-                    FirstName = "Jane",
-                    LastName = "Smith",
-                    UserName = "janesmith",
-                    Password = "password",
                     Email = "jane@example.com",
                     UserRole = UserRole.Hod,
                     IsActive = true
                 },
                 new()
                 {
+                    UserId = 3,
                     EmployeeId = 3,
-                    FirstName = "Rose",
-                    LastName = "Merry",
-                    UserName = "rosemerry",
-                    Password = "password",
                     Email = "rose@example.com",
                     UserRole = UserRole.Operator,
                     IsActive = true
                 },
                 new()
                 {
+                    UserId = 4,
                     EmployeeId = 4,
-                    FirstName = "Admin",
-                    LastName = "Dev",
-                    UserName = "DevAdmin",
-                    Password = "password",
                     Email = "admin@example.com",
                     UserRole = UserRole.Admin,
                     IsActive = true

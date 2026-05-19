@@ -47,8 +47,10 @@ public sealed class UpdateDepartmentService(AppDbContext dbContext)
         {
             var hodEmployee = await dbContext.Employees
                 .AsNoTracking()
-                .Where(e => e.EmployeeId == request.HodId && e.UserRole == UserRole.Hod)
-                .Select(e => new { e.UserId, e.EmployeeId })
+                .Where(e => e.EmployeeId.HasValue
+                            && e.EmployeeId.Value == request.HodId
+                            && (e.UserRole ?? UserRole.User) == UserRole.Hod)
+                .Select(e => new { e.UserId, EmployeeId = e.EmployeeId!.Value, e.Email })
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (hodEmployee is null)
@@ -70,9 +72,7 @@ public sealed class UpdateDepartmentService(AppDbContext dbContext)
             .Select(e => new
             {
                 e.EmployeeId,
-                e.FirstName,
-                e.LastName,
-                e.UserName
+                e.Email
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -81,14 +81,8 @@ public sealed class UpdateDepartmentService(AppDbContext dbContext)
             department.DepartmentId,
             department.DepartmentName,
             hodName?.EmployeeId ?? 0,
-            hodName is null ? string.Empty : GetDisplayName(hodName.FirstName, hodName.LastName, hodName.UserName),
-            string.Empty,
+            hodName?.Email ?? string.Empty,
+            hodName?.Email ?? string.Empty,
             string.Empty);
-    }
-
-    private static string GetDisplayName(string? firstName, string? lastName, string userName)
-    {
-        var combined = $"{firstName ?? string.Empty} {lastName ?? string.Empty}".Trim();
-        return !string.IsNullOrWhiteSpace(combined) ? combined : userName;
     }
 }

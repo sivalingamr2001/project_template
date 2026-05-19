@@ -17,17 +17,16 @@ public sealed class EmployeeService(AppDbContext dbContext)
         var totalCount = await baseQuery.CountAsync(cancellationToken);
 
         var users = await baseQuery
-            .Include(employee => employee.Department)
-            .OrderBy(employee => employee.EmployeeId)
+            .OrderBy(employee => employee.UserId)
             .Skip(query.Skip)
             .Take(query.NormalizedPageSize)
             .Select(employee => new LegacyUserListItemDto(
                 employee.UserId,
-                employee.EmployeeId,
-                BuildDisplayName(employee.FirstName, employee.LastName, employee.UserName),
+                employee.EmployeeId ?? 0,
                 employee.Email,
-                employee.Department != null ? employee.Department.DepartmentName : string.Empty,
-                employee.UserRole.ToString()))
+                employee.Email,
+                string.Empty,
+                (employee.UserRole ?? UserRole.User).ToString()))
             .ToListAsync(cancellationToken);
 
         return new PaginatedResponse<LegacyUserListItemDto>(
@@ -37,34 +36,20 @@ public sealed class EmployeeService(AppDbContext dbContext)
             query.NormalizedPageSize);
     }
 
-    public async Task<List<EmployeeDto>> SearchEmployeesAsync(
-       string term,
-       CancellationToken ct)
+    public async Task<List<EmployeeDto>> SearchEmployeesAsync(string term, CancellationToken ct)
     {
-        var baseQuery = dbContext.Employees
-            .AsNoTracking()
-            .Include(x => x.Department)
-            .ThenInclude(x => x!.Hod)
-            .AsQueryable();
+        var baseQuery = dbContext.Employees.AsNoTracking().AsQueryable();
 
-        // Apply Filter
         if (!string.IsNullOrWhiteSpace(term))
         {
             string likeTerm = $"%{term}%";
             baseQuery = baseQuery.Where(e =>
-                EF.Functions.Like(e.UserName, likeTerm) ||
                 EF.Functions.Like(e.Email, likeTerm) ||
-                EF.Functions.Like(e.EmployeeId.ToString(), likeTerm) ||
-                EF.Functions.Like(e.Mobile, likeTerm) ||
-                EF.Functions.Like(e.Location, likeTerm));
+                EF.Functions.Like(e.UserId.ToString(), likeTerm) ||
+                (e.EmployeeId.HasValue && EF.Functions.Like(e.EmployeeId.Value.ToString(), likeTerm)));
         }
 
-        // Retrieve everything without Skip/Take
-        var employees = await baseQuery
-            .OrderBy(x => x.UserName)
-            .ToListAsync(ct);
-
-        // Map to your DTO
+        var employees = await baseQuery.OrderBy(x => x.UserId).ToListAsync(ct);
         return employees.Select(MapToDto).ToList();
     }
 
@@ -76,43 +61,31 @@ public sealed class EmployeeService(AppDbContext dbContext)
         var totalCount = await baseQuery.CountAsync(cancellationToken);
 
         var employees = await baseQuery
-            .AsNoTracking()
-            .Include(x => x.Department)
-            .ThenInclude(x => x!.Hod)
-            .OrderBy(x => x.EmployeeId)
+            .OrderBy(x => x.UserId)
             .Skip(query.Skip)
             .Take(query.NormalizedPageSize)
             .ToListAsync(cancellationToken);
 
-        var data = employees.Select(MapToDto).ToList();
-
         return new PaginatedResponse<EmployeeDto>(
-            data,
+            employees.Select(MapToDto).ToList(),
             totalCount,
             query.NormalizedPage,
             query.NormalizedPageSize);
     }
 
-    public async Task<IReadOnlyList<EmployeeDto>> GetEmployeesByDepartmentAsync(int departmentId, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<EmployeeDto>> GetEmployeesByDepartmentAsync(int departmentId, CancellationToken cancellationToken)
     {
-        var employees = await dbContext.Employees
-            .AsNoTracking()
-            .Include(x => x.Department)
-            .ThenInclude(x => x!.Hod)
-            .Where(x => x.DeptId == departmentId)
-            .OrderBy(x => x.EmployeeId)
-            .ToListAsync(cancellationToken);
-
-        return employees.Select(MapToDto).ToList();
+        // Local authorization DB no longer stores department membership.
+        _ = departmentId;
+        _ = cancellationToken;
+        return Task.FromResult<IReadOnlyList<EmployeeDto>>(Array.Empty<EmployeeDto>());
     }
 
     public async Task<EmployeeDto?> GetEmployeeByIdAsync(int employeeId, CancellationToken cancellationToken)
     {
         var employee = await dbContext.Employees
             .AsNoTracking()
-            .Include(x => x.Department)
-            .ThenInclude(x => x!.Hod)
-            .FirstOrDefaultAsync(x => x.EmployeeId == employeeId, cancellationToken);
+            .FirstOrDefaultAsync(x => (x.EmployeeId ?? 0) == employeeId, cancellationToken);
 
         return employee is null ? null : MapToDto(employee);
     }
@@ -121,270 +94,45 @@ public sealed class EmployeeService(AppDbContext dbContext)
     {
         var employee = await dbContext.Employees
             .AsNoTracking()
-            .Include(x => x.Department)
-            .ThenInclude(x => x!.Hod)
             .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
 
         return employee is null ? null : MapToLegacyProfileDto(employee);
     }
 
-    public async Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeRequest request, CancellationToken cancellationToken)
+    public Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Username) ||
-            string.IsNullOrWhiteSpace(request.Password) ||
-            string.IsNullOrWhiteSpace(request.Email))
-        {
-            throw new InvalidOperationException("Username, Password, and Email are required.");
-        }
-
-        var exists = await dbContext.Employees.AnyAsync(e => e.UserName == request.Username.Trim(), cancellationToken);
-        if (exists)
-        {
-            throw new InvalidOperationException($"Username '{request.Username}' is already taken.");
-        }
-
-        var deptExists = await dbContext.Departments.AnyAsync(d => d.DepartmentId == request.DepartmentId, cancellationToken);
-        if (!deptExists)
-        {
-            throw new InvalidOperationException($"Department {request.DepartmentId} not found.");
-        }
-
-        var now = DateTime.UtcNow;
-        var employee = new EmployeeEntity
-        {
-            EmployeeId = await GetNextEmployeeIdAsync(cancellationToken),
-            FirstName = request.FirstName,
-            LastName = request.LastName,
-            UserName = request.Username.Trim(),
-            Password = request.Password,
-            Email = request.Email,
-            Mobile = request.Mobile,
-            Location = request.Location,
-            UserRole = Enum.Parse<UserRole>(request.Role, ignoreCase: true),
-            DeptId = request.DepartmentId,
-            IsActive = true,
-            CreatedOn = now,
-            UpdatedOn = now
-        };
-
-        dbContext.Employees.Add(employee);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        await dbContext.Entry(employee).Reference(x => x.Department).LoadAsync(cancellationToken);
-        if (employee.Department != null)
-        {
-            await dbContext.Entry(employee.Department).Reference(x => x.Hod).LoadAsync(cancellationToken);
-        }
-
-        return MapToDto(employee);
+        _ = request;
+        _ = cancellationToken;
+        throw new InvalidOperationException("Local profile creation is disabled. Users are provisioned on first successful CMPL login.");
     }
 
-    public async Task<LegacyUserProfileDto> CreateLegacyUserAsync(LegacyCreateUserRequest request, CancellationToken cancellationToken)
+    public Task<LegacyUserProfileDto> CreateLegacyUserAsync(LegacyCreateUserRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.UserName) ||
-            string.IsNullOrWhiteSpace(request.Password) ||
-            string.IsNullOrWhiteSpace(request.Email))
-        {
-            throw new InvalidOperationException("Username, Password, and Email are required.");
-        }
-
-        var employeeIdExists = await dbContext.Employees
-            .AnyAsync(employee => employee.EmployeeId == request.EmployeeId, cancellationToken);
-        if (employeeIdExists)
-        {
-            throw new InvalidOperationException($"Employee ID '{request.EmployeeId}' is already in use.");
-        }
-
-        var userName = request.UserName.Trim();
-        var userNameExists = await dbContext.Employees
-            .AnyAsync(employee => employee.UserName == userName, cancellationToken);
-        if (userNameExists)
-        {
-            throw new InvalidOperationException($"Username '{request.UserName}' is already taken.");
-        }
-
-        if (request.DepartmentId is null or <= 0)
-        {
-            throw new InvalidOperationException("Department is required.");
-        }
-
-        var departmentExists = await dbContext.Departments
-            .AnyAsync(department => department.DepartmentId == request.DepartmentId.Value, cancellationToken);
-        if (!departmentExists)
-        {
-            throw new InvalidOperationException($"Department {request.DepartmentId.Value} not found.");
-        }
-
-        var utcNow = DateTime.UtcNow;
-        var employee = new EmployeeEntity
-        {
-            EmployeeId = request.EmployeeId.HasValue && request.EmployeeId.Value > 0
-                ? request.EmployeeId.Value
-                : await GetNextEmployeeIdAsync(cancellationToken),
-            FirstName = request.FirstName?.Trim(),
-            LastName = request.LastName?.Trim(),
-            UserName = userName,
-            Password = request.Password,
-            Email = request.Email.Trim(),
-            Mobile = request.Phone?.Trim(),
-            Location = string.Empty,
-            UserRole = string.IsNullOrWhiteSpace(request.Role) ? UserRole.User : Enum.Parse<UserRole>(request.Role.Trim(), ignoreCase: true),
-            DeptId = request.DepartmentId.Value,
-            IsActive = true,
-            CreatedOn = utcNow,
-            UpdatedOn = utcNow
-        };
-
-        dbContext.Employees.Add(employee);
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        return await GetLegacyUserByUserIdAsync(employee.UserId, cancellationToken)
-            ?? throw new InvalidOperationException("Unable to load created employee.");
+        _ = request;
+        _ = cancellationToken;
+        throw new InvalidOperationException("Local profile creation is disabled. Users are provisioned on first successful CMPL login.");
     }
 
-    public async Task<EmployeeDto?> UpdateEmployeeAsync(int employeeId, UpdateEmployeeRequest request, CancellationToken cancellationToken)
+    public Task<EmployeeDto?> UpdateEmployeeAsync(int employeeId, UpdateEmployeeRequest request, CancellationToken cancellationToken)
     {
-        var departmentExists = await dbContext.Departments
-            .AnyAsync(d => d.DepartmentId == request.DepartmentId, cancellationToken);
-
-        if (!departmentExists)
-        {
-            throw new InvalidOperationException($"Department {request.DepartmentId} not found.");
-        }
-
-        var employee = await dbContext.Employees
-            .Include(x => x.Department)
-            .ThenInclude(x => x!.Hod)
-            .FirstOrDefaultAsync(x => x.EmployeeId == employeeId, cancellationToken);
-
-        if (employee == null)
-        {
-            return null;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.FirstName))
-        {
-            employee.FirstName = request.FirstName;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.LastName))
-        {
-            employee.LastName = request.LastName;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Email))
-        {
-            employee.Email = request.Email;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Mobile))
-        {
-            employee.Mobile = request.Mobile;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Location))
-        {
-            employee.Location = request.Location;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.Role))
-        {
-            employee.UserRole = Enum.Parse<UserRole>(request.Role, ignoreCase: true);
-        }
-
-        employee.IsActive = request.IsActive;
-        employee.DeptId = request.DepartmentId;
-        employee.UpdatedOn = DateTime.UtcNow;
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        await dbContext.Entry(employee).Reference(x => x.Department).LoadAsync(cancellationToken);
-        if (employee.Department != null)
-        {
-            await dbContext.Entry(employee.Department).Reference(x => x.Hod).LoadAsync(cancellationToken);
-        }
-
-        return MapToDto(employee);
+        _ = employeeId;
+        _ = request;
+        _ = cancellationToken;
+        throw new InvalidOperationException("Local profile updates are disabled. Profile data comes from CMPL DB.");
     }
 
-    public async Task<LegacyUserProfileDto?> UpdateLegacyUserAsync(
-        int userId,
-        LegacyUpdateUserRequest request,
-        CancellationToken cancellationToken)
+    public Task<LegacyUserProfileDto?> UpdateLegacyUserAsync(int userId, LegacyUpdateUserRequest request, CancellationToken cancellationToken)
     {
-        var employee = await dbContext.Employees
-            .Include(x => x.Department)
-            .ThenInclude(x => x!.Hod)
-            .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
-
-        if (employee is null)
-        {
-            return null;
-        }
-
-        if (request.EmployeeId.HasValue && request.EmployeeId.Value > 0 && employee.EmployeeId != request.EmployeeId.Value)
-        {
-            var employeeIdExists = await dbContext.Employees
-                .AnyAsync(x => x.EmployeeId == request.EmployeeId.Value && x.UserId != userId, cancellationToken);
-            if (employeeIdExists)
-            {
-                throw new InvalidOperationException("Employee ID already assigned.");
-            }
-
-            employee.EmployeeId = request.EmployeeId.Value;
-        }
-
-        if (!string.IsNullOrWhiteSpace(request.UserName))
-        {
-            var userName = request.UserName.Trim();
-            if (!string.Equals(employee.UserName, userName, StringComparison.Ordinal))
-            {
-                var userNameExists = await dbContext.Employees
-                    .AnyAsync(x => x.UserName == userName && x.UserId != userId, cancellationToken);
-                if (userNameExists)
-                {
-                    throw new InvalidOperationException("Username in use.");
-                }
-
-                employee.UserName = userName;
-            }
-        }
-
-        employee.FirstName = request.FirstName?.Trim();
-        employee.LastName = request.LastName?.Trim();
-
-        if (!string.IsNullOrWhiteSpace(request.Email))
-        {
-            employee.Email = request.Email.Trim();
-        }
-
-        employee.Mobile = request.Phone?.Trim();
-        employee.Location = request.Location?.Trim() ?? employee.Location;
-        employee.UserRole = string.IsNullOrWhiteSpace(request.Role) ? employee.UserRole : Enum.Parse<UserRole>(request.Role.Trim(), ignoreCase: true);
-
-        if (request.DepartmentId.HasValue)
-        {
-            var departmentExists = await dbContext.Departments
-                .AnyAsync(d => d.DepartmentId == request.DepartmentId.Value, cancellationToken);
-            if (!departmentExists)
-            {
-                throw new InvalidOperationException($"Department {request.DepartmentId.Value} not found.");
-            }
-
-            employee.DeptId = request.DepartmentId.Value;
-        }
-
-        employee.UpdatedOn = DateTime.UtcNow;
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        return await GetLegacyUserByUserIdAsync(employee.UserId, cancellationToken);
+        _ = userId;
+        _ = request;
+        _ = cancellationToken;
+        throw new InvalidOperationException("Local profile updates are disabled. Profile data comes from CMPL DB.");
     }
 
     public async Task<bool> DeleteEmployeeAsync(int employeeId, CancellationToken cancellationToken)
     {
         var employee = await dbContext.Employees
-            .FirstOrDefaultAsync(x => x.EmployeeId == employeeId, cancellationToken);
+            .FirstOrDefaultAsync(x => (x.EmployeeId ?? 0) == employeeId, cancellationToken);
 
         if (employee == null)
         {
@@ -393,103 +141,48 @@ public sealed class EmployeeService(AppDbContext dbContext)
 
         dbContext.Employees.Remove(employee);
         await dbContext.SaveChangesAsync(cancellationToken);
-
         return true;
     }
 
-    public async Task<bool> UpdatePasswordAsync(int employeeId, string password, CancellationToken cancellationToken)
+    public Task<bool> UpdatePasswordAsync(int employeeId, string password, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(password))
-        {
-            throw new InvalidOperationException("Password is required.");
-        }
-
-        var employee = await dbContext.Employees
-            .FirstOrDefaultAsync(x => x.EmployeeId == employeeId, cancellationToken);
-
-        if (employee is null)
-        {
-            return false;
-        }
-
-        employee.Password = password;
-        employee.UpdatedOn = DateTime.UtcNow;
-
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return true;
-    }
-
-    private async Task<int> GetNextEmployeeIdAsync(CancellationToken cancellationToken)
-    {
-        var maxEmployeeId = await dbContext.Employees
-            .AsNoTracking()
-            .Select(employee => (int?)employee.EmployeeId)
-            .MaxAsync(cancellationToken);
-
-        return (maxEmployeeId ?? 0) + 1;
+        _ = employeeId;
+        _ = password;
+        _ = cancellationToken;
+        throw new InvalidOperationException("Local password updates are disabled. Authentication is handled by CMPL DB.");
     }
 
     private static EmployeeDto MapToDto(EmployeeEntity employee)
     {
         return new EmployeeDto(
-            employee.EmployeeId,
-            employee.FirstName ?? string.Empty,
-            employee.LastName ?? string.Empty,
-            employee.UserName,
+            employee.EmployeeId ?? 0,
+            string.Empty,
+            string.Empty,
             employee.Email,
-            employee.Mobile ?? string.Empty,
-            employee.Location ?? string.Empty,
-            employee.UserRole.ToString(),
+            employee.Email,
+            string.Empty,
+            string.Empty,
+            (employee.UserRole ?? UserRole.User).ToString(),
             employee.IsActive,
             employee.CreatedOn,
             employee.UpdatedOn,
-            employee.DeptId ?? 0,
-            employee.Department is null
-                ? null
-                : new DepartmentDetailDto(
-                    employee.Department.DepartmentId,
-                    employee.Department.DepartmentName,
-                    employee.Department.Hod is null
-                        ? null
-                        : new HodDto(
-                            employee.Department.Hod.EmployeeId,
-                            employee.Department.Hod.FirstName ?? string.Empty,
-                            employee.Department.Hod.LastName ?? string.Empty,
-                            employee.Department.Hod.UserName,
-                            employee.Department.Hod.Email,
-                            employee.Department.Hod.Mobile ?? string.Empty,
-                            employee.Department.Hod.Location ?? string.Empty,
-                            employee.Department.Hod.UserRole.ToString(),
-                            employee.Department.Hod.IsActive)));
+            0,
+            null);
     }
 
     private static LegacyUserProfileDto MapToLegacyProfileDto(EmployeeEntity employee)
     {
         return new LegacyUserProfileDto(
             employee.UserId,
-            employee.EmployeeId,
-            employee.UserName,
-            BuildDisplayName(employee.FirstName, employee.LastName, employee.UserName),
+            employee.EmployeeId ?? 0,
             employee.Email,
-            employee.Mobile ?? string.Empty,
-            employee.DeptId ?? 0,
-            employee.Department?.DepartmentName ?? string.Empty,
-            employee.UserRole.ToString(),
-            employee.Department?.Hod is null
-                ? null
-                : new LegacyDepartmentHodDto(
-                    employee.Department.Hod.EmployeeId,
-                    BuildDisplayName(
-                        employee.Department.Hod.FirstName,
-                        employee.Department.Hod.LastName,
-                        employee.Department.Hod.UserName),
-                    employee.Department.Hod.Email,
-                    employee.Department.Hod.Mobile ?? string.Empty));
-    }
-
-    private static string BuildDisplayName(string? firstName, string? lastName, string userName)
-    {
-        var combined = $"{firstName ?? string.Empty} {lastName ?? string.Empty}".Trim();
-        return string.IsNullOrWhiteSpace(combined) ? userName : combined;
+            employee.Email,
+            employee.Email,
+            string.Empty,
+            0,
+            string.Empty,
+            (employee.UserRole ?? UserRole.User).ToString(),
+            null);
     }
 }
+

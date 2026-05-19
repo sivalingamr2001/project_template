@@ -164,7 +164,7 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
         </tr>
         <tr>
             <td><strong>Requester</strong></td>
-            <td>{Html(requesterName)} ({Html(notification.Requester.UserName)})</td>
+            <td>{Html(requesterName)} ({Html(notification.Requester.Email)})</td>
         </tr>
         <tr>
             <td><strong>Employee ID</strong></td>
@@ -187,13 +187,12 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
 
     private static string BuildDisplayName(EmployeeEntity employee)
     {
-        var fullName = $"{employee.FirstName} {employee.LastName}".Trim();
-        return string.IsNullOrWhiteSpace(fullName) ? employee.UserName : fullName;
+        return employee.Email;
     }
 
     private static string BuildRecipientLabel(EmployeeEntity employee)
     {
-        var role = employee.UserRole.ToString();
+        var role = (employee.UserRole ?? Domain.Enums.UserRole.User).ToString();
         return $"{BuildDisplayName(employee)} ({role})";
     }
 

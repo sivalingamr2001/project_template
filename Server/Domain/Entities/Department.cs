@@ -24,7 +24,7 @@ public sealed class DepartmentEntity
     [ForeignKey(nameof(HodId))]
     public EmployeeEntity? Hod { get; set; }
 
-    public ICollection<EmployeeEntity> Employees { get; set; } = new List<EmployeeEntity>();
+    // Local authorization DB no longer stores department membership for users.
 
     [Column("IsActive")]
     public bool IsActive { get; set; } = true;

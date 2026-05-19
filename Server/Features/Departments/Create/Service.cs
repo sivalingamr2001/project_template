@@ -40,8 +40,10 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
 
         var hodExists = await dbContext.Employees
             .AsNoTracking()
-            .Where(e => e.EmployeeId == request.HodId && e.UserRole == UserRole.Hod)
-            .Select(e => new { e.UserId, e.EmployeeId })
+            .Where(e => e.EmployeeId.HasValue
+                        && e.EmployeeId.Value == request.HodId
+                        && (e.UserRole ?? UserRole.User) == UserRole.Hod)
+            .Select(e => new { e.UserId, EmployeeId = e.EmployeeId!.Value, e.Email })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (hodExists is null)
@@ -64,25 +66,13 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
         await dbContext.Departments.AddAsync(entity, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        var hod = await dbContext.Employees
-            .AsNoTracking()
-            .Where(e => e.EmployeeId == request.HodId)
-            .Select(e => new { e.FirstName, e.LastName, e.UserName })
-            .FirstOrDefaultAsync(cancellationToken);
-
         return new DepartmentDto(
             entity.DepartmentId,
             entity.DepartmentId,
             entity.DepartmentName,
             hodExists.EmployeeId,
-            hod is null ? string.Empty : GetDisplayName(hod.FirstName, hod.LastName, hod.UserName),
-            string.Empty,
+            hodExists.Email,
+            hodExists.Email,
             string.Empty);
-    }
-
-    private static string GetDisplayName(string? firstName, string? lastName, string userName)
-    {
-        var combined = $"{firstName ?? string.Empty} {lastName ?? string.Empty}".Trim();
-        return !string.IsNullOrWhiteSpace(combined) ? combined : userName;
     }
 }

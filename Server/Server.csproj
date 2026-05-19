@@ -8,6 +8,13 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- Guard against compiling generated files from nested project artifacts -->
+      <Compile Remove="**\obj\**" />
+      <Compile Remove="**\bin\**" />
+      <Compile Remove="$(ArtifactsPath)\**" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Dapper" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" />

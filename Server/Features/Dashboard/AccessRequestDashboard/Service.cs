@@ -190,8 +190,8 @@ public class AccessRequestDashboardService
                     orderby r.CreatedOn descending
                     select new RecentRequestDto(
                         r.AccessReqId,
-                        emp.UserName,
-                        app.UserName,
+                        emp.Email,
+                        app.Email,
                         r.IsAgreed,
                         r.ItsrNo,
                         r.CreatedOn,
@@ -225,12 +225,12 @@ public class AccessRequestDashboardService
                         approval.AccessApproveId,
                         approval.AccessReqId,
                         approval.AccessItemId,
-                        approverUser.UserName,
+                        approverUser.Email,
                         "Pending",
                         item.TicketNumber,
                         item.FolderPath,
                         item.AccessType.ToString(),
-                        requestorUser.UserName,
+                        requestorUser.Email,
                         approval.CreatedOn
                     );
 

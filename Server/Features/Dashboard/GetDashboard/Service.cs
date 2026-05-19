@@ -18,12 +18,9 @@ public sealed class GetDashboardService(AppDbContext dbContext)
         // 1. Fetch profile with safe navigation
         var profile = await dbContext.Employees
             .AsNoTracking()
-            .Where(e => e.EmployeeId == employeeId)
+            .Where(e => e.EmployeeId.HasValue && e.EmployeeId.Value == employeeId)
             .Select(e => new
             {
-                // Use ?. to handle cases where Department might be null
-                DepartmentName = e.Department != null ? e.Department.DeptName : string.Empty,
-                DeptId = e.DeptId,
                 Role = e.UserRole
             })
             .FirstOrDefaultAsync(cancellationToken);
@@ -37,15 +34,8 @@ public sealed class GetDashboardService(AppDbContext dbContext)
 
         if (profile.Role != UserRole.Admin && profile.Role != UserRole.Operator)
         {
-            requestQuery = profile.Role == UserRole.Hod
-                ? requestQuery
-                    .Join(dbContext.Employees,
-                        req => req.EmpId,
-                        emp => emp.EmployeeId,
-                        (req, emp) => new { req, emp })
-                    .Where(x => x.emp.DeptId == profile.DeptId)
-                    .Select(x => x.req)
-                : requestQuery.Where(request => request.EmpId == employeeId);
+            // Local DB no longer stores department membership; restrict to self for non-admin/operator.
+            requestQuery = requestQuery.Where(request => request.EmpId == employeeId);
         }
 
         var totalCount = await requestQuery.CountAsync(cancellationToken);
@@ -85,5 +75,5 @@ public sealed class GetDashboardService(AppDbContext dbContext)
         return new PaginatedResponse<DashboardAccessRequestDto>(data, totalCount, query.NormalizedPage, query.NormalizedPageSize);
     }
 
-    private sealed record EmployeeProfile(string DepartmentName, string Role);
+    private sealed record EmployeeProfile(string Role);
 }

@@ -195,7 +195,7 @@ public class AccessRequestExpirationService : IAccessRequestExpirationService
         </tr>
         <tr>
             <td><strong>Requester</strong></td>
-            <td>{Html(requesterName)} ({Html(requester.UserName)})</td>
+            <td>{Html(requesterName)} ({Html(requester.Email)})</td>
         </tr>
         <tr>
             <td><strong>Folder Path</strong></td>
@@ -226,8 +226,7 @@ public class AccessRequestExpirationService : IAccessRequestExpirationService
 
     private static string BuildDisplayName(EmployeeEntity employee)
     {
-        var fullName = $"{employee.FirstName} {employee.LastName}".Trim();
-        return string.IsNullOrWhiteSpace(fullName) ? employee.UserName : fullName;
+        return employee.Email;
     }
 
     private static string NormalizeRole(string? role) =>

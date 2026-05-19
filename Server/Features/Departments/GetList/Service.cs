@@ -27,19 +27,12 @@ public sealed class GetDepartmentsService(AppDbContext dbContext)
                 d.DepartmentId,
                 d.DepartmentName,
                 d.Hod?.EmployeeId ?? 0,
-                d.Hod != null
-                    ? GetDisplayName(d.Hod.FirstName, d.Hod.LastName, d.Hod.UserName)
-                    : string.Empty,
                 d.Hod?.Email ?? string.Empty,
-                d.Hod?.Mobile ?? string.Empty))
+                d.Hod?.Email ?? string.Empty,
+                string.Empty))
             .ToList();
 
         return new PaginatedResponse<DepartmentDto>(departments, totalCount, query.NormalizedPage, query.NormalizedPageSize);
     }
 
-    private static string GetDisplayName(string? firstName, string? lastName, string userName)
-    {
-        var combined = $"{firstName ?? string.Empty} {lastName ?? string.Empty}".Trim();
-        return !string.IsNullOrWhiteSpace(combined) ? combined : userName;
-    }
 }
