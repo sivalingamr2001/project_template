@@ -73,8 +73,8 @@ public sealed class AccessRequestWorkflowService(
         }
 
         // 3. Sync Parent State Parameters
-        accessRequest.EmpId = requester.EmployeeId ?? requester.UserId;
-        accessRequest.ReqTo = hodApprover.EmployeeId ?? hodApprover.UserId;
+        accessRequest.EmpId = requester.UserId;
+        accessRequest.ReqTo = hodApprover.UserId;
         accessRequest.ItsrNo = request.ItsrNo?.Trim() ?? string.Empty;
         accessRequest.IsAgreed = request.IsAgree;
         accessRequest.ModifiedBy = requester.EmployeeId.ToString();
@@ -149,7 +149,7 @@ public sealed class AccessRequestWorkflowService(
         var message = $"{requester.Email} {(isUpdate ? "updated" : "submitted")} access request #{accessRequest.AccessReqId}.";
         var hodRecipients = (new List<EmployeeEntity> { hodApprover })
             .Concat(folderHodRecipients)
-            .DistinctBy(employee => employee.EmployeeId ?? employee.UserId);
+            .DistinctBy(employee => employee.UserId);
         var recipients = BuildStageRecipients(requester, hodRecipients, itRecipients);
 
         await AddAuditEntriesAsync(accessRequest.AccessReqId, null, null, actionKey, message, recipients, requester.EmployeeId.ToString(), utcNow, cancellationToken);
@@ -232,7 +232,7 @@ public sealed class AccessRequestWorkflowService(
         {
             AccessReqId = accessRequest.AccessReqId,
             AccessItemId = accessItemId,
-            ApproverId = reviewer.EmployeeId ?? reviewer.UserId,
+            ApproverId = reviewer.UserId,
             ApprovalStatus = actionStatus,
             Comments = request.Comments?.Trim() ?? string.Empty,
             CreatedBy = reviewer.EmployeeId.ToString(),
@@ -252,7 +252,7 @@ public sealed class AccessRequestWorkflowService(
         if (request.Approved)
         {
             var itApprover = itRecipients.First();
-            accessRequest.ReqTo = itApprover.EmployeeId ?? itApprover.UserId;
+            accessRequest.ReqTo = itApprover.UserId;
         }
 
         // 6. Persistence
@@ -329,7 +329,7 @@ public sealed class AccessRequestWorkflowService(
         {
             AccessReqId = accessRequest.AccessReqId,
             AccessItemId = accessItemId,
-            ApproverId = reviewer.EmployeeId ?? reviewer.UserId,
+            ApproverId = reviewer.UserId,
             ApprovalStatus = approvalStatus,
             Comments = request.Comments?.Trim() ?? string.Empty,
             CreatedBy = reviewer.EmployeeId.ToString(),
@@ -345,7 +345,7 @@ public sealed class AccessRequestWorkflowService(
             accessRequest.ItsrNo = request.ItsrNo!.Trim();
         }
 
-        accessRequest.ReqTo = requester.EmployeeId ?? requester.UserId;
+        accessRequest.ReqTo = requester.UserId;
         accessRequest.ModifiedBy = reviewer.EmployeeId.ToString();
         accessRequest.ModifiedOn = utcNow;
 
@@ -433,7 +433,7 @@ public sealed class AccessRequestWorkflowService(
         {
             AccessReqId = accessRequest.AccessReqId,
             AccessItemId = accessItemId,
-            ApproverId = reviewer.EmployeeId ?? reviewer.UserId,
+            ApproverId = reviewer.UserId,
             ApprovalStatus = RequestStatus.Revoked,
             Comments = request.Comments.Trim(),
             CreatedBy = reviewer.EmployeeId.ToString(),
@@ -601,8 +601,8 @@ public sealed class AccessRequestWorkflowService(
 
         var renewalRequest = new AccessRequestEntity
         {
-            EmpId = requester.EmployeeId ?? requester.UserId,
-            ReqTo = hodApprover.EmployeeId ?? hodApprover.UserId,
+            EmpId = requester.UserId,
+            ReqTo = hodApprover.UserId,
             ItsrNo = request.ItsrNo?.Trim() ?? string.Empty,
             IsAgreed = true,
             CreatedBy = requester.EmployeeId.ToString(),
@@ -713,7 +713,7 @@ public sealed class AccessRequestWorkflowService(
             .Where(employee =>
                 approverIds.Contains(employee.UserId) ||
                 (employee.EmployeeId.HasValue && approverIds.Contains(employee.EmployeeId.Value)))
-            .ToDictionaryAsync(employee => employee.EmployeeId ?? employee.UserId, cancellationToken);
+            .ToDictionaryAsync(employee => employee.UserId, cancellationToken);
 
         var approvals = approvalRows
             .Select(approval => new AccessRequestApprovalDto(
@@ -1096,7 +1096,7 @@ public sealed class AccessRequestWorkflowService(
         return await dbContext.Employees
             .AsNoTracking()
             .Where(employee => (employee.UserRole ?? UserRole.User) == UserRole.Hod)
-            .OrderBy(employee => employee.EmployeeId ?? employee.UserId)
+            .OrderBy(employee => employee.UserId)
             .ToListAsync(cancellationToken);
     }
 
@@ -1104,7 +1104,7 @@ public sealed class AccessRequestWorkflowService(
     {
         var operators = await dbContext.Employees
             .Where(employee => (employee.UserRole ?? UserRole.User) == UserRole.Operator)
-            .OrderBy(employee => employee.EmployeeId ?? employee.UserId)
+            .OrderBy(employee => employee.UserId)
             .ToListAsync(cancellationToken);
 
         return operators.Count == 0 ? throw new AppValidationException("No IT approver is configured.") : operators;
@@ -1157,14 +1157,14 @@ public sealed class AccessRequestWorkflowService(
         }
 
         var employees = await dbContext.Employees
-            .AsNoTracking()
-            .Where(employee =>
-                (employee.EmployeeId.HasValue && folderHodEmployeeIds.Contains(employee.EmployeeId.Value))
-                || folderHodEmails.Contains(employee.Email)
-                || folderHodUserNames.Contains(employee.Email))
-            .ToListAsync(cancellationToken);
+        .AsNoTracking()
+        .Where(employee =>
+            (!string.IsNullOrEmpty(employee.EmployeeId) && folderHodEmployeeIds.Contains(employee.UserId))
+            || folderHodEmails.Contains(employee.Email)
+            || folderHodUserNames.Contains(employee.Email))
+        .ToListAsync(cancellationToken);
 
-        return employees.DistinctBy(employee => employee.EmployeeId ?? employee.UserId).ToList();
+        return employees.DistinctBy(employee => employee.UserId).ToList(); ;
     }
 
     private static void AddFolderHodIdentifiers(
@@ -1244,7 +1244,7 @@ public sealed class AccessRequestWorkflowService(
             return;
         }
 
-        if ((viewer.EmployeeId ?? viewer.UserId) == accessRequest.EmpId)
+        if ((viewer.UserId) == accessRequest.EmpId)
         {
             return;
         }
@@ -1314,7 +1314,7 @@ public sealed class AccessRequestWorkflowService(
         CancellationToken cancellationToken)
     {
         var entries = recipients
-            .DistinctBy(employee => employee.EmployeeId ?? employee.UserId)
+            .DistinctBy(employee => employee.UserId)
             .Select(recipient => new AccessReqAuditEntity
             {
                 AccessReqId = accessReqId,
@@ -1322,7 +1322,7 @@ public sealed class AccessRequestWorkflowService(
                 AccessApproveId = accessApproveId,
                 EventType = eventType,
                 Message = message,
-                RecipientEmpId = recipient.EmployeeId ?? recipient.UserId,
+                RecipientEmpId = recipient.UserId,
                 RecipientName = recipient.Email,
                 RecipientRole = (recipient.UserRole ?? UserRole.User).ToString(),
                 IsRead = false,
@@ -1343,9 +1343,9 @@ public sealed class AccessRequestWorkflowService(
         DateTime utcNow,
         CancellationToken cancellationToken)
     {
-        foreach (var recipient in recipients.DistinctBy(employee => employee.EmployeeId ?? employee.UserId))
+        foreach (var recipient in recipients.DistinctBy(employee => employee.UserId))
         {
-            var recipientKey = recipient.EmployeeId ?? recipient.UserId;
+            var recipientKey = recipient.UserId;
             await hubContext.Clients
                 .Group(NotificationHub.GroupName(recipientKey))
                 .SendAsync(

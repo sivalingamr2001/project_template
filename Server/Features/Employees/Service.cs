@@ -1,188 +1,181 @@
-using Janatics.Application.Features.Employees.Dtos;
+using System.Data;
+using Dapper;
 using Microsoft.EntityFrameworkCore;
-using Server.Domain.Entities;
+using Microsoft.Extensions.Options;
+using MySqlConnector;
 using Server.Domain.Enums;
 using Server.Infrastructure.Db;
 using Server.Shared.Helpers;
 
 namespace Server.Features.Employees;
 
-public sealed class EmployeeService(AppDbContext dbContext)
+public sealed class EmployeeService(
+    AppDbContext dbContext,
+    IOptions<ConnectionStrings> connectionStrings,
+    ILogger<EmployeeService> logger)
 {
-    public async Task<PaginatedResponse<LegacyUserListItemDto>> GetLegacyUsersAsync(
-        GetUsersQuery query,
-        CancellationToken cancellationToken)
+    private readonly ConnectionStrings _connectionStrings = connectionStrings.Value;
+
+    public async Task<List<UserResponse>> GetUsersAsync(CancellationToken cancellationToken)
     {
-        var baseQuery = dbContext.Employees.AsNoTracking();
-        var totalCount = await baseQuery.CountAsync(cancellationToken);
-
-        var users = await baseQuery
-            .OrderBy(employee => employee.UserId)
-            .Skip(query.Skip)
-            .Take(query.NormalizedPageSize)
-            .Select(employee => new LegacyUserListItemDto(
-                employee.UserId,
-                employee.EmployeeId ?? 0,
-                employee.Email,
-                employee.Email,
-                string.Empty,
-                (employee.UserRole ?? UserRole.User).ToString()))
-            .ToListAsync(cancellationToken);
-
-        return new PaginatedResponse<LegacyUserListItemDto>(
-            users,
-            totalCount,
-            query.NormalizedPage,
-            query.NormalizedPageSize);
-    }
-
-    public async Task<List<EmployeeDto>> SearchEmployeesAsync(string term, CancellationToken ct)
-    {
-        var baseQuery = dbContext.Employees.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(term))
+        try
         {
-            string likeTerm = $"%{term}%";
-            baseQuery = baseQuery.Where(e =>
-                EF.Functions.Like(e.Email, likeTerm) ||
-                EF.Functions.Like(e.UserId.ToString(), likeTerm) ||
-                (e.EmployeeId.HasValue && EF.Functions.Like(e.EmployeeId.Value.ToString(), likeTerm)));
+            using var connection = new MySqlConnection(_connectionStrings.Cmpl);
+
+            // 1. Fetch main target users from CMPL database
+            var cmplUsersIterable = await connection.QueryAsync<CmplUserDto>(
+                new CommandDefinition(Queries.CmplUserQuery, cancellationToken: cancellationToken));
+            var cmplUsers = cmplUsersIterable.AsList();
+
+            if (cmplUsers.Count == 0) return [];
+
+            var userIds = cmplUsers.Select(u => u.UserId).Distinct().ToList();
+            var hodUserIds = cmplUsers.Where(u => u.HodId.HasValue).Select(u => u.HodId!.Value).Distinct().ToList();
+
+            // 2. Run database calls concurrently to prevent blocking bottlenecks
+            var localUsersTask = dbContext.Employees
+                .AsNoTracking()
+                .Where(u => userIds.Contains(u.UserId))
+                .ToDictionaryAsync(u => u.UserId, u => u.UserRole?.ToString(), cancellationToken);
+
+            // Project only the necessary fields (UserId, Email) from the local Employee table
+            var localHodsTask = dbContext.Employees
+                .AsNoTracking()
+                .Where(e => hodUserIds.Contains(e.UserId))
+                .Select(e => new { e.UserId, e.Email })
+                .ToListAsync(cancellationToken);
+
+            var rawHodsListTask = GetHodAsync(cancellationToken);
+
+            await Task.WhenAll(localUsersTask, localHodsTask, rawHodsListTask);
+
+            var localUsersDict = localUsersTask.Result;
+            var localHods = localHodsTask.Result;
+            var rawHodsMasterList = rawHodsListTask.Result;
+
+            // 3. Index the HOD Master list by Email for O(1) lookup speeds
+            var hodMasterByEmail = rawHodsMasterList
+                .Where(h => !string.IsNullOrWhiteSpace(h.Email))
+                .DistinctBy(h => h.Email, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(h => h.Email, h => h, StringComparer.OrdinalIgnoreCase);
+
+            // 4. Map the local HOD user ID to its matching master record
+            var hodDetailsDict = new Dictionary<int, HodResponse>();
+            foreach (var localHod in localHods)
+            {
+                if (!string.IsNullOrWhiteSpace(localHod.Email) &&
+                    hodMasterByEmail.TryGetValue(localHod.Email, out var matchedMasterHod))
+                {
+                    hodDetailsDict[localHod.UserId] = matchedMasterHod;
+                }
+            }
+
+            // 5. Build final responses
+            var responses = new List<UserResponse>(cmplUsers.Count);
+            foreach (var user in cmplUsers)
+            {
+                localUsersDict.TryGetValue(user.UserId, out var role);
+
+                HodResponse? hod = null;
+                if (user.HodId.HasValue)
+                {
+                    hodDetailsDict.TryGetValue(user.HodId.Value, out hod);
+                }
+
+                responses.Add(new UserResponse(
+                    user.UserId,
+                    user.EmployeeId,
+                    user.UserName,
+                    user.Email,
+                    user.Mobile,
+                    user.Location,
+                    role,
+                    new DepartmentResponse(user.DepartmentId, user.DepartmentName, user.HodId),
+                    hod
+                ));
+            }
+
+            return responses;
         }
-
-        var employees = await baseQuery.OrderBy(x => x.UserId).ToListAsync(ct);
-        return employees.Select(MapToDto).ToList();
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to compile aggregated user records.");
+            throw new InvalidOperationException("An error occurred while fetching users.", ex);
+        }
     }
 
-    public async Task<PaginatedResponse<EmployeeDto>> GetEmployeesAsync(
-        GetEmployeesQuery query,
-        CancellationToken cancellationToken)
+    public async Task<List<HodResponse>> GetHodAsync(CancellationToken cancellationToken)
     {
-        var baseQuery = dbContext.Employees.AsNoTracking();
-        var totalCount = await baseQuery.CountAsync(cancellationToken);
-
-        var employees = await baseQuery
-            .OrderBy(x => x.UserId)
-            .Skip(query.Skip)
-            .Take(query.NormalizedPageSize)
-            .ToListAsync(cancellationToken);
-
-        return new PaginatedResponse<EmployeeDto>(
-            employees.Select(MapToDto).ToList(),
-            totalCount,
-            query.NormalizedPage,
-            query.NormalizedPageSize);
+        try
+        {
+            using var connection = new MySqlConnection(_connectionStrings.HodMaster);
+            // Dapper will automatically map 'name', 'email', and 'mobile' columns to your record properties
+            var results = await connection.QueryAsync<HodResponse>(
+                new CommandDefinition(Queries.GetHodData, cancellationToken: cancellationToken)
+            );
+            return results.AsList();
+        }
+        catch (MySqlException ex)
+        {
+            logger.LogError(ex, "A database error occurred while fetching HOD master records.");
+            throw new InvalidOperationException("An error occurred while fetching HOD records.", ex);
+        }
     }
 
-    public Task<IReadOnlyList<EmployeeDto>> GetEmployeesByDepartmentAsync(int departmentId, CancellationToken cancellationToken)
+    public async Task<UserResponse?> GetUserByIdAsync(int userId, CancellationToken cancellation)
     {
-        // Local authorization DB no longer stores department membership.
-        _ = departmentId;
-        _ = cancellationToken;
-        return Task.FromResult<IReadOnlyList<EmployeeDto>>(Array.Empty<EmployeeDto>());
+        var users = await GetUsersAsync(cancellation);
+        return users.FirstOrDefault(u => u.UserId == userId);
     }
 
-    public async Task<EmployeeDto?> GetEmployeeByIdAsync(int employeeId, CancellationToken cancellationToken)
+    public async Task UpdateEmployeeAsync(int userId, string? role, string? location, CancellationToken cancellation)
     {
-        var employee = await dbContext.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => (x.EmployeeId ?? 0) == employeeId, cancellationToken);
-
-        return employee is null ? null : MapToDto(employee);
-    }
-
-    public async Task<LegacyUserProfileDto?> GetLegacyUserByUserIdAsync(int userId, CancellationToken cancellationToken)
-    {
-        var employee = await dbContext.Employees
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
-
-        return employee is null ? null : MapToLegacyProfileDto(employee);
-    }
-
-    public Task<EmployeeDto> CreateEmployeeAsync(CreateEmployeeRequest request, CancellationToken cancellationToken)
-    {
-        _ = request;
-        _ = cancellationToken;
-        throw new InvalidOperationException("Local profile creation is disabled. Users are provisioned on first successful CMPL login.");
-    }
-
-    public Task<LegacyUserProfileDto> CreateLegacyUserAsync(LegacyCreateUserRequest request, CancellationToken cancellationToken)
-    {
-        _ = request;
-        _ = cancellationToken;
-        throw new InvalidOperationException("Local profile creation is disabled. Users are provisioned on first successful CMPL login.");
-    }
-
-    public Task<EmployeeDto?> UpdateEmployeeAsync(int employeeId, UpdateEmployeeRequest request, CancellationToken cancellationToken)
-    {
-        _ = employeeId;
-        _ = request;
-        _ = cancellationToken;
-        throw new InvalidOperationException("Local profile updates are disabled. Profile data comes from CMPL DB.");
-    }
-
-    public Task<LegacyUserProfileDto?> UpdateLegacyUserAsync(int userId, LegacyUpdateUserRequest request, CancellationToken cancellationToken)
-    {
-        _ = userId;
-        _ = request;
-        _ = cancellationToken;
-        throw new InvalidOperationException("Local profile updates are disabled. Profile data comes from CMPL DB.");
-    }
-
-    public async Task<bool> DeleteEmployeeAsync(int employeeId, CancellationToken cancellationToken)
-    {
-        var employee = await dbContext.Employees
-            .FirstOrDefaultAsync(x => (x.EmployeeId ?? 0) == employeeId, cancellationToken);
-
+        var employee = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == userId, cancellation);
         if (employee == null)
         {
-            return false;
+            throw new KeyNotFoundException($"Employee with UserId {userId} not found.");
         }
-
-        dbContext.Employees.Remove(employee);
-        await dbContext.SaveChangesAsync(cancellationToken);
-        return true;
+        if (!string.IsNullOrWhiteSpace(role))
+        {
+            employee.UserRole = Enum.TryParse<UserRole>(role, true, out var parsedRole) ? parsedRole : null;
+        }
+        if (!string.IsNullOrWhiteSpace(location))
+        {
+            employee.Location = location;
+        }
+        await dbContext.SaveChangesAsync(cancellation);
     }
 
-    public Task<bool> UpdatePasswordAsync(int employeeId, string password, CancellationToken cancellationToken)
-    {
-        _ = employeeId;
-        _ = password;
-        _ = cancellationToken;
-        throw new InvalidOperationException("Local password updates are disabled. Authentication is handled by CMPL DB.");
-    }
+    private sealed record CmplUserDto(
+        int UserId,
+        int EmployeeId,
+        string UserName,
+        string Email,
+        string Mobile,
+        string Location,
+        int DepartmentId,
+        string DepartmentName,
+        int? HodId);
 
-    private static EmployeeDto MapToDto(EmployeeEntity employee)
-    {
-        return new EmployeeDto(
-            employee.EmployeeId ?? 0,
-            string.Empty,
-            string.Empty,
-            employee.Email,
-            employee.Email,
-            string.Empty,
-            string.Empty,
-            (employee.UserRole ?? UserRole.User).ToString(),
-            employee.IsActive,
-            employee.CreatedOn,
-            employee.UpdatedOn,
-            0,
-            null);
-    }
+    public sealed record UserResponse(
+        int UserId,
+        int EmployeeId,
+        string UserName,
+        string Email,
+        string Mobile,
+        string Location,
+        string? Role,
+        DepartmentResponse Department,
+        HodResponse? Hod);
 
-    private static LegacyUserProfileDto MapToLegacyProfileDto(EmployeeEntity employee)
-    {
-        return new LegacyUserProfileDto(
-            employee.UserId,
-            employee.EmployeeId ?? 0,
-            employee.Email,
-            employee.Email,
-            employee.Email,
-            string.Empty,
-            0,
-            string.Empty,
-            (employee.UserRole ?? UserRole.User).ToString(),
-            null);
-    }
+    public sealed record DepartmentResponse(
+        int DepartmentId,
+        string DepartmentName,
+        int? HodId);
+
+    public sealed record HodResponse(
+        int EmployeeId,
+        string Name,
+        string Email,
+        string Mobile);
 }
-

@@ -14,14 +14,16 @@ public sealed class EmployeeEntity
     public int UserId { get; set; }
 
     [Column("employee_id")]
-    public int? EmployeeId { get; set; }
+    public string? EmployeeId { get; set; }
 
-    [Required]
     [Column("email")]
-    public string Email { get; set; } = null!;
+    public string? Email { get; set; }
 
     [Column("user_role")]
     public UserRole? UserRole { get; set; }
+
+    [Column("location")]
+    public string? Location { get; set; }
 
     [Column("is_active")]
     public bool IsActive { get; set; } = true;

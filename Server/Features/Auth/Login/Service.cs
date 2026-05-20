@@ -4,6 +4,7 @@ using MySqlConnector;
 using Server.Domain.Entities;
 using Server.Domain.Enums;
 using Server.Infrastructure.Db;
+using Server.Shared.Helpers;
 
 namespace Server.Features.Auth.Login;
 
@@ -16,167 +17,207 @@ public sealed class LoginService(
     {
         var identifier = request.Identifier?.Trim();
         if (string.IsNullOrWhiteSpace(identifier) || string.IsNullOrWhiteSpace(request.Password))
+        {
+            logger.LogWarning("Login attempt with empty identifier or password");
             return null;
+        }
 
-        // Authenticate ONLY against CMPL DB (source of truth for identity + profile).
+        // 1. Authenticate against CMPL (source of truth for identity)
         var cmplUser = await GetCmplUserAsync(identifier, request.Password, ct);
         if (cmplUser == null)
         {
-            logger.LogWarning("Authentication failed for identifier: {Identifier}", identifier);
+            logger.LogWarning("CMPL authentication failed for identifier: {Identifier}", identifier);
             return null;
         }
 
-        // Local DB is source of truth ONLY for app authorization metadata (role/isActive).
-        // Use UserId (CMPL_USER_ID) as the primary link.
-        var localUser = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == cmplUser.UserId, ct);
+        // 2. Ensure local authorization record exists (source of truth for roles/permissions)
+        var localUser = await EnsureLocalUserAsync(cmplUser, ct);
         if (localUser == null)
         {
-            localUser = new EmployeeEntity
-            {
-                UserId = cmplUser.UserId,
-                EmployeeId = cmplUser.EmployeeId,
-                Email = cmplUser.Email,
-                UserRole = UserRole.User,
-                IsActive = true,
-                CreatedOn = DateTime.UtcNow,
-                UpdatedOn = DateTime.UtcNow,
-            };
-
-            dbContext.Employees.Add(localUser);
-            try
-            {
-                await dbContext.SaveChangesAsync(ct);
-                logger.LogInformation(
-                    "Auto-created local authorization user for CMPL user_id {UserId} (employee_id {EmployeeId}) with default role {Role}.",
-                    localUser.UserId,
-                    localUser.EmployeeId,
-                    localUser.UserRole);
-            }
-            catch (DbUpdateException ex)
-            {
-                // Likely concurrent login created the row first; fetch it and continue.
-                logger.LogWarning(
-                    ex,
-                    "Local authorization user auto-create raced for CMPL user_id {UserId}. Fetching existing record.",
-                    cmplUser.UserId);
-                localUser = await dbContext.Employees.AsNoTracking().FirstOrDefaultAsync(e => e.UserId == cmplUser.UserId, ct);
-            }
-        }
-        else
-        {
-            // Keep the two "link" fields in sync with CMPL (still no passwords/profile persistence locally).
-            var changed = false;
-            if (localUser.EmployeeId != cmplUser.EmployeeId)
-            {
-                localUser.EmployeeId = cmplUser.EmployeeId;
-                changed = true;
-            }
-            if (!string.Equals(localUser.Email, cmplUser.Email, StringComparison.OrdinalIgnoreCase))
-            {
-                localUser.Email = cmplUser.Email;
-                changed = true;
-            }
-            if (changed)
-            {
-                localUser.UpdatedOn = DateTime.UtcNow;
-                await dbContext.SaveChangesAsync(ct);
-            }
+            logger.LogError("Failed to create or retrieve local user for CMPL user_id {UserId}", cmplUser.UserId);
+            return null;
         }
 
-        // Construct response preserving the existing contract, but sourcing data correctly.
-        return MapToLoginResponse(cmplUser, localUser);
+        // 3. Sync link fields if CMPL data changed
+        await SyncLocalUserAsync(localUser, cmplUser, ct);
+
+        // 4. Build enriched response with department data
+        return await BuildLoginResponseAsync(cmplUser, localUser, ct);
     }
 
     private async Task<CmplUserRecord?> GetCmplUserAsync(string identifier, string password, CancellationToken ct)
     {
-        var connectionString = configuration["Database:MySqlConnectionString_Cmpl"];
+        var connectionString = configuration.GetConnectionString("MySqlConnectionString_Cmpl")
+            ?? configuration["Database:MySqlConnectionString_Cmpl"];
 
-        // CMPL DB Logic: Support login via UserName, EmpId, or Email
-        const string sql = @"
-            SELECT 
-                CMPL_USER_ID as UserId, 
-                emp_id as EmployeeId, 
-                CMPL_USER_NAME as UserName, 
-                MAIL_ID as Email,
-                MOB_NO as Mobile,
-                dept_id as DeptId
-            FROM it_inventory_db_new.jan_complaint_login
-            WHERE deleted_flag = 0 
-              AND (CMPL_USER_NAME = @id OR emp_id = @id OR MAIL_ID = @id) 
-              AND CMPL_USER_KEY = @pwd 
-            LIMIT 1";
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            logger.LogError("CMPL connection string is not configured");
+            return null;
+        }
 
         try
         {
             using var connection = new MySqlConnection(connectionString);
-            return await connection.QueryFirstOrDefaultAsync<CmplUserRecord>(
-                new CommandDefinition(sql, new { id = identifier, pwd = password }, cancellationToken: ct));
+            await connection.OpenAsync(ct);
 
-            
+            return await connection.QueryFirstOrDefaultAsync<CmplUserRecord>(
+                new CommandDefinition(
+                    Queries.CmplLoginUserQuery,
+                    new { id = identifier, pwd = password },
+                    cancellationToken: ct));
+        }
+        catch (MySqlException ex)
+        {
+            logger.LogError(ex, "CMPL database connection/query failed for identifier: {Identifier}", identifier);
+            return null;
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "CMPL Database connection failed.");
+            logger.LogError(ex, "Unexpected error during CMPL authentication");
             return null;
         }
     }
 
-    private LoginResponse MapToLoginResponse(CmplUserRecord cmpl, EmployeeEntity? local)
+    private async Task<EmployeeEntity?> EnsureLocalUserAsync(CmplUserRecord cmplUser, CancellationToken ct)
     {
-        // Authorization fields come from local DB.
-        var role = local?.UserRole ?? UserRole.User;
-        var isActive = local?.IsActive ?? true;
-        var createdOn = local?.CreatedOn ?? DateTime.UtcNow;
-        var updatedOn = local?.UpdatedOn ?? DateTime.UtcNow;
+        // Fast path: user already exists
+        var existing = await dbContext.Employees
+            .FirstOrDefaultAsync(e => e.UserId == cmplUser.UserId, ct);
 
-        // Profile fields come from CMPL DB.
-        var displayName = cmpl.UserName;
-        var deptId = cmpl.DeptId;
-        const string deptName = "N/A";
-        HODDetailsDto? hodDto = null;
-        var deptDto = new SessionDepartmentDto(deptId, deptName, hodDto);
+        if (existing != null) return existing;
 
-        var sessionUser = new LoggedInUserDto(
-            cmpl.UserId,
-            cmpl.EmployeeId,
-            cmpl.UserName,
-            cmpl.UserName,
-            string.Empty,
-            displayName,
-            cmpl.Email ?? string.Empty,
-            cmpl.Mobile ?? string.Empty,
-            cmpl.Mobile ?? string.Empty,
-            "Unknown",
-            isActive,
-            createdOn,
-            updatedOn,
-            deptId,
-            deptName,
-            role.ToString(),
-            hodDto,
-            deptDto
-        );
+        // Slow path: create new user (handle race condition)
+        var newUser = new EmployeeEntity
+        {
+            UserId = cmplUser.UserId,
+            EmployeeId = cmplUser.EmployeeId,
+            Email = cmplUser.Email,
+            UserRole = UserRole.User,
+            IsActive = true,
+            CreatedOn = DateTime.UtcNow,
+            UpdatedOn = DateTime.UtcNow,
+        };
+
+        dbContext.Employees.Add(newUser);
+
+        try
+        {
+            await dbContext.SaveChangesAsync(ct);
+            logger.LogInformation(
+                "Auto-created local user for CMPL user_id {UserId} with default role {Role}",
+                cmplUser.UserId, UserRole.User);
+            return newUser;
+        }
+        catch (DbUpdateException ex) when (IsUniqueConstraintViolation(ex))
+        {
+            // Race condition: another request created the user first
+            logger.LogInformation(
+                "Race condition detected for CMPL user_id {UserId}. Fetching existing record.",
+                cmplUser.UserId);
+
+            return await dbContext.Employees
+                .FirstOrDefaultAsync(e => e.UserId == cmplUser.UserId, ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            logger.LogError(ex, "Failed to create local user for CMPL user_id {UserId}", cmplUser.UserId);
+            return null;
+        }
+    }
+
+    private async Task SyncLocalUserAsync(EmployeeEntity localUser, CmplUserRecord cmplUser, CancellationToken ct)
+    {
+        var changed = false;
+
+        if (!string.Equals(localUser.EmployeeId, cmplUser.EmployeeId, StringComparison.OrdinalIgnoreCase))
+        {
+            localUser.EmployeeId = cmplUser.EmployeeId;
+            changed = true;
+        }
+
+        if (!string.Equals(localUser.Email, cmplUser.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            localUser.Email = cmplUser.Email;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            localUser.UpdatedOn = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync(ct);
+            logger.LogDebug("Synced local user {UserId} with CMPL data", cmplUser.UserId);
+        }
+    }
+
+    private async Task<LoginResponse> BuildLoginResponseAsync(
+        CmplUserRecord cmpl,
+        EmployeeEntity local,
+        CancellationToken ct)
+    {
+        var role = local.UserRole ?? UserRole.User;
+        var isActive = local.IsActive;
+
+        // Fetch department data from local DB
+        var deptDto = await GetDepartmentDataAsync(cmpl.DeptId, ct);
+
+        var sessionUser = new LoggedInUserDto
+        {
+            UserId = local.UserId,
+            EmployeeId = cmpl.EmployeeId,
+            UserName = cmpl.UserName,
+            Email = cmpl.Email ?? string.Empty,
+            Mobile = cmpl.Mobile,
+            DepartmentId = cmpl.DeptId,
+            Name = cmpl.UserName, // Or combine first/last if available
+            IsActive = isActive,
+            CreatedOn = local.CreatedOn,
+            UpdatedOn = local.UpdatedOn,
+            DepartmentName = deptDto?.DepartmentName ?? "N/A",
+            Role = role.ToString(),
+            DepartmentHod = deptDto?.Hod,
+            Department = deptDto
+        };
 
         return new LoginResponse(new SessionDto(sessionUser));
     }
 
-    private static string BuildDisplayName(string? first, string? last, string user)
+    private async Task<SessionDepartmentDto?> GetDepartmentDataAsync(int deptId, CancellationToken ct)
     {
-        var full = $"{first ?? ""} {last ?? ""}".Trim();
-        return string.IsNullOrWhiteSpace(full) ? user : full;
+        var dept = await dbContext.Departments
+            .AsNoTracking()
+            .Include(d => d.Hod)
+            .FirstOrDefaultAsync(d => d.DepartmentId == deptId && d.IsActive, ct);
+
+        if (dept == null) return null;
+
+        HODDetailsDto? hodDto = null;
+        if (dept.Hod != null)
+        {
+            // Note: You may need to fetch HOD profile from CMPL if not stored locally
+            hodDto = new HODDetailsDto(
+                dept.Hod.UserId,
+                "N/A", // Fetch from CMPL or add UserName to EmployeeEntity
+                dept.Hod.Email ?? "N/A",
+                "N/A");
+        }
+
+        return new SessionDepartmentDto(dept.DepartmentId, dept.DepartmentName, hodDto);
     }
 
-    // Lightweight record for Dapper mapping
-    private record CmplUserRecord(int UserId, int EmployeeId, string UserName, string Email, string Mobile, int DeptId);
-
-    [Obsolete("Deprecated: CMPL DB is the source of truth for authentication. TODO: remove ExecuteOldLoginLogicAsync once legacy users are migrated.")]
-    private async Task<LoginResponse?> ExecuteOldLoginLogicAsync(string identifier, string password, CancellationToken ct)
+    private static bool IsUniqueConstraintViolation(DbUpdateException ex)
     {
-        // TODO: Remove this method after legacy local-login support is fully retired.
-        // This is intentionally disabled because local DB no longer stores passwords/profile data.
-        _ = identifier;
-        _ = password;
-        _ = ct;
-        return await Task.FromResult<LoginResponse?>(null);
+        // MySQL: Error 1062 = duplicate entry
+        return ex.InnerException is MySqlException mysqlEx && mysqlEx.Number == 1062;
+    }
+
+    public record CmplUserRecord
+    {
+        public int UserId { get; init; }
+        public string EmployeeId { get; init; } = string.Empty;
+        public string UserName { get; init; } = string.Empty;
+        public string Email { get; init; } = string.Empty;
+        public long Mobile { get; init; }
+        public int DeptId { get; init; }
     }
 }

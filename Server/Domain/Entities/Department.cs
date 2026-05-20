@@ -24,8 +24,6 @@ public sealed class DepartmentEntity
     [ForeignKey(nameof(HodId))]
     public EmployeeEntity? Hod { get; set; }
 
-    // Local authorization DB no longer stores department membership for users.
-
     [Column("IsActive")]
     public bool IsActive { get; set; } = true;
 
@@ -40,39 +38,4 @@ public sealed class DepartmentEntity
 
     [Column("ModifiedBy")]
     public string? ModifiedBy { get; set; }
-
-    [NotMapped]
-    public int Id
-    {
-        get => DepartmentId;
-        set => DepartmentId = value;
-    }
-
-    [NotMapped]
-    public int DeptId
-    {
-        get => DepartmentId;
-        set => DepartmentId = value;
-    }
-
-    [NotMapped]
-    public string DeptName
-    {
-        get => DepartmentName;
-        set => DepartmentName = value;
-    }
-
-    [NotMapped]
-    public int DeptHodId
-    {
-        get => HodId;
-        set => HodId = value;
-    }
-
-    [NotMapped]
-    public EmployeeEntity? HeadOfDepartment
-    {
-        get => Hod;
-        set => Hod = value;
-    }
 }

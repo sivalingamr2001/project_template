@@ -61,6 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddSwaggerGen();
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
 
+        services.AddSingleton<ConnectionStrings>();
         services.AddScoped<DatabaseInitializer>();
         services.AddTransient<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();

@@ -1,5 +1,3 @@
-using Janatics.Application.Features.Employees.Dtos;
-
 namespace Server.Features.Employees;
 
 public static class EmployeesEndpoint
@@ -170,27 +168,6 @@ public static class EmployeesEndpoint
             }
         })
         .WithName("UpdateUser")
-        .WithOpenApi();
-
-        group.MapPut("/{employeeId:int}/password", async (
-            int employeeId,
-            UpdatePasswordRequest request,
-            EmployeeService service,
-            CancellationToken cancellationToken) =>
-        {
-            try
-            {
-                var updated = await service.UpdatePasswordAsync(employeeId, request.Password, cancellationToken);
-                return updated
-                    ? Results.NoContent()
-                    : Results.NotFound(new { Message = $"User with ID {employeeId} not found." });
-            }
-            catch (InvalidOperationException exception)
-            {
-                return Results.BadRequest(new { Message = exception.Message });
-            }
-        })
-        .WithName("UpdateUserPassword")
         .WithOpenApi();
     }
 }
