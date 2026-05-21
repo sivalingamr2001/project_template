@@ -28,7 +28,7 @@ export function Dashboard({
             </p>
           </div>
         </header>
-
+    
         <main className="p-8">
           <SearchBar
             search={search}

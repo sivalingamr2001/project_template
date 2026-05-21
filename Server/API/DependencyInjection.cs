@@ -39,6 +39,7 @@ namespace API
 
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRequisitionRepository, RequisitionRepository>();
+            services.AddScoped<ISearchService, SearchService>();
 
             return services;
         }
@@ -59,4 +60,3 @@ namespace API
         }
     }
 }
-

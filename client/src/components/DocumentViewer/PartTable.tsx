@@ -9,40 +9,58 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import React from "react";
-import { useFieldArray, type Control, type UseFormRegister } from "react-hook-form";
+import { useFieldArray, type Control, type UseFormRegister, useFormContext, type UseFormSetValue } from "react-hook-form";
+import { useSearchApi } from "@/core/api/useSearch";
 import type { RequisitionFormData } from "./types";
 
 interface PartTableProps {
   register: UseFormRegister<RequisitionFormData>;
   control: Control<RequisitionFormData>;
+  setValue?: UseFormSetValue<RequisitionFormData>;
 }
 
-export const PartTable: React.FC<PartTableProps> = ({ register, control }) => {
+export const PartTable: React.FC<PartTableProps> = ({ register, control, setValue: setValueProp }) => {
   const { fields, append, remove } = useFieldArray({
     control,
     name: "parts",
   });
+
+  let formContext: { setValue?: UseFormSetValue<RequisitionFormData> } | undefined;
+  try {
+    formContext = useFormContext<RequisitionFormData>();
+  } catch {
+    formContext = undefined;
+  }
+
+  const setValue = setValueProp ?? formContext?.setValue;
+
+  const fetchAndPopulate = async (index: number, partNo: string) => {
+    if (!partNo || !partNo.trim() || !setValue) return;
+    try {
+      const results = await useSearchApi.searchParts(partNo, 1, 1);
+      if (results && results.length > 0) {
+        const p = results[0] as any;
+        if (p.partName !== undefined) setValue(`parts.${index}.partName` as any, p.partName);
+        if (p.rev !== undefined) setValue(`parts.${index}.rev` as any, p.rev);
+        if (p.qty !== undefined) setValue(`parts.${index}.qty` as any, p.qty);
+      }
+    } catch (e) {
+      // silent fail — don't block user input
+    }
+  };
 
   return (
     <div className="bg-card space-y-4 rounded-lg border p-4 shadow-sm">
       <div className="flex items-center justify-between">
         <h3 className="flex gap-2 justify-center items-center text-foreground text-sm font-semibold tracking-wide uppercase">
           Component Breakdown List
-        <div className="group relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="border boreder-border text-muted-foreground h-7 w-7 p-0"
-            onClick={() => {}}
-          >
-            ?
-          </Button>
+        {/* <div className="group relative">
           <div className="bg-card border-border text-muted-foreground absolute right-0 z-50 mt-2 w-64 rounded border p-3 text-xs opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
             **Note on Minimum Order Quantity (MOQ):** For raw materials/components that
             carry high commercial minimum ordering margins, development tracking profiles
             remain bound to vendor availability limits.
           </div>
-        </div>
+        </div> */}
         </h3>
         <Button
           type="button"
@@ -88,10 +106,19 @@ export const PartTable: React.FC<PartTableProps> = ({ register, control }) => {
                       {index + 1}
                     </TableCell>
                     <TableCell>
-                      <Input
-                        {...register(`parts.${index}.partNo` as const)}
-                        className="h-8 font-mono text-xs"
-                      />
+                      {(() => {
+                        const partNoReg = register(`parts.${index}.partNo` as const);
+                        return (
+                          <Input
+                            {...partNoReg}
+                            className="h-8 font-mono text-xs"
+                            onBlur={(e) => {
+                              partNoReg.onBlur?.(e);
+                              fetchAndPopulate(index, (e.target as HTMLInputElement).value);
+                            }}
+                          />
+                        );
+                      })()}
                     </TableCell>
                     <TableCell>
                       <Input

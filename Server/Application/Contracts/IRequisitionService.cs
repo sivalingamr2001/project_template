@@ -26,5 +26,7 @@ namespace Application.Contracts
         Task DeleteAsync(string recNo);
 
         Task<byte[]> ExportAsync(string recNo, string format);
+
+        Task<string> GenerateRecNoAsync();
     }
 }

@@ -180,5 +180,24 @@ namespace API.Controllers
                 return NotFound(new { success = false, error = new { code = "NOT_FOUND", message = ex.Message } });
             }
         }
+
+        [HttpGet("next-sequence")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(object))]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetRecNo()
+        {
+            try
+            {
+                // Fully awaiting the exact Task<string> signature to resolve the raw value
+                string reqNo = await _requisitionService.GenerateRecNoAsync();
+
+                // Returns a structured JSON payload ready for your frontend UI mapping layer
+                return Ok(new { recNo = reqNo });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = ex.Message });
+            }
+        }
     }
 }

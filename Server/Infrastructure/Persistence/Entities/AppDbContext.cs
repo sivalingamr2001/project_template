@@ -24,7 +24,7 @@ namespace Infrastructure.Persistence.Entities
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
-                    Id = 1, // Generates a valid unique identifier for Admin
+                    Id = 1,
                     FullName = "System Administrator",
                     Email = "admin@company.com",
                     PasswordHash = "password",
@@ -34,7 +34,7 @@ namespace Infrastructure.Persistence.Entities
                 },
                 new User
                 {
-                    Id = 2, // Generates a valid unique identifier for HOD
+                    Id = 2,
                     FullName = "John HOD",
                     Email = "hod@company.com",
                     PasswordHash = "password",

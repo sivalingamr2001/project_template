@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -53,7 +53,7 @@ export const FormDetailPage = () => {
     [today],
   );
 
-  const { register, control, handleSubmit, reset } = useForm<RequisitionFormData>({
+  const { register, control, handleSubmit, reset, setValue } = useForm<RequisitionFormData>({
     defaultValues: createFormValues,
   });
 
@@ -67,7 +67,13 @@ export const FormDetailPage = () => {
           const record = await useRequestionApi.fetchRequisition(recordId);
           reset(buildFormValues(record, today));
         } else {
-          reset(createFormValues);
+          // Creation mode: Fetch next sequence number from API
+          const nextRecNo = await useRequestionApi.fetchNextSequence();
+          
+          reset({
+            ...createFormValues,
+            recNo: nextRecNo, // Injects sequence number into form state
+          });
         }
       } catch (error) {
         console.error("Error loading requisition:", error);
@@ -78,6 +84,7 @@ export const FormDetailPage = () => {
     };
 
     void loadRequisition();
+
   }, [recordId, reset, createFormValues, today]);
 
   const handleResetBlank = () => {
@@ -120,7 +127,7 @@ export const FormDetailPage = () => {
   const isLastStep = currentStep === steps.length;
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 md:p-6">
+    <div className="mx-auto w-full max-w-[75vw] space-y-6 p-4 md:p-6">
       <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <Button variant="outline" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="border-none" />
@@ -167,12 +174,12 @@ export const FormDetailPage = () => {
             {currentStep === 1 && (
               <>
                 <FormMeta register={register} />
-                <ProductInfo register={register} control={control} />
+                <ProductInfo register={register} control={control} setValue={setValue} />
               </>
             )}
             {currentStep === 2 && (
               <>
-                <PartTable register={register} control={control} />
+                <PartTable register={register} control={control} setValue={setValue} />
               </>
             )}
             {currentStep === 3 && <Signatures register={register} />}

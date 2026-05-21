@@ -18,8 +18,15 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
         >
           Rec. No.
         </Label>
-        <Input id="recNo" {...register("recNo")} className="h-9 font-mono" disabled />
+        {/* CHANGED: Swapped disabled for readOnly */}
+        <Input 
+          id="recNo" 
+          {...register("recNo")} 
+          className="h-9 font-mono bg-muted/40 cursor-not-allowed" 
+          readOnly 
+        />
       </div>
+      
       <div className="space-y-1.5">
         <Label
           htmlFor="date"
@@ -29,6 +36,7 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
         </Label>
         <Input id="date" type="date" {...register("date")} className="h-9" />
       </div>
+      
       <div className="space-y-1.5">
         <Label
           htmlFor="pageNo"
@@ -36,8 +44,15 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
         >
           Page No.
         </Label>
-        <Input id="pageNo" {...register("pageNo")} className="h-9" disabled/>
+        {/* CHANGED: Swapped disabled for readOnly */}
+        <Input 
+          id="pageNo" 
+          {...register("pageNo")} 
+          className="h-9 bg-muted/40 cursor-not-allowed" 
+          readOnly 
+        />
       </div>
+      
       <div className="space-y-1.5">
         <Label
           htmlFor="from"
@@ -47,6 +62,7 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
         </Label>
         <Input id="from" {...register("from")} className="h-9" />
       </div>
+      
       <div className="col-span-2 space-y-1.5 md:col-span-1">
         <Label
           htmlFor="to"

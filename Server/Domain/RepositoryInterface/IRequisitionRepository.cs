@@ -19,5 +19,6 @@ namespace Domain.RepositoryInterface
 
         Task UpdateAsync(RequisitionDomain requisition);
         Task DeleteAsync(RequisitionDomain requisition);
+        Task<string> GenerateReqNo();
     }
 }

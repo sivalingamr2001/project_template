@@ -132,6 +132,29 @@ namespace Infrastructure.Repository
             }
         }
 
+        public async Task<string> GenerateReqNo()
+        {
+            // Fetch the maximum current RecNo safely from your table
+            var maxRecNo = await _context.Requisitions
+                .Select(r => r.RecNo)
+                .OrderByDescending(r => r)
+                .FirstOrDefaultAsync();
+
+            int nextSequence = 1;
+
+            // Parse the current highest number if records already exist
+            if (!string.IsNullOrEmpty(maxRecNo) && maxRecNo.StartsWith("REQ#"))
+            {
+                string numericPart = maxRecNo.Replace("REQ#", "");
+                if (int.TryParse(numericPart, out int currentMax))
+                {
+                    nextSequence = currentMax + 1;
+                }
+            }
+
+            return $"REQ#{nextSequence:D3}";
+        }
+
         public async Task CommitAsync()
         {
             await _context.SaveChangesAsync();

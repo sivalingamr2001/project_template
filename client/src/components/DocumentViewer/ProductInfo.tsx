@@ -1,5 +1,6 @@
 import React from "react";
-import { type UseFormRegister, type Control, Controller } from "react-hook-form";
+import { type UseFormRegister, type Control, Controller, useFormContext, type UseFormSetValue } from "react-hook-form";
+import { useSearchApi } from "@/core/api/useSearch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,9 +15,34 @@ import type { RequisitionFormData } from "./types";
 interface ProductInfoProps {
   register: UseFormRegister<RequisitionFormData>;
   control: Control<RequisitionFormData>;
+  setValue?: UseFormSetValue<RequisitionFormData>;
 }
 
-export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control }) => {
+export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control, setValue: setValueProp }) => {
+  let formContext: { setValue?: UseFormSetValue<RequisitionFormData> } | undefined;
+  try {
+    formContext = useFormContext<RequisitionFormData>();
+  } catch {
+    formContext = undefined;
+  }
+
+  const setValue = setValueProp ?? formContext?.setValue;
+
+  const fetchAndPopulate = async (query: string) => {
+    if (!query || !query.trim() || !setValue) return;
+    try {
+      const results = await useSearchApi.searchProjects(query, 1, 1);
+      if (results && results.length > 0) {
+        const r = results[0];
+        if (r.productNo !== undefined) setValue("productNo" as any, r.productNo);
+        if (r.revision !== undefined) setValue("rev" as any, r.revision);
+        if (r.projectNumber !== undefined) setValue("projectNo" as any, r.projectNumber);
+        if (r.projectName !== undefined) setValue("productName" as any, r.projectName);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
   return (
     <div className="bg-card grid grid-cols-1 gap-6 rounded-lg border p-5 shadow-sm md:grid-cols-3">
       <div className="space-y-4">
@@ -27,7 +53,20 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control }) =
           >
             Product No.
           </Label>
-          <Input id="productNo" {...register("productNo")} className="h-9" />
+          {(() => {
+            const reg = register("productNo");
+            return (
+              <Input
+                id="productNo"
+                {...reg}
+                className="h-9"
+                onBlur={(e) => {
+                  reg.onBlur?.(e);
+                  fetchAndPopulate((e.target as HTMLInputElement).value);
+                }}
+              />
+            );
+          })()}
         </div>
         <div className="space-y-1.5">
           <Label
@@ -48,7 +87,20 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control }) =
           >
             Project No.
           </Label>
-          <Input id="projectNo" {...register("projectNo")} className="h-9" />
+          {(() => {
+            const reg = register("projectNo");
+            return (
+              <Input
+                id="projectNo"
+                {...reg}
+                className="h-9"
+                onBlur={(e) => {
+                  reg.onBlur?.(e);
+                  fetchAndPopulate((e.target as HTMLInputElement).value);
+                }}
+              />
+            );
+          })()}
         </div>
         <div className="space-y-1.5">
           <Label

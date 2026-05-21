@@ -241,7 +241,7 @@ namespace Application.Implementation
             return System.Text.Encoding.UTF8.GetBytes(content);
         }
 
-        private async Task<string> GenerateRecNoAsync()
+        public async Task<string> GenerateRecNoAsync()
         {
             var now = DateTime.UtcNow;
             var year = now.Year;

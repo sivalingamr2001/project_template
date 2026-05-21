@@ -118,12 +118,16 @@ const mapRequisition = (item: ApiRequisition): RequisitionDocument => ({
   receivedDate: toDate(item.receivedDate),
 });
 
-const unwrapList = (response: ApiRequisition[] | ApiListEnvelope<ApiRequisition>): ApiRequisition[] => {
+const unwrapList = (
+  response: ApiRequisition[] | ApiListEnvelope<ApiRequisition>,
+): ApiRequisition[] => {
   if (Array.isArray(response)) return response;
   return Array.isArray(response?.data) ? response.data : [];
 };
 
-const unwrapItem = (response: ApiRequisition | ApiEnvelope<ApiRequisition>): ApiRequisition => {
+const unwrapItem = (
+  response: ApiRequisition | ApiEnvelope<ApiRequisition>,
+): ApiRequisition => {
   if ("data" in response) {
     return response.data;
   }
@@ -133,22 +137,35 @@ const unwrapItem = (response: ApiRequisition | ApiEnvelope<ApiRequisition>): Api
 
 export const useRequestionApi = {
   fetchRequisitions: async (): Promise<RequisitionDocument[]> => {
-    const response = await axiosInstance.get<ApiRequisition[] | ApiListEnvelope<ApiRequisition>>(
-      "/requisitions",
-    );
+    const response = await axiosInstance.get<
+      ApiRequisition[] | ApiListEnvelope<ApiRequisition>
+    >("/requisitions");
 
     return unwrapList(response.data).map(mapRequisition);
   },
 
-  fetchRequisition: async (recNo: string): Promise<RequisitionDocument> => {
-    const response = await axiosInstance.get<ApiRequisition | ApiEnvelope<ApiRequisition>>(
-      `/requisitions/${encodeURIComponent(recNo)}`,
+  fetchNextSequence: async (): Promise<string> => {
+    const response = await axiosInstance.get<string | ApiEnvelope<string>>(
+      "/requisitions/next-sequence",
     );
+
+    if (typeof response.data === "string") {
+      return response.data;
+    }
+    return response.data.data;
+  },
+
+  fetchRequisition: async (recNo: string): Promise<RequisitionDocument> => {
+    const response = await axiosInstance.get<
+      ApiRequisition | ApiEnvelope<ApiRequisition>
+    >(`/requisitions/${encodeURIComponent(recNo)}`);
 
     return mapRequisition(unwrapItem(response.data));
   },
 
-  createRequisition: async (payload: RequisitionPayload): Promise<RequisitionDocument> => {
+  createRequisition: async (
+    payload: RequisitionPayload,
+  ): Promise<RequisitionDocument> => {
     const response = await axiosInstance.post<ApiEnvelope<ApiRequisition>>(
       "/requisitions",
       payload,
