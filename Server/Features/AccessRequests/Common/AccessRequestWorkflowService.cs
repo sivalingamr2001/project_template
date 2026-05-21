@@ -807,7 +807,7 @@ public sealed class AccessRequestWorkflowService(
         }
 
         audit.IsRead = true;
-        audit.ModifiedBy = UserId;
+        audit.ModifiedBy = userId;
         audit.ModifiedOn = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -1315,7 +1315,7 @@ public sealed class AccessRequestWorkflowService(
                 EventType = eventType,
                 Message = message,
                 RecipientUserId = recipient.UserId,
-                RecipientName = recipient.Email ?? recipient.UserId,
+                RecipientName = recipient.Email ?? string.Empty,
                 RecipientRole = (recipient.UserRole ?? UserRole.User).ToString(),
                 IsRead = false,
                 CreatedBy = actor,

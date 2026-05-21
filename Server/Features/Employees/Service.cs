@@ -171,7 +171,7 @@ public sealed class EmployeeService(
 
         return users
             .Where(user =>
-                user.UserId.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                user.UserId.ToString().Contains(term, StringComparison.OrdinalIgnoreCase) ||
                 user.EmployeeId.ToString().Contains(term, StringComparison.OrdinalIgnoreCase) ||
                 user.UserName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
                 user.Email.Contains(term, StringComparison.OrdinalIgnoreCase))
