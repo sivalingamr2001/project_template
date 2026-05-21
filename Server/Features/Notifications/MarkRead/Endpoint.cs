@@ -12,7 +12,7 @@ public static class MarkNotificationReadEndpoint
             AccessRequestWorkflowService service,
             CancellationToken cancellationToken) =>
         {
-            await service.MarkNotificationReadAsync(auditId, request.EmployeeId, cancellationToken);
+            await service.MarkNotificationReadAsync(auditId, request.UserId, cancellationToken);
             return Results.NoContent();
         })
         .WithName("MarkNotificationRead")

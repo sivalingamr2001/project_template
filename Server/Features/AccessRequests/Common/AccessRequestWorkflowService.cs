@@ -32,7 +32,7 @@ public sealed class AccessRequestWorkflowService(
         await SyncExpirationsAsync(cancellationToken);
         ValidateCreateRequest(request);
 
-        var requester = await GetEmployeeOrThrowAsync(request.EmpId, cancellationToken);
+        var requester = await GetEmployeeOrThrowAsync(request.UserId, cancellationToken);
         var hodApprover = await ResolveHodApproverAsync(null, request.ReqTo, cancellationToken);
         var folderHodRecipients = await GetFolderHodRecipientsAsync(request.Items.Select(item => item.FolderPath), cancellationToken);
         var itRecipients = await GetItApproversAsync(cancellationToken);
@@ -56,7 +56,7 @@ public sealed class AccessRequestWorkflowService(
             foreach (var existingItem in accessRequest.AccessItems)
             {
                 existingItem.Status = RequestStatus.PendingHOD; // Or your specific target workflow enum state
-                existingItem.ModifiedBy = requester.EmployeeId.ToString();
+                existingItem.ModifiedBy = requester.UserId;
                 existingItem.ModifiedOn = utcNow;
             }
         }
@@ -65,7 +65,7 @@ public sealed class AccessRequestWorkflowService(
             // Initialize an empty container profile for pristine target creation
             accessRequest = new AccessRequestEntity
             {
-                CreatedBy = requester.EmployeeId.ToString(),
+                CreatedBy = requester.UserId,
                 CreatedOn = utcNow,
                 AccessItems = new List<AccessItemEntity>()
             };
@@ -73,11 +73,11 @@ public sealed class AccessRequestWorkflowService(
         }
 
         // 3. Sync Parent State Parameters
-        accessRequest.EmpId = requester.UserId;
+        accessRequest.UserId = requester.UserId;
         accessRequest.ReqTo = hodApprover.UserId;
         accessRequest.ItsrNo = request.ItsrNo?.Trim() ?? string.Empty;
         accessRequest.IsAgreed = request.IsAgree;
-        accessRequest.ModifiedBy = requester.EmployeeId.ToString();
+        accessRequest.ModifiedBy = requester.UserId;
         accessRequest.ModifiedOn = utcNow;
 
         // 4. Handle child folder item mapping
@@ -133,9 +133,9 @@ public sealed class AccessRequestWorkflowService(
                     AccessType = (AccessTypes)item.AccessType,
                     ConfirmAccessType = (AccessTypes)item.ConfirmAccessTypeByHOD,
                     Reason = item.Reason.Trim(),
-                    CreatedBy = requester.EmployeeId.ToString(),
+                    CreatedBy = requester.UserId,
                     CreatedOn = utcNow,
-                    ModifiedBy = requester.EmployeeId.ToString(),
+                    ModifiedBy = requester.UserId,
                     ModifiedOn = utcNow
                 });
             }
@@ -152,7 +152,7 @@ public sealed class AccessRequestWorkflowService(
             .DistinctBy(employee => employee.UserId);
         var recipients = BuildStageRecipients(requester, hodRecipients, itRecipients);
 
-        await AddAuditEntriesAsync(accessRequest.AccessReqId, null, null, actionKey, message, recipients, requester.EmployeeId.ToString(), utcNow, cancellationToken);
+        await AddAuditEntriesAsync(accessRequest.AccessReqId, null, null, actionKey, message, recipients, requester.UserId, utcNow, cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -175,7 +175,7 @@ public sealed class AccessRequestWorkflowService(
 
         return new CreateAccessRequestResponse(
             accessRequest.AccessReqId,
-            accessRequest.EmpId,
+            accessRequest.UserId,
             accessRequest.ReqTo,
             accessRequest.IsAgreed,
             accessRequest.ItsrNo,
@@ -197,15 +197,15 @@ public sealed class AccessRequestWorkflowService(
     {
         await SyncExpirationsAsync(cancellationToken);
         // 1. Basic Validations
-        if (request.ReviewerEmployeeId <= 0)
-            throw new AppValidationException("Reviewer employee id must be greater than zero.");
+        if (request.ReviewerUserId <= 0)
+            throw new AppValidationException("Reviewer user id must be greater than zero.");
 
         if (!request.Approved && string.IsNullOrWhiteSpace(request.Comments))
             throw new AppValidationException("Comments are required when HOD rejects an item.");
 
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Hod, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerUserId, UserRole.Hod, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
-        var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
+        var requester = await GetEmployeeOrThrowAsync(accessRequest.UserId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(null, cancellationToken);
         var itRecipients = await GetItApproversAsync(cancellationToken);
 
@@ -224,7 +224,7 @@ public sealed class AccessRequestWorkflowService(
         // 3. Update the single item
         accessItem.Status = request.Approved ? RequestStatus.PendingIT : RequestStatus.RejectedHOD;
         accessItem.ConfirmAccessType = request.Approved ? request.ConfirmAccessType : accessItem.ConfirmAccessType;
-        accessItem.ModifiedBy = reviewer.EmployeeId.ToString();
+        accessItem.ModifiedBy = reviewer.UserId;
         accessItem.ModifiedOn = utcNow;
 
         // 4. Record the Approval/Rejection action for this specific item
@@ -235,9 +235,9 @@ public sealed class AccessRequestWorkflowService(
             ApproverId = reviewer.UserId,
             ApprovalStatus = actionStatus,
             Comments = request.Comments?.Trim() ?? string.Empty,
-            CreatedBy = reviewer.EmployeeId.ToString(),
+            CreatedBy = reviewer.UserId,
             CreatedOn = utcNow,
-            ModifiedBy = reviewer.EmployeeId.ToString(),
+            ModifiedBy = reviewer.UserId,
             ModifiedOn = utcNow
         });
 
@@ -256,7 +256,7 @@ public sealed class AccessRequestWorkflowService(
         }
 
         // 6. Persistence
-        await AddAuditEntriesAsync(accessReqId, accessItemId, null, eventType, message, recipients, reviewer.EmployeeId.ToString(), utcNow, cancellationToken);
+        await AddAuditEntriesAsync(accessReqId, accessItemId, null, eventType, message, recipients, reviewer.UserId, utcNow, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         await PushNotificationsAsync(recipients, accessReqId, eventType, message, utcNow, cancellationToken);
         await SendStageEmailAsync(
@@ -280,9 +280,9 @@ public sealed class AccessRequestWorkflowService(
     {
         await SyncExpirationsAsync(cancellationToken);
         // 1. Validation
-        if (request.ReviewerEmployeeId <= 0)
+        if (request.ReviewerUserId <= 0)
         {
-            throw new AppValidationException("Reviewer employee id must be greater than zero.");
+            throw new AppValidationException("Reviewer user id must be greater than zero.");
         }
 
         if (!request.Approved && string.IsNullOrWhiteSpace(request.Comments))
@@ -291,9 +291,9 @@ public sealed class AccessRequestWorkflowService(
         }
 
         // 2. Fetch dependencies
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Operator, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerUserId, UserRole.Operator, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
-        var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
+        var requester = await GetEmployeeOrThrowAsync(accessRequest.UserId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(null, cancellationToken);
         var itRecipients = await GetItApproversAsync(cancellationToken);
 
@@ -321,7 +321,7 @@ public sealed class AccessRequestWorkflowService(
 
         // 5. Update ONLY the single selected item
         currentAccessItem.Status = request.Approved ? RequestStatus.AccessGranted : RequestStatus.RejectedIT;
-        currentAccessItem.ModifiedBy = reviewer.EmployeeId.ToString();
+        currentAccessItem.ModifiedBy = reviewer.UserId;
         currentAccessItem.ModifiedOn = utcNow;
 
         // 6. Record approval history
@@ -332,9 +332,9 @@ public sealed class AccessRequestWorkflowService(
             ApproverId = reviewer.UserId,
             ApprovalStatus = approvalStatus,
             Comments = request.Comments?.Trim() ?? string.Empty,
-            CreatedBy = reviewer.EmployeeId.ToString(),
+            CreatedBy = reviewer.UserId,
             CreatedOn = utcNow,
-            ModifiedBy = reviewer.EmployeeId.ToString(),
+            ModifiedBy = reviewer.UserId,
             ModifiedOn = utcNow
             // Note: If your entity has an AccessItemId field, assign it here
         });
@@ -346,7 +346,7 @@ public sealed class AccessRequestWorkflowService(
         }
 
         accessRequest.ReqTo = requester.UserId;
-        accessRequest.ModifiedBy = reviewer.EmployeeId.ToString();
+        accessRequest.ModifiedBy = reviewer.UserId;
         accessRequest.ModifiedOn = utcNow;
 
         // 8. Setup Messaging
@@ -365,7 +365,7 @@ public sealed class AccessRequestWorkflowService(
             eventType,
             message,
             distinctRecipients,
-            reviewer.EmployeeId.ToString(),
+            reviewer.UserId,
             utcNow,
             cancellationToken);
 
@@ -391,9 +391,9 @@ public sealed class AccessRequestWorkflowService(
     public async Task<ReviewAccessRequestResponse> RevokeAsync(int accessReqId, int accessItemId, RevokeAccessRequest request, CancellationToken cancellationToken)
     {
         await SyncExpirationsAsync(cancellationToken);
-        if (request.ReviewerEmployeeId <= 0)
+        if (request.ReviewerUserId <= 0)
         {
-            throw new AppValidationException("Reviewer employee id must be greater than zero.");
+            throw new AppValidationException("Reviewer user id must be greater than zero.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Comments))
@@ -401,9 +401,9 @@ public sealed class AccessRequestWorkflowService(
             throw new AppValidationException("Comments are required when revoking access.");
         }
 
-        var reviewer = await EnsureRoleAsync(request.ReviewerEmployeeId, UserRole.Operator, cancellationToken);
+        var reviewer = await EnsureRoleAsync(request.ReviewerUserId, UserRole.Operator, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
-        var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
+        var requester = await GetEmployeeOrThrowAsync(accessRequest.UserId, cancellationToken);
         var hodRecipients = await GetDepartmentHodsAsync(null, cancellationToken);
         var itRecipients = await GetItApproversAsync(cancellationToken);
 
@@ -436,16 +436,16 @@ public sealed class AccessRequestWorkflowService(
             ApproverId = reviewer.UserId,
             ApprovalStatus = RequestStatus.Revoked,
             Comments = request.Comments.Trim(),
-            CreatedBy = reviewer.EmployeeId.ToString(),
+            CreatedBy = reviewer.UserId,
             CreatedOn = utcNow,
-            ModifiedBy = reviewer.EmployeeId.ToString(),
+            ModifiedBy = reviewer.UserId,
             ModifiedOn = utcNow
             // Recommended: Add AccessItemId to your history entity if supported
         });
 
         // 3. Update ONLY the selected item
         currentAccessItem.Status = RequestStatus.Revoked;
-        currentAccessItem.ModifiedBy = reviewer.EmployeeId.ToString();
+        currentAccessItem.ModifiedBy = reviewer.UserId;
         currentAccessItem.ModifiedOn = utcNow;
 
         var distinctRecipients = BuildStageRecipients(requester, hodRecipients, itRecipients.Append(reviewer));
@@ -460,7 +460,7 @@ public sealed class AccessRequestWorkflowService(
             "it.revoked",
             message,
             distinctRecipients,
-            reviewer.EmployeeId.ToString(),
+            reviewer.UserId,
             utcNow,
             cancellationToken);
 
@@ -484,9 +484,9 @@ public sealed class AccessRequestWorkflowService(
     public async Task<ResubmitAccessItemResponse> ResubmitAsync(int accessReqId, int accessItemId, ResubmitAccessItemRequest request, CancellationToken cancellationToken)
     {
         await SyncExpirationsAsync(cancellationToken);
-        if (request.ReviewerEmployeeId <= 0)
+        if (request.ReviewerUserId <= 0)
         {
-            throw new AppValidationException("Reviewer employee id must be greater than zero.");
+            throw new AppValidationException("Reviewer user id must be greater than zero.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Comments))
@@ -495,9 +495,9 @@ public sealed class AccessRequestWorkflowService(
         }
 
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
-        var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
+        var requester = await GetEmployeeOrThrowAsync(accessRequest.UserId, cancellationToken);
 
-        if (accessRequest.EmpId != request.ReviewerEmployeeId)
+        if (accessRequest.UserId != request.ReviewerUserId)
         {
             throw new AppValidationException("Only the original requester can resubmit this access item.");
         }
@@ -520,7 +520,7 @@ public sealed class AccessRequestWorkflowService(
         var utcNow = DateTime.UtcNow;
 
         accessItem.Status = RequestStatus.PendingHOD;
-        accessItem.ModifiedBy = requester.EmployeeId.ToString();
+        accessItem.ModifiedBy = requester.UserId;
         accessItem.ModifiedOn = utcNow;
 
         var distinctRecipients = BuildStageRecipients(requester, hodRecipients, itRecipients);
@@ -533,7 +533,7 @@ public sealed class AccessRequestWorkflowService(
             "request.resubmitted",
             message,
             distinctRecipients,
-            requester.EmployeeId.ToString(),
+            requester.UserId,
             utcNow,
             cancellationToken);
 
@@ -557,15 +557,15 @@ public sealed class AccessRequestWorkflowService(
     public async Task<RenewAccessRequestResponse> RenewAsync(int accessReqId, RenewAccessRequest request, CancellationToken cancellationToken)
     {
         await SyncExpirationsAsync(cancellationToken);
-        if (request.RequestedByEmployeeId <= 0)
+        if (request.RequestedByUserId <= 0)
         {
-            throw new AppValidationException("Requested by employee id must be greater than zero.");
+            throw new AppValidationException("Requested by user id must be greater than zero.");
         }
 
         var sourceRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
-        var requester = await GetEmployeeOrThrowAsync(request.RequestedByEmployeeId, cancellationToken);
+        var requester = await GetEmployeeOrThrowAsync(request.RequestedByUserId, cancellationToken);
 
-        if (sourceRequest.EmpId != requester.EmployeeId)
+        if (sourceRequest.UserId != requester.UserId)
         {
             throw new AppValidationException("Only the original requester can renew an access request.");
         }
@@ -601,13 +601,13 @@ public sealed class AccessRequestWorkflowService(
 
         var renewalRequest = new AccessRequestEntity
         {
-            EmpId = requester.UserId,
+            UserId = requester.UserId,
             ReqTo = hodApprover.UserId,
             ItsrNo = request.ItsrNo?.Trim() ?? string.Empty,
             IsAgreed = true,
-            CreatedBy = requester.EmployeeId.ToString(),
+            CreatedBy = requester.UserId,
             CreatedOn = utcNow,
-            ModifiedBy = requester.EmployeeId.ToString(),
+            ModifiedBy = requester.UserId,
             ModifiedOn = utcNow
         };
 
@@ -621,9 +621,9 @@ public sealed class AccessRequestWorkflowService(
             FolderPath = item.FolderPath,
             AccessType = item.AccessType,
             Reason = item.Reason,
-            CreatedBy = requester.EmployeeId.ToString(),
+            CreatedBy = requester.UserId,
             CreatedOn = utcNow,
-            ModifiedBy = requester.EmployeeId.ToString(),
+            ModifiedBy = requester.UserId,
             ModifiedOn = utcNow
         }).ToArray();
 
@@ -639,7 +639,7 @@ public sealed class AccessRequestWorkflowService(
             "request.renewed",
             message,
             recipients,
-            requester.EmployeeId.ToString(),
+            requester.UserId,
             utcNow,
             cancellationToken);
 
@@ -662,18 +662,15 @@ public sealed class AccessRequestWorkflowService(
         return new RenewAccessRequestResponse(renewalRequest.AccessReqId, RequestStatus.PendingHOD, message);
     }
 
-    public async Task<AccessRequestDetailsDto> GetDetailsAsync(int accessReqId, int viewerEmployeeId, CancellationToken cancellationToken)
+    public async Task<AccessRequestDetailsDto> GetDetailsAsync(int accessReqId, int viewerUserId, CancellationToken cancellationToken)
     {
         await SyncExpirationsAsync(cancellationToken);
-        var viewer = await GetEmployeeOrThrowAsync(viewerEmployeeId, cancellationToken);
+        var viewer = await GetEmployeeOrThrowAsync(viewerUserId, cancellationToken);
         var accessRequest = await GetRequestOrThrowAsync(accessReqId, cancellationToken);
-        var requester = await GetEmployeeOrThrowAsync(accessRequest.EmpId, cancellationToken);
+        var requester = await GetEmployeeOrThrowAsync(accessRequest.UserId, cancellationToken);
         var currentApprover = await dbContext.Employees
             .AsNoTracking()
-            .FirstOrDefaultAsync(employee =>
-                employee.UserId == accessRequest.ReqTo ||
-                (employee.EmployeeId.HasValue && employee.EmployeeId.Value == accessRequest.ReqTo),
-                cancellationToken);
+            .FirstOrDefaultAsync(employee => employee.UserId == accessRequest.ReqTo, cancellationToken);
 
         EnsureCanView(viewer, requester, accessRequest);
 
@@ -710,16 +707,14 @@ public sealed class AccessRequestWorkflowService(
         var approverIds = approvalRows.Select(x => x.ApproverId).Distinct().ToList();
         var approverLookup = await dbContext.Employees
             .AsNoTracking()
-            .Where(employee =>
-                approverIds.Contains(employee.UserId) ||
-                (employee.EmployeeId.HasValue && approverIds.Contains(employee.EmployeeId.Value)))
+            .Where(employee => approverIds.Contains(employee.UserId))
             .ToDictionaryAsync(employee => employee.UserId, cancellationToken);
 
         var approvals = approvalRows
             .Select(approval => new AccessRequestApprovalDto(
                 approval.AccessApproveId,
                 approval.ApproverId,
-                approverLookup.TryGetValue(approval.ApproverId, out var approver) ? approver.Email : approval.ApproverId.ToString(),
+                approverLookup.TryGetValue(approval.ApproverId, out var approver) ? (approver.Email ?? approval.ApproverId.ToString()) : approval.ApproverId.ToString(),
                 (approverLookup.TryGetValue(approval.ApproverId, out var approverRole) ? (approverRole.UserRole ?? UserRole.User) : UserRole.User).ToString(),
                 approval.ApprovalStatus,
                 approval.Comments,
@@ -737,7 +732,7 @@ public sealed class AccessRequestWorkflowService(
                 audit.AuditId,
                 audit.EventType,
                 audit.Message,
-                audit.RecipientEmpId,
+                audit.RecipientUserId,
                 audit.RecipientName,
                 audit.RecipientRole,
                 audit.IsRead,
@@ -746,7 +741,7 @@ public sealed class AccessRequestWorkflowService(
 
         return new AccessRequestDetailsDto(
             accessRequest.AccessReqId,
-            accessRequest.EmpId,
+            accessRequest.UserId,
             requester.Email,
             0,
             string.Empty,
@@ -762,16 +757,16 @@ public sealed class AccessRequestWorkflowService(
     }
 
     public async Task<Server.Shared.Helpers.PaginatedResponse<NotificationDto>> GetNotificationsAsync(
-        int employeeId,
+        int userId,
         GetNotificationsQuery query,
         CancellationToken cancellationToken)
     {
         await SyncExpirationsAsync(cancellationToken);
-        _ = await GetEmployeeOrThrowAsync(employeeId, cancellationToken);
+        _ = await GetEmployeeOrThrowAsync(userId, cancellationToken);
 
         var baseQuery = dbContext.AccessReqAudits
             .AsNoTracking()
-            .Where(audit => audit.RecipientEmpId == employeeId)
+            .Where(audit => audit.RecipientUserId == userId)
             .OrderByDescending(audit => audit.CreatedOn);
 
         var totalCount = await baseQuery.CountAsync(cancellationToken);
@@ -787,7 +782,7 @@ public sealed class AccessRequestWorkflowService(
                 audit.AccessReqId,
                 audit.EventType,
                 audit.Message,
-                audit.RecipientEmpId,
+                audit.RecipientUserId,
                 audit.RecipientName,
                 audit.RecipientRole,
                 audit.IsRead,
@@ -801,10 +796,10 @@ public sealed class AccessRequestWorkflowService(
             query.NormalizedPageSize);
     }
 
-    public async Task MarkNotificationReadAsync(int auditId, int employeeId, CancellationToken cancellationToken)
+    public async Task MarkNotificationReadAsync(int auditId, int userId, CancellationToken cancellationToken)
     {
         var audit = await dbContext.AccessReqAudits
-            .FirstOrDefaultAsync(item => item.AuditId == auditId && item.RecipientEmpId == employeeId, cancellationToken);
+            .FirstOrDefaultAsync(item => item.AuditId == auditId && item.RecipientUserId == userId, cancellationToken);
 
         if (audit is null)
         {
@@ -812,7 +807,7 @@ public sealed class AccessRequestWorkflowService(
         }
 
         audit.IsRead = true;
-        audit.ModifiedBy = employeeId.ToString();
+        audit.ModifiedBy = UserId;
         audit.ModifiedOn = DateTime.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -857,14 +852,14 @@ public sealed class AccessRequestWorkflowService(
             .ToDictionaryAsync(request => request.AccessReqId, cancellationToken);
 
         var requesterIds = requests.Values
-            .Select(request => request.EmpId)
+            .Select(request => request.UserId)
             .Distinct()
             .ToArray();
 
         var requesters = await dbContext.Employees
             .AsNoTracking()
-            .Where(employee => employee.EmployeeId.HasValue && requesterIds.Contains(employee.EmployeeId.Value))
-            .ToDictionaryAsync(employee => employee.EmployeeId!.Value, cancellationToken);
+            .Where(employee => requesterIds.Contains(employee.UserId))
+            .ToDictionaryAsync(employee => employee.UserId, cancellationToken);
 
         var existingEvents = await dbContext.AccessReqAudits
             .AsNoTracking()
@@ -901,7 +896,7 @@ public sealed class AccessRequestWorkflowService(
                 continue;
             }
 
-            if (!requesters.TryGetValue(accessRequest.EmpId, out var requester))
+            if (!requesters.TryGetValue(accessRequest.UserId, out var requester))
             {
                 continue;
             }
@@ -914,7 +909,7 @@ public sealed class AccessRequestWorkflowService(
             if (utcNow >= expirationDateUtc && !expiredKeys.Contains(item.AccessItemId))
             {
                 item.Status = RequestStatus.Expired;
-                item.ModifiedBy = requester.EmployeeId.ToString();
+                item.ModifiedBy = requester.UserId;
                 item.ModifiedOn = utcNow;
                 hasStatusChanges = true;
 
@@ -926,7 +921,7 @@ public sealed class AccessRequestWorkflowService(
                     "request.expired",
                     message,
                     recipients,
-                    requester.EmployeeId.ToString(),
+                    requester.UserId,
                     utcNow,
                     cancellationToken);
 
@@ -953,7 +948,7 @@ public sealed class AccessRequestWorkflowService(
                     "request.expiring_soon",
                     message,
                     recipients,
-                    requester.EmployeeId.ToString(),
+                    requester.UserId,
                     utcNow,
                     cancellationToken);
 
@@ -1012,9 +1007,9 @@ public sealed class AccessRequestWorkflowService(
 
     private static void ValidateCreateRequest(CreateAccessRequest request)
     {
-        if (request.EmpId <= 0)
+        if (request.UserId <= 0)
         {
-            throw new AppValidationException("Employee id must be greater than zero.");
+            throw new AppValidationException("User id must be greater than zero.");
         }
 
         if (request.Items.Count == 0)
@@ -1043,23 +1038,20 @@ public sealed class AccessRequestWorkflowService(
         }
     }
 
-    private async Task<EmployeeEntity> GetEmployeeOrThrowAsync(int employeeId, CancellationToken cancellationToken)
+    private async Task<EmployeeEntity> GetEmployeeOrThrowAsync(int userId, CancellationToken cancellationToken)
     {
         return await dbContext.Employees
-            .FirstOrDefaultAsync(employee =>
-                employee.UserId == employeeId ||
-                (employee.EmployeeId.HasValue && employee.EmployeeId.Value == employeeId),
-                cancellationToken)
-            ?? throw new AppValidationException($"Employee {employeeId} was not found.");
+            .FirstOrDefaultAsync(employee => employee.UserId == userId, cancellationToken)
+            ?? throw new AppValidationException($"User {userId} was not found.");
     }
 
-    private async Task<EmployeeEntity> EnsureRoleAsync(int employeeId, UserRole role, CancellationToken cancellationToken)
+    private async Task<EmployeeEntity> EnsureRoleAsync(int userId, UserRole role, CancellationToken cancellationToken)
     {
-        var employee = await GetEmployeeOrThrowAsync(employeeId, cancellationToken);
+        var employee = await GetEmployeeOrThrowAsync(userId, cancellationToken);
 
         if ((employee.UserRole ?? UserRole.User) != role)
         {
-            throw new AppValidationException($"Employee {employeeId} is not authorized for this action.");
+            throw new AppValidationException($"User {userId} is not authorized for this action.");
         }
 
         return employee;
@@ -1159,7 +1151,7 @@ public sealed class AccessRequestWorkflowService(
         var employees = await dbContext.Employees
         .AsNoTracking()
         .Where(employee =>
-            (!string.IsNullOrEmpty(employee.EmployeeId) && folderHodEmployeeIds.Contains(employee.UserId))
+            folderHodEmployeeIds.Contains(employee.UserId)
             || folderHodEmails.Contains(employee.Email)
             || folderHodUserNames.Contains(employee.Email))
         .ToListAsync(cancellationToken);
@@ -1244,7 +1236,7 @@ public sealed class AccessRequestWorkflowService(
             return;
         }
 
-        if ((viewer.UserId) == accessRequest.EmpId)
+        if ((viewer.UserId) == accessRequest.UserId)
         {
             return;
         }
@@ -1322,8 +1314,8 @@ public sealed class AccessRequestWorkflowService(
                 AccessApproveId = accessApproveId,
                 EventType = eventType,
                 Message = message,
-                RecipientEmpId = recipient.UserId,
-                RecipientName = recipient.Email,
+                RecipientUserId = recipient.UserId,
+                RecipientName = recipient.Email ?? recipient.UserId,
                 RecipientRole = (recipient.UserRole ?? UserRole.User).ToString(),
                 IsRead = false,
                 CreatedBy = actor,
@@ -1397,7 +1389,7 @@ public sealed class AccessRequestWorkflowService(
         return new[] { requester }
             .Concat(hodRecipients)
             .Concat(itRecipients)
-            .DistinctBy(employee => employee.EmployeeId)
+            .DistinctBy(employee => employee.UserId)
             .ToArray();
     }
 

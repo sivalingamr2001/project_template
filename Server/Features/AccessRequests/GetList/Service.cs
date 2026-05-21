@@ -22,7 +22,7 @@ public sealed class GetAccessRequestsService(
             select new
             {
                 request.AccessReqId,
-                request.EmpId,
+                request.UserId,
                 request.ReqTo,
                 request.ItsrNo,
                 request.IsAgreed,
@@ -43,7 +43,7 @@ public sealed class GetAccessRequestsService(
         var data = rows
             .Select(row => new AccessRequestListItemDto(
                 row.AccessReqId,
-                row.EmpId,
+                row.UserId,
                 row.ReqTo,
                 row.Status,
                 row.ItsrNo,

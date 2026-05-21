@@ -335,9 +335,9 @@ function FolderMappingPage() {
                   <SelectItem value={NONE_VALUE}>None</SelectItem>
                   {hodOptions.map((hod) => (
                     <SelectItem
-                      key={hod.EmployeeId}
-                      value={hod.EmployeeId}
-                      disabled={hod.EmployeeId === formSecondaryHod}
+                      key={hod.UserId}
+                      value={hod.EmployeeId ?? String(hod.UserId)}
+                      disabled={(hod.EmployeeId ?? String(hod.UserId)) === formSecondaryHod}
                     >
                       {hod.Name} ({hod.Email})
                     </SelectItem>
@@ -359,9 +359,9 @@ function FolderMappingPage() {
                   <SelectItem value={NONE_VALUE}>None</SelectItem>
                   {hodOptions.map((hod) => (
                     <SelectItem
-                      key={hod.EmployeeId}
-                      value={hod.EmployeeId}
-                      disabled={hod.EmployeeId === formPrimaryHod}
+                      key={hod.UserId}
+                      value={hod.EmployeeId ?? String(hod.UserId)}
+                      disabled={(hod.EmployeeId ?? String(hod.UserId)) === formPrimaryHod}
                     >
                       {hod.Name} ({hod.Email})
                     </SelectItem>

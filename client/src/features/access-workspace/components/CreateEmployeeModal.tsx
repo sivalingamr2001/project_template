@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select"
 
 import { useDepartments } from "../hooks/useDepartments"
-import type { AppRole, EmployeeRecord } from "../types"
+import type { AppRole } from "../types"
 import { getDepartmentName } from "../utils/departments"
 import {
   createUser,
@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/command"
 
 type CreateEmployeeModalProps = {
-  employees: EmployeeRecord[]
   open: boolean
   onClose: () => void
   onCreated: () => void

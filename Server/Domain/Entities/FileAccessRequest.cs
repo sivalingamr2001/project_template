@@ -29,11 +29,11 @@ public class AccessRequestEntity : BaseEntity
     [Column("accessreq_id")]
     public int AccessReqId { get; set; }
 
-    [Column("emp_id")]
-    public int EmpId { get; set; }
+    [Column("User_id")]
+    public int UserId { get; set; }
 
     [Column("req_to")]
-    public int ReqTo { get; set; }
+    public int ReqTo { get; set; } //Ref UserId
 
     [Column("is_agreed")]
     public bool IsAgreed { get; set; }
@@ -87,7 +87,7 @@ public sealed class AccessApprovalEntity : BaseEntity
     public int AccessItemId { get; set; }
 
     [Column("approver_id")]
-    public int ApproverId { get; set; }
+    public int ApproverId { get; set; } //ref UserId
 
     [Column("approval_status")]
     public RequestStatus ApprovalStatus { get; set; }
@@ -118,8 +118,8 @@ public sealed class AccessReqAuditEntity : BaseEntity
     [Column("message")]
     public string Message { get; set; } = string.Empty;
 
-    [Column("recipient_emp_id")]
-    public int RecipientEmpId { get; set; }
+    [Column("recipient_user_id")]
+    public int RecipientUserId { get; set; } // ref UserId
 
     [Column("recipient_name")]
     public string RecipientName { get; set; } = string.Empty;

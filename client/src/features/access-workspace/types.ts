@@ -83,14 +83,15 @@ export type NotificationItem = {
 export type EmployeeRecord = {
   departmentName: string
   email: string
-  employeeId: number
+  employeeId?: string | null
   userId: number
   name: string
   role: AppRole
 }
 
 export interface HodResponse {
-  EmployeeId: string
+  UserId: number
+  EmployeeId?: string | null
   Name: string
   Email: string
   PhoneNumber: string

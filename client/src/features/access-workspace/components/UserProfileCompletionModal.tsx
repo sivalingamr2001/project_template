@@ -26,10 +26,7 @@ function splitName(fullName: string) {
 }
 
 function isProfileIncomplete(user: any) {
-  return (
-    !!user &&
-    ([null, undefined, 0, "0"].includes(user.employeeId))
-  )
+  return !!user && !user.userId
 }
 
 export default function UserProfileCompletionModal() {
@@ -38,9 +35,6 @@ export default function UserProfileCompletionModal() {
   const { departments } = useDepartments()
 
   const initialName = useMemo(() => splitName(user?.name ?? ""), [user?.name])
-  const [employeeId, setEmployeeId] = useState<number | undefined>(
-    user?.employeeId
-  )
   const [firstName, setFirstName] = useState(initialName.firstName)
   const [lastName, setLastName] = useState(initialName.lastName)
   const [userName, setUserName] = useState(user?.userName ?? "")
@@ -55,7 +49,6 @@ export default function UserProfileCompletionModal() {
   useEffect(() => {
     if (!user) return
     const name = splitName(user.name ?? "")
-    setEmployeeId(user.employeeId)
     setFirstName(name.firstName)
     setLastName(name.lastName)
     setUserName(user.userName ?? "")
@@ -76,7 +69,6 @@ export default function UserProfileCompletionModal() {
     setError(null)
     try {
       const updated = await updateUserProfile(user.userId, {
-        employeeId,
         userName,
         firstName,
         lastName,
@@ -119,16 +111,12 @@ export default function UserProfileCompletionModal() {
         <div className="grid gap-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="employeeId">Employee ID</Label>
+              <Label htmlFor="userId">User ID</Label>
               <Input
-                id="employeeId"
-                className="border-primary"
-                value={String(employeeId ?? "")}
-                onChange={(e) =>
-                  setEmployeeId(e.target.value ? Number(e.target.value) : undefined)
-                }
-                inputMode="numeric"
-                required
+                id="userId"
+                className="bg-muted"
+                value={String(user.userId ?? "")}
+                readOnly
               />
             </div>
             <div className="space-y-2">
@@ -175,7 +163,7 @@ export default function UserProfileCompletionModal() {
             onClick={onSubmit}
             disabled={
               isSaving ||
-              !employeeId ||
+              !user.userId ||
               !userName.trim() ||
               !firstName.trim() ||
               !email.trim() ||

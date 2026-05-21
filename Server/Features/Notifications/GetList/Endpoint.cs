@@ -7,13 +7,13 @@ public static class GetNotificationsEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{employeeId:int}", async (
-            int employeeId,
+        group.MapGet("/{userId:int}", async (
+            int userId,
             [AsParameters] GetNotificationsQuery query,
             AccessRequestWorkflowService service,
             CancellationToken cancellationToken) =>
         {
-            var response = await service.GetNotificationsAsync(employeeId, query, cancellationToken);
+            var response = await service.GetNotificationsAsync(userId, query, cancellationToken);
             return Results.Ok(response);
         })
         .WithName("GetNotifications")

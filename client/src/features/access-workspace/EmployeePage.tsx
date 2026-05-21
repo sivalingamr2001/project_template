@@ -23,7 +23,7 @@ function EmployeePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
     null
   )
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
@@ -46,7 +46,7 @@ function EmployeePage() {
               size="sm"
               variant="outline"
               onClick={() => {
-                setSelectedEmployeeId(row.employeeId)
+                setSelectedEmployeeId(row.employeeId ?? null)
                 setSelectedUserId(row.userId)
                 setIsEditOpen(true)
               }}
@@ -58,7 +58,7 @@ function EmployeePage() {
               size="sm"
               variant="outline"
               onClick={() => {
-                setSelectedEmployeeId(row.employeeId)
+                setSelectedEmployeeId(row.employeeId ?? null)
                 setSelectedUserId(row.userId)
                 setIsPasswordOpen(true)
               }}
@@ -106,7 +106,7 @@ function EmployeePage() {
       {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
       <CommonTable
         columns={columns}
-        getRowId={(row) => row.employeeId}
+        getRowId={(row) => row.userId}
         isLoading={isLoading}
         onRefresh={() => setReloadKey((value) => value + 1)}
         onSearchChange={(term) => {
@@ -136,24 +136,22 @@ function EmployeePage() {
       <EditEmployeeModal
         employeeId={selectedEmployeeId}
         userId={selectedUserId}
-        employees={employees}
         open={isEditOpen}
         onClose={() => setIsEditOpen(false)}
         onSaved={(updated) => {
-          if (updated?.employeeId && updated.employeeId === user?.employeeId) {
+          if (updated?.userId && updated.userId === user?.userId) {
             setSessionUser(updated)
           }
           setReloadKey((value) => value + 1)
         }}
       />
       <CreateEmployeeModal
-        employees={employees}
         open={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreated={() => setReloadKey((value) => value + 1)}
       />
       <ResetPasswordModal
-        employeeId={selectedEmployeeId}
+        userId={selectedUserId}
         open={isPasswordOpen}
         onClose={() => setIsPasswordOpen(false)}
         onSaved={() => setReloadKey((value) => value + 1)}

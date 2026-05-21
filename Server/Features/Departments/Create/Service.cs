@@ -40,15 +40,14 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
 
         var hodExists = await dbContext.Employees
             .AsNoTracking()
-            .Where(e => e.EmployeeId.HasValue
-                        && e.EmployeeId.Value == request.HodId
+            .Where(e => e.UserId == request.HodId
                         && (e.UserRole ?? UserRole.User) == UserRole.Hod)
-            .Select(e => new { e.UserId, EmployeeId = e.EmployeeId!.Value, e.Email })
+            .Select(e => new { e.UserId, e.EmployeeId, e.Email })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (hodExists is null)
         {
-            throw new InvalidOperationException($"HOD with Id '{request.HodId}' does not exist or is not a HOD.");
+            throw new InvalidOperationException($"HOD with UserId '{request.HodId}' does not exist or is not a HOD.");
         }
 
         var entity = new DepartmentEntity
@@ -66,13 +65,14 @@ public sealed class CreateDepartmentService(AppDbContext dbContext)
         await dbContext.Departments.AddAsync(entity, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new DepartmentDto(
-            entity.DepartmentId,
-            entity.DepartmentId,
-            entity.DepartmentName,
-            hodExists.EmployeeId,
-            hodExists.Email,
-            hodExists.Email,
-            string.Empty);
+        return new DepartmentDto
+        {
+            DepartmentId = entity.DepartmentId,
+            Name = entity.DepartmentName,
+            HodId = hodExists.UserId,
+            HodName = hodExists.Email,
+            HodEmail = hodExists.Email,
+            HodEmployeeId = hodExists.EmployeeId
+        };
     }
 }

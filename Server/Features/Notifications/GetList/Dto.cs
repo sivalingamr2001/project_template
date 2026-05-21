@@ -9,7 +9,7 @@ public sealed record NotificationDto(
     int AccessReqId,
     string EventType,
     string Message,
-    int RecipientEmpId,
+    int RecipientUserId,
     string RecipientName,
     string RecipientRole,
     bool IsRead,

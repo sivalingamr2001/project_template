@@ -26,8 +26,8 @@ export function EmployeeSection({
 
   useEffect(() => {
     if (currentUser) {
-      form.setValue('empId', currentUser.employeeId)
-      form.setValue('reqTo', currentUser.departmentHod?.employeeId ?? 0)
+      form.setValue('empId', currentUser.userId)
+      form.setValue('reqTo', currentUser.departmentHod?.userId ?? 0)
     }
   }, [currentUser, form])
 
@@ -35,7 +35,7 @@ export function EmployeeSection({
     form.setValue('empId', empId)
     onEmployeeChange?.(empId)
 
-    if (empId > 0 && empId !== currentUser?.employeeId) {
+    if (empId > 0 && empId !== currentUser?.userId) {
       setIsFetching(true)
       try {
         // TODO: Fetch user by ID
@@ -45,9 +45,9 @@ export function EmployeeSection({
       } finally {
         setIsFetching(false)
       }
-    } else if (empId === currentUser?.employeeId) {
+    } else if (empId === currentUser?.userId) {
       setFetchedUser(null)
-      form.setValue('reqTo', currentUser?.departmentHod?.employeeId ?? 0)
+      form.setValue('reqTo', currentUser?.departmentHod?.userId ?? 0)
     }
   }
 
@@ -112,7 +112,7 @@ export function EmployeeSection({
           <Input
             value={
               displayUser?.departmentHod
-                ? `${displayUser.departmentHod.employeeId} - ${displayUser.departmentHod.name}`
+                ? `${displayUser.departmentHod.userId} - ${displayUser.departmentHod.name}`
                 : "No HOD assigned"
             }
             readOnly

@@ -21,14 +21,14 @@ function RequestDetailsPage() {
   const { user } = useAuth()
   const accessReqId = Number(requestId)
   const selectedItemFromUrl = itemId ? Number(itemId) : undefined
-  const reviewerEmployeeId = user?.employeeId ?? 0
+  const reviewerUserId = user?.userId ?? 0
   const role =
     user?.role === "Hod" || user?.role === "Operator" ? user.role : "User"
   const { details, errorMessage, isLoading, refetch } = useRequestDetails(
     accessReqId,
-    reviewerEmployeeId
+    reviewerUserId
   )
-  const page = useRequestDetailsPage(details, reviewerEmployeeId, role, refetch)
+  const page = useRequestDetailsPage(details, reviewerUserId, role, refetch)
   const prevItemIdRef = useRef<number | undefined>(undefined)
 
   // Set selected item from URL parameter (only when it changes)

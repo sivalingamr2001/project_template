@@ -9,11 +9,11 @@ public static class GetAccessRequestDetailsEndpoint
     {
     group.MapGet("/{accessReqId:int}", async (
     int accessReqId,
-    [FromQuery] int viewerEmployeeId,
+    [FromQuery] int viewerUserId,
     AccessRequestWorkflowService service,
     CancellationToken cancellationToken) =>
     {
-        var response = await service.GetDetailsAsync(accessReqId, viewerEmployeeId, cancellationToken);
+        var response = await service.GetDetailsAsync(accessReqId, viewerUserId, cancellationToken);
         return Results.Ok(response);
     })
     .WithName("GetAccessRequestDetails")

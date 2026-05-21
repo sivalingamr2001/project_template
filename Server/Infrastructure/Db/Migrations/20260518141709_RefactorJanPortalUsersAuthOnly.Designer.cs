@@ -205,9 +205,9 @@ namespace Server.Infrastructure.Db.Migrations
                         .HasColumnType("datetime(6)")
                         .HasColumnName("modified_on");
 
-                    b.Property<int>("RecipientEmpId")
+                    b.Property<int>("RecipientUserId")
                         .HasColumnType("int")
-                        .HasColumnName("recipient_emp_id");
+                        .HasColumnName("recipient_user_id");
 
                     b.Property<string>("RecipientName")
                         .IsRequired()

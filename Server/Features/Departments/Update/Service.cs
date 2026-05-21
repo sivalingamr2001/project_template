@@ -37,25 +37,24 @@ public sealed class UpdateDepartmentService(AppDbContext dbContext)
             return null;
         }
 
-        var currentHodEmployeeId = await dbContext.Employees
+        var currentHodUserId = await dbContext.Employees
             .AsNoTracking()
             .Where(e => e.UserId == department.HodId)
-            .Select(e => (int?)e.EmployeeId)
+            .Select(e => (int?)e.UserId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (currentHodEmployeeId != request.HodId)
+        if (currentHodUserId != request.HodId)
         {
             var hodEmployee = await dbContext.Employees
                 .AsNoTracking()
-                .Where(e => e.EmployeeId.HasValue
-                            && e.EmployeeId.Value == request.HodId
+                .Where(e => e.UserId == request.HodId
                             && (e.UserRole ?? UserRole.User) == UserRole.Hod)
-                .Select(e => new { e.UserId, EmployeeId = e.EmployeeId!.Value, e.Email })
+                .Select(e => new { e.UserId, e.EmployeeId, e.Email })
                 .FirstOrDefaultAsync(cancellationToken);
 
             if (hodEmployee is null)
             {
-                throw new InvalidOperationException($"HOD with Id '{request.HodId}' does not exist or is not a HOD.");
+                throw new InvalidOperationException($"HOD with UserId '{request.HodId}' does not exist or is not a HOD.");
             }
 
             department.HodId = hodEmployee.UserId;
@@ -76,13 +75,14 @@ public sealed class UpdateDepartmentService(AppDbContext dbContext)
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        return new DepartmentDto(
-            department.DepartmentId,
-            department.DepartmentId,
-            department.DepartmentName,
-            hodName?.EmployeeId ?? 0,
-            hodName?.Email ?? string.Empty,
-            hodName?.Email ?? string.Empty,
-            string.Empty);
+        return new DepartmentDto
+        {
+            DepartmentId = department.DepartmentId,
+            Name = department.DepartmentName,
+            HodId = department.HodId,
+            HodName = hodName?.Email ?? string.Empty,
+            HodEmail = hodName?.Email ?? string.Empty,
+            HodEmployeeId = hodName?.EmployeeId
+        };
     }
 }

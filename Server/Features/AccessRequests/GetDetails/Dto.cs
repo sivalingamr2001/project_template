@@ -39,7 +39,7 @@ public sealed record AccessRequestTimelineDto(
     int AuditId,
     string EventType,
     string Message,
-    int RecipientEmpId,
+    int RecipientUserId,
     string RecipientName,
     string RecipientRole,
     bool IsRead,

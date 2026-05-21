@@ -16,6 +16,25 @@ public sealed class EmployeeService(
 {
     private readonly ConnectionStrings _connectionStrings = connectionStrings.Value;
 
+    public async Task<PaginatedResponse<UserResponse>> GetEmployeesAsync(
+        GetEmployeesQuery query,
+        CancellationToken cancellationToken)
+    {
+        var users = await GetUsersAsync(cancellationToken);
+        var totalCount = users.Count;
+        var data = users
+            .OrderBy(user => user.UserId)
+            .Skip(query.Skip)
+            .Take(query.NormalizedPageSize)
+            .ToList();
+
+        return new PaginatedResponse<UserResponse>(
+            data,
+            totalCount,
+            query.NormalizedPage,
+            query.NormalizedPageSize);
+    }
+
     public async Task<List<UserResponse>> GetUsersAsync(CancellationToken cancellationToken)
     {
         try
@@ -128,6 +147,38 @@ public sealed class EmployeeService(
         return users.FirstOrDefault(u => u.UserId == userId);
     }
 
+    public Task<UserResponse?> GetEmployeeByIdAsync(int userId, CancellationToken cancellation)
+        => GetUserByIdAsync(userId, cancellation);
+
+    public async Task<List<UserResponse>> GetEmployeesByDepartmentAsync(int departmentId, CancellationToken cancellation)
+    {
+        var users = await GetUsersAsync(cancellation);
+        return users
+            .Where(user => user.Department.DepartmentId == departmentId)
+            .OrderBy(user => user.UserId)
+            .ToList();
+    }
+
+    public async Task<List<UserResponse>> SearchEmployeesAsync(string searchTerm, CancellationToken cancellation)
+    {
+        var users = await GetUsersAsync(cancellation);
+        var term = searchTerm?.Trim();
+
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            return users.OrderBy(user => user.UserId).ToList();
+        }
+
+        return users
+            .Where(user =>
+                user.UserId.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                user.EmployeeId.ToString().Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                user.UserName.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                user.Email.Contains(term, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(user => user.UserId)
+            .ToList();
+    }
+
     public async Task UpdateEmployeeAsync(int userId, string? role, string? location, CancellationToken cancellation)
     {
         var employee = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == userId, cancellation);
@@ -145,6 +196,169 @@ public sealed class EmployeeService(
         }
         await dbContext.SaveChangesAsync(cancellation);
     }
+
+    public async Task<UserResponse?> UpdateEmployeeAsync(int userId, UpdateEmployeeRequest request, CancellationToken cancellation)
+    {
+        await UpdateEmployeeAsync(userId, request.Role, request.Location, cancellation);
+        return await GetUserByIdAsync(userId, cancellation);
+    }
+
+    public async Task<bool> DeleteEmployeeAsync(int userId, CancellationToken cancellation)
+    {
+        var employee = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == userId, cancellation);
+        if (employee is null)
+        {
+            return false;
+        }
+
+        employee.IsActive = false;
+        employee.UpdatedOn = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(cancellation);
+        return true;
+    }
+
+    public async Task<PaginatedResponse<LegacyUserListItemDto>> GetLegacyUsersAsync(
+        GetUsersQuery query,
+        CancellationToken cancellationToken)
+    {
+        var users = await GetUsersAsync(cancellationToken);
+        var totalCount = users.Count;
+        var data = users
+            .OrderBy(user => user.UserId)
+            .Skip(query.Skip)
+            .Take(query.NormalizedPageSize)
+            .Select(user => new LegacyUserListItemDto(
+                user.UserId,
+                user.EmployeeId,
+                user.UserName,
+                user.Email,
+                user.Department.DepartmentName,
+                user.Role ?? UserRole.User.ToString()))
+            .ToList();
+
+        return new PaginatedResponse<LegacyUserListItemDto>(
+            data,
+            totalCount,
+            query.NormalizedPage,
+            query.NormalizedPageSize);
+    }
+
+    public async Task<LegacyUserProfileDto?> GetLegacyUserByUserIdAsync(int userId, CancellationToken cancellationToken)
+    {
+        var user = await GetUserByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new LegacyUserProfileDto(
+            user.UserId,
+            user.EmployeeId,
+            user.UserName,
+            user.UserName,
+            user.Email,
+            user.Mobile,
+            user.Department.DepartmentId,
+            user.Department.DepartmentName,
+            user.Role ?? UserRole.User.ToString(),
+            user.Hod is null
+                ? null
+                : new LegacyDepartmentHodDto(
+                    user.Hod.EmployeeId,
+                    user.Hod.Name,
+                    user.Hod.Email,
+                    user.Hod.Mobile));
+    }
+
+    public async Task<LegacyUserProfileDto> CreateLegacyUserAsync(LegacyCreateUserRequest request, CancellationToken cancellationToken)
+    {
+        if (request.EmployeeId is null or <= 0)
+        {
+            throw new InvalidOperationException("EmployeeId is required to create a local user.");
+        }
+
+        var cmplUser = (await GetUsersAsync(cancellationToken))
+            .FirstOrDefault(user => user.EmployeeId == request.EmployeeId.Value);
+
+        if (cmplUser is null)
+        {
+            throw new InvalidOperationException($"CMPL user with EmployeeId {request.EmployeeId.Value} was not found.");
+        }
+
+        var existing = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == cmplUser.UserId, cancellationToken);
+        if (existing is null)
+        {
+            existing = new Domain.Entities.EmployeeEntity
+            {
+                UserId = cmplUser.UserId,
+                EmployeeId = cmplUser.EmployeeId.ToString(),
+                Email = string.IsNullOrWhiteSpace(request.Email) ? cmplUser.Email : request.Email,
+                UserRole = ParseRole(request.Role),
+                Location = null,
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow,
+                UpdatedOn = DateTime.UtcNow
+            };
+
+            dbContext.Employees.Add(existing);
+        }
+        else
+        {
+            existing.Email = string.IsNullOrWhiteSpace(request.Email) ? existing.Email : request.Email;
+            existing.UserRole = ParseRole(request.Role) ?? existing.UserRole;
+            existing.UpdatedOn = DateTime.UtcNow;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return await GetLegacyUserByUserIdAsync(cmplUser.UserId, cancellationToken)
+            ?? throw new InvalidOperationException("Unable to load the created user.");
+    }
+
+    public async Task<LegacyUserProfileDto?> UpdateLegacyUserAsync(int userId, LegacyUpdateUserRequest request, CancellationToken cancellationToken)
+    {
+        var employee = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == userId, cancellationToken);
+        if (employee is null)
+        {
+            throw new KeyNotFoundException($"User with UserId {userId} not found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            employee.Email = request.Email.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Location))
+        {
+            employee.Location = request.Location.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Role))
+        {
+            employee.UserRole = ParseRole(request.Role);
+        }
+
+        employee.UpdatedOn = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return await GetLegacyUserByUserIdAsync(userId, cancellationToken);
+    }
+
+    public async Task UpdatePasswordAsync(int userId, string password, CancellationToken cancellationToken)
+    {
+        _ = password;
+
+        var employee = await dbContext.Employees.FirstOrDefaultAsync(e => e.UserId == userId, cancellationToken);
+        if (employee is null)
+        {
+            throw new KeyNotFoundException($"User with UserId {userId} not found.");
+        }
+
+        employee.UpdatedOn = DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static UserRole? ParseRole(string? role)
+        => Enum.TryParse<UserRole>(role, true, out var parsedRole) ? parsedRole : null;
 
     private sealed record CmplUserDto(
         int UserId,

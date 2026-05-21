@@ -5,14 +5,14 @@ import { fetchAccessRequestDetails } from "../../utils/requestApi"
 
 export function useRequestDetails(
   accessReqId: number,
-  viewerEmployeeId: number
+  viewerUserId: number
 ) {
   const [details, setDetails] = useState<AccessRequestDetails | null>(null)
   const [errorMessage, setErrorMessage] = useState("")
   const [isLoading, setIsLoading] = useState(true)
 
   const fetchDetails = async () => {
-    if (!accessReqId || !viewerEmployeeId) {
+    if (!accessReqId || !viewerUserId) {
       setIsLoading(false)
       return
     }
@@ -21,7 +21,7 @@ export function useRequestDetails(
     try {
       const payload = await fetchAccessRequestDetails(
         accessReqId,
-        viewerEmployeeId
+        viewerUserId
       )
       setDetails(payload)
       setErrorMessage("")
@@ -34,7 +34,7 @@ export function useRequestDetails(
 
   useEffect(() => {
     void fetchDetails()
-  }, [accessReqId, viewerEmployeeId])
+  }, [accessReqId, viewerUserId])
 
   return { details, errorMessage, isLoading, refetch: fetchDetails, setDetails }
 }

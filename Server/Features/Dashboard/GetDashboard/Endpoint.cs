@@ -6,13 +6,13 @@ public static class GetDashboardEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{employeeId:int}", async (
-            int employeeId,
+        group.MapGet("/{userId:int}", async (
+            int userId,
             [AsParameters] GetDashboardQuery query,
             GetDashboardService service,
             CancellationToken cancellationToken) =>
         {
-            var response = await service.GetAsync(employeeId, query, cancellationToken);
+            var response = await service.GetAsync(userId, query, cancellationToken);
             return Results.Ok(response);
         })
         .WithName("GetDashboard")

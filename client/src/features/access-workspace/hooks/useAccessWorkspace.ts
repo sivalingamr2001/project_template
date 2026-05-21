@@ -16,7 +16,7 @@ import {
 
 export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   const { user } = useAuth()
-  const employeeId = user?.employeeId ?? 0
+  const userId = user?.userId ?? 0
   const role = (user?.role as AppRole) || "User"
   const [apiRequests, setApiRequests] = useState<AccessRequest[]>([])
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
@@ -25,14 +25,14 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
-    if (!employeeId) return
+    if (!userId) return
 
     setIsLoading(true)
     void (async () => {
       try {
         const [requests, notificationsResponse] = await Promise.all([
-          fetchAccessRequests(employeeId),
-          fetchNotifications(employeeId, 1, 50),
+          fetchAccessRequests(userId),
+          fetchNotifications(userId, 1, 50),
         ])
 
         setApiRequests(requests)
@@ -50,15 +50,15 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
         setIsLoading(false)
       }
     })()
-  }, [employeeId, reloadKey])
+  }, [userId, reloadKey])
 
   const requests = useMemo(
-    () => getRequestsByMode(apiRequests, mode, employeeId),
-    [apiRequests, employeeId, mode]
+    () => getRequestsByMode(apiRequests, mode, userId),
+    [apiRequests, userId, mode]
   )
   const summaryCards = useMemo(
-    () => getSummaryCards(apiRequests, employeeId),
-    [apiRequests, employeeId]
+    () => getSummaryCards(apiRequests, userId),
+    [apiRequests, userId]
   )
   const searchRequests = (searchTerm: string) =>
     requests.filter((request) =>
@@ -67,8 +67,8 @@ export function useAccessWorkspace(mode: QueueMode = "dashboard") {
   const refetch = () => setReloadKey((current) => current + 1)
 
   const markNotificationAsRead = async (auditId: number) => {
-    if (!employeeId) return
-    await markNotificationRead(auditId, employeeId)
+    if (!userId) return
+    await markNotificationRead(auditId, userId)
     setNotifications((current) =>
       current.map((item) =>
         item.auditId === auditId ? { ...item, isRead: true } : item

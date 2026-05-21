@@ -113,7 +113,7 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
     {
         var requesterName = BuildDisplayName(notification.Requester);
         var recipients = notification.Recipients
-            .DistinctBy(employee => employee.EmployeeId)
+            .DistinctBy(employee => employee.UserId)
             .Select(BuildRecipientLabel)
             .ToArray();
 
@@ -167,8 +167,8 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
             <td>{Html(requesterName)} ({Html(notification.Requester.Email)})</td>
         </tr>
         <tr>
-            <td><strong>Employee ID</strong></td>
-            <td>{notification.Requester.EmployeeId}</td>
+            <td><strong>User ID</strong></td>
+            <td>{notification.Requester.UserId}</td>
         </tr>
         <tr>
             <td><strong>ITSR Number</strong></td>

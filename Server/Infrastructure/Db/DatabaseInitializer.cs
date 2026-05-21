@@ -94,7 +94,7 @@ public sealed class DatabaseInitializer(
                 new()
                 {
                     UserId = 1,
-                    EmployeeId = 1,
+                    EmployeeId = "1",
                     Email = "john@example.com",
                     UserRole = UserRole.User,
                     IsActive = true
@@ -102,7 +102,7 @@ public sealed class DatabaseInitializer(
                 new()
                 {
                     UserId = 2,
-                    EmployeeId = 2,
+                    EmployeeId = "2",
                     Email = "jane@example.com",
                     UserRole = UserRole.Hod,
                     IsActive = true
@@ -110,7 +110,7 @@ public sealed class DatabaseInitializer(
                 new()
                 {
                     UserId = 3,
-                    EmployeeId = 3,
+                    EmployeeId = "3",
                     Email = "rose@example.com",
                     UserRole = UserRole.Operator,
                     IsActive = true
@@ -118,7 +118,7 @@ public sealed class DatabaseInitializer(
                 new()
                 {
                     UserId = 4,
-                    EmployeeId = 4,
+                    EmployeeId = "4",
                     Email = "admin@example.com",
                     UserRole = UserRole.Admin,
                     IsActive = true
@@ -136,9 +136,9 @@ public sealed class DatabaseInitializer(
             {
                 new()
                 {
-                    DeptId = 101,
-                    DeptName = "IT",
-                    DeptHodId = 2, // Jane is HOD
+                    DepartmentId = 101,
+                    DepartmentName = "IT",
+                    HodId = 2,
                     IsActive = true
                 }
             };

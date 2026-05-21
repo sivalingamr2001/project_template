@@ -3,7 +3,7 @@ using Server.Domain.Enums;
 namespace Server.Features.AccessRequests.Resubmit;
 
 public sealed record ResubmitAccessItemRequest(
-    int ReviewerEmployeeId,
+    int ReviewerUserId,
     string Comments);
 
 public sealed record ResubmitAccessItemResponse(

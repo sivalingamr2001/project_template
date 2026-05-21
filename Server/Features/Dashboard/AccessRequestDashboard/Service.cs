@@ -64,7 +64,7 @@ public class AccessRequestDashboardService
             .AsNoTracking()
             .Where(r => r.IsActive);
 
-        if (query.EmpId is not null) requestQuery = requestQuery.Where(r => r.EmpId == query.EmpId.Value);
+        if (query.EmpId is not null) requestQuery = requestQuery.Where(r => r.UserId == query.EmpId.Value);
         if (query.ApproverId is not null) requestQuery = requestQuery.Where(r => r.ReqTo == query.ApproverId.Value);
         if (query.From is not null) requestQuery = requestQuery.Where(r => r.CreatedOn >= query.From.Value);
         if (query.To is not null) requestQuery = requestQuery.Where(r => r.CreatedOn <= query.To.Value);
@@ -127,7 +127,7 @@ public class AccessRequestDashboardService
         var unreadNotifications = await _dbContext.AccessReqAudits
             .AsNoTracking()
             .Where(a => a.IsActive && !a.IsRead)
-            .Where(a => query.EmpId == null || a.RecipientEmpId == query.EmpId.Value)
+            .Where(a => query.ApproverId == null || a.RecipientUserId == query.ApproverId.Value)
             .CountAsync(cancellationToken);
 
         return new DashboardSummaryDto(
@@ -185,7 +185,7 @@ public class AccessRequestDashboardService
     {
         // FIXED: Swapped fluent syntax chain out for clean explicit LINQ queries
         var query = from r in requests
-                    join emp in _dbContext.Employees.AsNoTracking() on r.EmpId equals emp.UserId
+                    join emp in _dbContext.Employees.AsNoTracking() on r.UserId equals emp.UserId
                     join app in _dbContext.Employees.AsNoTracking() on r.ReqTo equals app.UserId
                     orderby r.CreatedOn descending
                     select new RecentRequestDto(
@@ -219,7 +219,7 @@ public class AccessRequestDashboardService
                     join req in _dbContext.AccessRequests.AsNoTracking() on approval.AccessReqId equals req.AccessReqId
                     where req.IsActive
                     join approverUser in _dbContext.Employees.AsNoTracking() on approval.ApproverId equals approverUser.UserId
-                    join requestorUser in _dbContext.Employees.AsNoTracking() on req.EmpId equals requestorUser.UserId
+                    join requestorUser in _dbContext.Employees.AsNoTracking() on req.UserId equals requestorUser.UserId
                     orderby approval.CreatedOn
                     select new PendingApprovalDto(
                         approval.AccessApproveId,
@@ -243,7 +243,7 @@ public class AccessRequestDashboardService
         return await _dbContext.AccessReqAudits
             .AsNoTracking()
             .Where(a => a.IsActive)
-            .Where(a => query.EmpId == null || a.RecipientEmpId == query.EmpId.Value)
+            .Where(a => query.ApproverId == null || a.RecipientUserId == query.ApproverId.Value)
             .OrderByDescending(a => a.CreatedOn)
             .Take(15)
             .Select(a => new AuditLogDto(

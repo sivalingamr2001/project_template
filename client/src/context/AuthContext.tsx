@@ -8,14 +8,14 @@ import {
 } from "react"
 
 export type HODDetails = {
-  employeeId: number
+  userId: number
   name: string
   email: string
 }
 
 export type AuthUser = {
   userId: number
-  employeeId: number
+  employeeId?: string | null
   userName: string
   name: string
   email: string
@@ -23,7 +23,7 @@ export type AuthUser = {
   departmentId: number
   departmentName: string
   role: string
-  departmentHod: HODDetails
+  departmentHod?: HODDetails | null
 }
 
 // Data shape for the registration request

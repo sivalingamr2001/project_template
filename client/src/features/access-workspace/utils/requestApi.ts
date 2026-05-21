@@ -163,10 +163,10 @@ function mapAccessRequestDetails(details: {
 }
 
 export async function fetchAccessRequests(
-  employeeId: number
+  userId: number
 ): Promise<AccessRequest[]> {
   const response = await fetch(
-    `${API_URL}/dashboard/${employeeId}?Page=1&PageSize=10`
+    `${API_URL}/dashboard/${userId}?Page=1&PageSize=10`
   )
   if (!response.ok) throw new Error("Unable to load access requests.")
 
@@ -210,10 +210,10 @@ export async function fetchAccessRequests(
 
 export async function fetchAccessRequestDetails(
   accessReqId: number,
-  viewerEmployeeId: number
+  viewerUserId: number
 ) {
   const response = await fetch(
-    `${API_URL}/access-requests/${accessReqId}?viewerEmployeeId=${viewerEmployeeId}`
+    `${API_URL}/access-requests/${accessReqId}?viewerUserId=${viewerUserId}`
   )
   if (!response.ok) throw new Error("Unable to load request details.")
   const payload = await safeParseJson(response)
@@ -221,12 +221,12 @@ export async function fetchAccessRequestDetails(
 }
 
 export async function fetchNotifications(
-  employeeId: number,
+  userId: number,
   page = 1,
   pageSize = 10
 ): Promise<PaginatedResponse<NotificationItem>> {
   const response = await fetch(
-    `${API_URL}/notifications/${employeeId}?Page=${page}&PageSize=${pageSize}`
+    `${API_URL}/notifications/${userId}?Page=${page}&PageSize=${pageSize}`
   )
   if (!response.ok) throw new Error("Unable to load notifications.")
 
@@ -252,12 +252,12 @@ export async function fetchNotifications(
 
 export async function markNotificationRead(
   auditId: number,
-  employeeId: number
+  userId: number
 ) {
   const response = await fetch(`${API_URL}/notifications/${auditId}/read`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ EmployeeId: employeeId }),
+    body: JSON.stringify({ userId }),
   })
   if (!response.ok) throw new Error("Unable to update notification status.")
 }
@@ -342,8 +342,8 @@ export async function searchEmployees(
   }))
 }
 
-export async function fetchUserProfile(employeeId: number): Promise<AuthUser> {
-  const response = await fetch(`${API_URL}/User/${employeeId}`)
+export async function fetchUserProfile(userId: number): Promise<AuthUser> {
+  const response = await fetch(`${API_URL}/User/${userId}`)
   if (!response.ok) throw new Error("Unable to load user profile.")
   return safeParseJson(response)
 }
@@ -464,10 +464,10 @@ export async function updateDepartment(
 }
 
 export async function updateUserPassword(
-  employeeId: number,
+  userId: number,
   password: string
 ): Promise<void> {
-  const response = await fetch(`${API_URL}/User/${employeeId}/password`, {
+  const response = await fetch(`${API_URL}/User/${userId}/password`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password }),
@@ -484,7 +484,7 @@ export async function updateUserPassword(
 export async function reviewAccessRequestByHod(
   accessReqId: number,
   accessItemId: number,
-  reviewerEmployeeId: number,
+  reviewerUserId: number,
   approved: boolean,
   comments: string,
   confirmAccessType?: number
@@ -495,7 +495,7 @@ export async function reviewAccessRequestByHod(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        reviewerEmployeeId,
+        reviewerUserId,
         approved,
         comments,
         confirmAccessType: confirmAccessType || 1,
@@ -508,7 +508,7 @@ export async function reviewAccessRequestByHod(
 export async function reviewAccessRequestByIt(
   accessReqId: number,
   accessItemId: number,
-  reviewerEmployeeId: number,
+  reviewerUserId: number,
   approved: boolean,
   comments: string,
   itsrNo: string,
@@ -520,7 +520,7 @@ export async function reviewAccessRequestByIt(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        reviewerEmployeeId,
+        reviewerUserId,
         approved,
         comments,
         itsrNo,
@@ -534,7 +534,7 @@ export async function reviewAccessRequestByIt(
 export async function revokeAccessRequest(
   accessReqId: number,
   accessItemId: number,
-  reviewerEmployeeId: number,
+  reviewerUserId: number,
   comments: string
 ) {
   const response = await fetch(
@@ -543,7 +543,7 @@ export async function revokeAccessRequest(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        reviewerEmployeeId,
+        reviewerUserId,
         comments,
       }),
     }
@@ -591,6 +591,7 @@ export async function fetchAllHod(
   const payload = await safeParseJson(response)
 
   return payload.map((item: any) => ({
+    UserId: item.userId,
     EmployeeId: item.employeeId,
     Name: item.name,
     Email: item.email,

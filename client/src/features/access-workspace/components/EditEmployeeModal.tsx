@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import type { EmployeeRecord, AppRole } from "../types"
+import type { AppRole } from "../types"
 import { useDepartments } from "../hooks/useDepartments"
 import { getDepartmentName } from "../utils/departments"
 import {
@@ -36,9 +36,8 @@ function splitName(fullName: string) {
 }
 
 type EditEmployeeModalProps = {
-  employeeId: number | null
+  employeeId: string | null
   userId: number | null
-  employees: EmployeeRecord[]
   open: boolean
   onClose: () => void
   onSaved: (updated: AuthUser) => void
@@ -101,7 +100,7 @@ export default function EditEmployeeModal({
   }, [departments])
 
   const onSubmit = async () => {
-    if (!employeeId || !userId) return
+    if (!userId) return
     setIsSaving(true)
     setError(null)
     try {
@@ -255,7 +254,7 @@ export default function EditEmployeeModal({
           <Button
             type="button"
             onClick={onSubmit}
-            disabled={isSaving || isLoading || !employeeId || !userName.trim()}
+            disabled={isSaving || isLoading || !userId || !userName.trim()}
           >
             {isSaving ? "Saving..." : "Save"}
           </Button>

@@ -7,7 +7,7 @@ public sealed record LoginResponse(SessionDto Session);
 public sealed record SessionDto(LoggedInUserDto User);
 
 public sealed record HODDetailsDto(
-    int EmployeeId,
+    int UserId,
     string Name,
     string Email,
     string Phone);

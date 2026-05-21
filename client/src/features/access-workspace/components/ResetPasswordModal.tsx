@@ -14,14 +14,14 @@ import { Label } from "@/components/ui/label"
 import { updateUserPassword } from "../utils/requestApi"
 
 type ResetPasswordModalProps = {
-  employeeId: number | null
+  userId: number | null
   open: boolean
   onClose: () => void
   onSaved: () => void
 }
 
 export default function ResetPasswordModal({
-  employeeId,
+  userId,
   open,
   onClose,
   onSaved,
@@ -40,16 +40,16 @@ export default function ResetPasswordModal({
 
   const canSubmit =
     !isSaving &&
-    Boolean(employeeId) &&
+    Boolean(userId) &&
     password.trim().length > 0 &&
     password === confirmPassword
 
   const onSubmit = async () => {
-    if (!employeeId || !canSubmit) return
+    if (!userId || !canSubmit) return
     setIsSaving(true)
     setError(null)
     try {
-      await updateUserPassword(employeeId, password)
+      await updateUserPassword(userId, password)
       onSaved()
       onClose()
     } catch (e) {

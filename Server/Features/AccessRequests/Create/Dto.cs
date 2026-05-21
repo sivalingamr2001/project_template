@@ -4,7 +4,7 @@ namespace Server.Features.AccessRequests.Create;
 
 public sealed record CreateAccessRequest(
     int? AccessReqId,
-    int EmpId,
+    int UserId,
     bool IsAgree,
     int ReqTo,
     string? ItsrNo,
@@ -18,7 +18,7 @@ public sealed record CreateAccessItemRequest(
 
 public sealed record CreateAccessRequestResponse(
     int AccessReqId,
-    int EmpId,
+    int UserId,
     int ReqTo,
     bool IsAgree,
     string? ItsrNo,

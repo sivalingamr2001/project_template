@@ -12,7 +12,8 @@ function ProfilePage() {
     >
       <div className="grid gap-4 md:grid-cols-2">
         {[
-          ["Employee ID", user?.employeeId],
+          ["User ID", user?.userId],
+          ["Employee ID", user?.employeeId ?? "--"],
           ["Name", user?.name],
           ["Email", user?.email],
           ["Role", user?.role],

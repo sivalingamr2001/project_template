@@ -35,9 +35,9 @@ export const requestColumns: TableColumn<AccessRequest>[] = [
         <span className="font-semibold">REQ #{row.accessReqId}</span>
         <span className="text-muted-foreground">•</span>
         <span className="text-muted-foreground">
-          {row.empId === userData?.employeeId
+          {row.empId === userData?.userId
             ? userData?.name
-            : `Emp #${row.empId}`}
+            : `User #${row.empId}`}
         </span>
       </div>
     ),
@@ -88,7 +88,7 @@ export const employeeColumns: TableColumn<EmployeeRecord>[] = [
       </div>
     ),
   },
-  { key: "id", header: "Employee ID", render: (row) => row.employeeId },
+  { key: "id", header: "User ID", render: (row) => row.userId },
   {
     key: "department",
     header: "Department",

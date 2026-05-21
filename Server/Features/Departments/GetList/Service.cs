@@ -1,42 +1,42 @@
-using System.Configuration;
-using Dapper;
 using Microsoft.EntityFrameworkCore;
-using MySqlConnector;
-using Server.Domain.Entities;
 using Server.Features.Common;
 using Server.Features.HOD;
 using Server.Infrastructure.Db;
 using Server.Shared.Helpers;
-using static Server.Features.Auth.Login.LoginService;
-using static Server.Features.Employees.EmployeeService;
 
 namespace Server.Features.Departments.GetList;
 
 public sealed class GetDepartmentsService(AppDbContext dbContext)
 {
-    /// <summary>
-    /// Fetch data from cmpl user and hod table, validate if existing same email id or employee id.
-    /// Create a local department record if valid, and return the local department data with pagination.
-    /// </summary>
-    public async Task<DepartmentResponse> GetDepartmentsAsync(int pageNumber, int pageSize, CancellationToken cancellationToken)
+    public async Task<PaginatedResponse<DepartmentDto>> GetAsync(
+        GetDepartmentQuery query,
+        CancellationToken cancellationToken)
     {
+        var departmentsQuery = dbContext.Departments
+            .AsNoTracking()
+            .Include(dept => dept.Hod)
+            .OrderBy(dept => dept.DepartmentId);
 
-        var query = from dept in dbContext.Departments
-                    join hod in dbContext.Employees on dept.HodUserId equals hod.UserId into hodJoin
-                    from hod in hodJoin.DefaultIfEmpty()
-                    select new DepartmentResponse
-                    {
-                        DepartmentId = dept.DepartmentId,
-                        Name = dept.Name,
-                        HodUserId = dept.HodUserId,
-                        HodEmail = hod != null ? hod.Email : null
-                    };
-        var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query
-            .OrderBy(d => d.DepartmentId)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+        var totalCount = await departmentsQuery.CountAsync(cancellationToken);
+
+        var items = await departmentsQuery
+            .Skip(query.Skip)
+            .Take(query.NormalizedPageSize)
+            .Select(dept => new DepartmentDto
+            {
+                DepartmentId = dept.DepartmentId,
+                Name = dept.DepartmentName,
+                HodId = dept.HodId,
+                HodName = dept.Hod != null ? dept.Hod.Email : string.Empty,
+                HodEmail = dept.Hod != null ? dept.Hod.Email : string.Empty,
+                HodEmployeeId = dept.Hod != null ? dept.Hod.EmployeeId : null
+            })
             .ToListAsync(cancellationToken);
-        return new DepartmentResponse(items, totalCount, pageNumber, pageSize);
+
+        return new PaginatedResponse<DepartmentDto>(
+            items,
+            totalCount,
+            query.NormalizedPage,
+            query.NormalizedPageSize);
     }
 }

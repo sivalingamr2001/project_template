@@ -14,7 +14,7 @@ import {
 
 export function useRequestDetailsPage(
   details: AccessRequestDetails | null,
-  reviewerEmployeeId: number,
+  reviewerUserId: number,
   role: AppRole,
   refetch: () => Promise<void>
 ) {
@@ -35,7 +35,7 @@ export function useRequestDetailsPage(
     details && selectedItem?.status === "Access Granted" && role === "Operator"
   const canResubmit =
     role === "User" &&
-    details?.empId === reviewerEmployeeId &&
+    details?.empId === reviewerUserId &&
     ["Rejected HOD", "Rejected IT", "Revoked"].includes(
       selectedItem?.status || ""
     )
@@ -65,7 +65,7 @@ export function useRequestDetailsPage(
       await revokeAccessRequest(
         details.accessReqId,
         selectedItemId,
-        reviewerEmployeeId,
+        reviewerUserId,
         comments
       )
       await refetch()
@@ -87,7 +87,7 @@ export function useRequestDetailsPage(
         await reviewAccessRequestByHod(
           details.accessReqId,
           selectedItemId,
-          reviewerEmployeeId,
+          reviewerUserId,
           approved,
           comments,
           confirmAccessType
@@ -96,7 +96,7 @@ export function useRequestDetailsPage(
         await reviewAccessRequestByIt(
           details.accessReqId,
           selectedItemId,
-          reviewerEmployeeId,
+          reviewerUserId,
           approved,
           comments,
           details.itsrNo || "",

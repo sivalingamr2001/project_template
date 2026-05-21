@@ -38,7 +38,7 @@ export function GetCurrentUser(): AuthUser | null {
 
     return {
       userId: session.userId ?? 0,
-      employeeId: session.employeeId,
+      employeeId: session.employeeId ?? null,
       userName: session.userName ?? "",
       name: session.name,
       email: session.email,

@@ -174,7 +174,7 @@ public class AccessRequestExpirationService : IAccessRequestExpirationService
     {
         var requesterName = BuildDisplayName(requester);
         var recipientSummary = string.Join(", ", recipients
-            .DistinctBy(employee => employee.EmployeeId)
+            .DistinctBy(employee => employee.UserId)
             .Select(employee => $"{BuildDisplayName(employee)} ({NormalizeRole(employee.UserRole.ToString())})"));
 
         return $@"

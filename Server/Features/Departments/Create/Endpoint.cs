@@ -15,7 +15,7 @@ public static class CreateDepartmentEndpoint
             try
             {
                 var created = await service.CreateAsync(request, cancellationToken);
-                return Results.Created($"/api/departments/{created.Id}", created);
+                return Results.Created($"/api/departments/{created.DepartmentId}", created);
             }
             catch (InvalidOperationException ex)
             {
@@ -26,4 +26,3 @@ public static class CreateDepartmentEndpoint
         .WithOpenApi();
     }
 }
-
