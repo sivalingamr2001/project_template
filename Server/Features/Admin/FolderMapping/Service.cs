@@ -53,7 +53,7 @@ public sealed class FolderMappingService(FolderService folderService, AppDbConte
             {
                 FolderName = folderName,
                 CreatedOn = DateTime.UtcNow,
-                CreatedBy = request.ModifiedBy ?? "System" // Use modifier as creator for new records
+                CreatedBy = request.CreatedBy ?? request.ModifiedBy ?? 0
             };
             dbContext.Set<FolderMappingEntity>().Add(mapping);
         }
@@ -76,7 +76,7 @@ public sealed class FolderMappingService(FolderService folderService, AppDbConte
         mapping.SecondaryHodEmail = request.SecondaryHodEmail?.Trim();
         mapping.IsActive = request.IsActive;
         mapping.ModifiedOn = DateTime.UtcNow;
-        mapping.ModifiedBy = request.ModifiedBy ?? "System";
+        mapping.ModifiedBy = request.ModifiedBy ?? 0;
 
         await dbContext.SaveChangesAsync(cancellationToken);
 

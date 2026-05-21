@@ -13,13 +13,13 @@ public class BaseEntity
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
 
     [Column("created_by")]
-    public string CreatedBy { get; set; } = string.Empty;
+    public int CreatedBy { get; set; }
 
     [Column("modified_on")]
     public DateTime? ModifiedOn { get; set; }
 
     [Column("modified_by")]
-    public string? ModifiedBy { get; set; }
+    public int? ModifiedBy { get; set; }
 }
 
 [Table("jan_accessrequest")]

@@ -11,9 +11,9 @@ public sealed record FolderMappingDto(
     string? SecondaryHodEmail,
     bool IsActive,
     DateTime CreatedOn,
-    string CreatedBy,
+    int CreatedBy,
     DateTime? ModifiedOn,
-    string? ModifiedBy);
+    int? ModifiedBy);
 
 public sealed record FolderMappingCreateOrUpdateRequest(
     int? Id,
@@ -25,7 +25,7 @@ public sealed record FolderMappingCreateOrUpdateRequest(
     string? SecondaryHodName,
     string? SecondaryHodEmail,
     bool IsActive,
-    string? CreatedBy,
-    string? ModifiedBy,
+    int? CreatedBy,
+    int? ModifiedBy,
     DateTime CreatedOn,
     DateTime ModifiedOn);

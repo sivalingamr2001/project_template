@@ -43,7 +43,7 @@ public sealed record RecentRequestDto(
     bool IsAgreed,
     string? ItsrNo,
     DateTime CreatedOn,
-    string CreatedBy,
+    int CreatedBy,
     int ItemCount,
     string OverallStatus
 );

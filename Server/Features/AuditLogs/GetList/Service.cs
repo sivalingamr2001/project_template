@@ -31,9 +31,7 @@ public sealed class GetAuditLogsService(AppDbContext dbContext)
             .ToListAsync(cancellationToken);
 
         var actorIds = rows
-            .Select(row => int.TryParse(row.CreatedBy, out var actorId) ? actorId : (int?)null)
-            .Where(actorId => actorId.HasValue)
-            .Select(actorId => actorId!.Value)
+            .Select(row => row.CreatedBy)
             .Distinct()
             .ToList();
 
@@ -45,10 +43,9 @@ public sealed class GetAuditLogsService(AppDbContext dbContext)
         var data = rows
             .Select(row =>
             {
-                var actorName = int.TryParse(row.CreatedBy, out var actorId)
-                    && actorNames.TryGetValue(actorId, out var name)
+                var actorName = actorNames.TryGetValue(row.CreatedBy, out var name)
                     ? name
-                    : row.CreatedBy;
+                    : $"User {row.CreatedBy}";
 
                 return new AuditLogDto(
                     row.AuditId,

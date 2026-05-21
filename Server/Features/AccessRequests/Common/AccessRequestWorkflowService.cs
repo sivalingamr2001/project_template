@@ -1301,7 +1301,7 @@ public sealed class AccessRequestWorkflowService(
         string eventType,
         string message,
         IReadOnlyCollection<EmployeeEntity> recipients,
-        string actor,
+        int actor,
         DateTime utcNow,
         CancellationToken cancellationToken)
     {
