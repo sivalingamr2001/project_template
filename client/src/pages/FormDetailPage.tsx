@@ -1,16 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { use, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { FormHeader } from "@/components/DocumentViewer/FormHeader";
 import { FormMeta } from "@/components/DocumentViewer/FormMeta";
 import { PartTable } from "@/components/DocumentViewer/PartTable";
 import { ProductInfo } from "@/components/DocumentViewer/ProductInfo";
 import { Signatures } from "@/components/DocumentViewer/Signatures";
+import type { PartItem, RequisitionFormData } from "@/components/DocumentViewer/types";
 import { useRequestionApi } from "@/core/api/useRequestionApi";
-import type { RequisitionFormData, PartItem } from "@/components/DocumentViewer/types";
 import type { RequisitionDocument } from "@/types";
 import { ArrowLeft } from "lucide-react";
 
@@ -33,8 +33,8 @@ export const FormDetailPage = () => {
       recNo: "",
       date: today,
       pageNo: "1 of 1",
-      from: "",
-      to: "",
+      from: "D&D TEAM",
+      to: "Materials-D&D",
       productNo: "",
       rev: "",
       projectNo: "",
@@ -138,10 +138,10 @@ export const FormDetailPage = () => {
             {steps.map((label, index) => (
               <div
                 key={label}
-                className={`rounded-lg border p-2 ${currentStep === index + 1 ? "border-primary bg-primary/10" : "border-border bg-card"}`}
+                className={`rounded-none border-b border-b-2 p-2 ${currentStep === index + 1 ? "border-primary" : "border-border"}`}
               >
                 <p
-                  className={`font-semibold ${currentStep === index + 1 ? "text-primary" : "text-muted-foreground"}`}
+                  className={`font-semibold flex justify-center ${currentStep === index + 1 ? "text-primary" : "text-muted-foreground"}`}
                 >
                   {index + 1}. {label}
                 </p>

@@ -1,13 +1,10 @@
-using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.DTOs.Request;
 using Application.DTOs.Response;
+using AutoMapper;
 using Domain.DomainEntities;
 using Domain.RepositoryInterface;
+using System.Globalization;
 
 namespace Application.Implementation
 {
@@ -15,11 +12,16 @@ namespace Application.Implementation
     {
         private readonly IRequisitionRepository _requisitionRepository;
         private readonly IMapper _mapper;
+        private readonly RequisitionExcelReportBuilder _reportBuilder;
 
-        public RequisitionService(IRequisitionRepository requisitionRepository, IMapper mapper)
+        public RequisitionService(
+            IRequisitionRepository requisitionRepository,
+            IMapper mapper,
+            RequisitionExcelReportBuilder requisitionExcelReportBuilder)
         {
             _requisitionRepository = requisitionRepository;
             _mapper = mapper;
+            _reportBuilder = requisitionExcelReportBuilder;
         }
 
         public async Task<RequisitionResponseDto> GetByRecNoAsync(string recNo)
@@ -227,7 +229,7 @@ namespace Application.Implementation
             await _requisitionRepository.CommitAsync();
         }
 
-        public async Task<byte[]> ExportAsync(string recNo, string format = "pdf")
+        public async Task<byte[]> ExportAsync(string recNo, string format)
         {
             var requisition = await _requisitionRepository.GetByRecNoAsync(recNo);
             if (requisition == null)
@@ -235,10 +237,54 @@ namespace Application.Implementation
                 throw new KeyNotFoundException($"Requisition {recNo} not found");
             }
 
-            // Simple export - just return placeholder bytes
-            // In production, use iTextSharp for PDF or EPPlus for Excel
-            string content = $"Requisition: {requisition.RecNo}\nProduct: {requisition.ProductName}";
-            return System.Text.Encoding.UTF8.GetBytes(content);
+            if (!format.Equals("excel", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new NotSupportedException("Only Excel export is supported at this time.");
+            }
+
+            var source = MapToExportSource(requisition);
+            var workbook = _reportBuilder.Build(source);
+
+            return workbook.Content;
+        }
+
+        /// <summary>
+        /// Maps the domain Requisition entity to the export DTO.
+        /// Adjust property names to match your actual entity.
+        /// </summary>
+        private static RequisitionExportSource MapToExportSource(RequisitionDomain entity)
+        {
+            return new RequisitionExportSource(
+                entity.RecNo,
+                entity.Date,
+                entity.PageNo,
+                entity.FromTeam,
+                entity.ToTeam,
+                entity.ProductNo,
+                entity.ProductRev,
+                entity.ProjectNo,
+                entity.ProductName,
+                entity.Purpose,
+                entity.MonthlyQty,
+                entity.Parts?.Select((p, idx) => new RequisitionLineItem(
+                    p.SNo,
+                    p.PartNo,
+                    p.Rev,
+                    p.PartName,
+                    p.Qty,
+                    p.RequiredDate,
+                    p.CommittedDate,
+                    p.ActualCompletionDate
+                )).ToList() ?? new List<RequisitionLineItem>(),
+                entity.PreparedBy,
+                entity.PreparedDate,
+                entity.CheckedBy ?? string.Empty,
+                entity.CheckedDate,
+                entity.ApprovedBy ?? string.Empty,
+                entity.ApprovedDate,
+                entity.ReceivedBy ?? string.Empty,
+                entity.ReceivedDate
+            );
         }
 
         public async Task<string> GenerateRecNoAsync()

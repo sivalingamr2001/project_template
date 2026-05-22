@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Sidebar } from "./Sidebar";
-import { SearchBar } from "./SearchBar";
 import { RequisitionTable } from "./RequisitionTable";
+import { SearchBar } from "./SearchBar";
+import { Sidebar } from "./Sidebar";
 import { useSearch } from "./useSearch";
-import { mockRequisitions } from "../../utils/mock-data";
 import type { DashboardProps } from "./types";
+import type { RequisitionDocument } from "../../types";
 
 export function Dashboard({
   user,
@@ -12,7 +12,7 @@ export function Dashboard({
   onSelectDocument,
   onCreateNew,
 }: DashboardProps) {
-  const [documents] = useState(mockRequisitions);
+  const [documents] = useState<RequisitionDocument[]>([]);
   const { search, filtered, setQuery, setStatus } = useSearch(documents);
 
   return (

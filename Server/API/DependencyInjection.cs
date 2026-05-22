@@ -2,6 +2,7 @@
 using Application;
 using Application.Contracts;
 using Application.Implementation;
+using Application.Utils;
 using Domain.RepositoryInterface;
 using Infrastructure;
 using Infrastructure.Persistence.Entities;
@@ -55,6 +56,9 @@ namespace API
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRequisitionService, RequisitionService>();
+            services.AddScoped<IJwtService, JwtService>();
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
+            services.AddSingleton<RequisitionExcelReportBuilder>();
 
             return services;
         }

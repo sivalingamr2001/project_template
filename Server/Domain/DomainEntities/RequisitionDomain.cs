@@ -18,7 +18,7 @@ namespace Domain.DomainEntities
         public string Purpose { get; set; } // new-product-validation | sales
         public int MonthlyQty { get; set; }
         
-        public string Status { get; set; } // draft | pending | approved | rejected | completed | archived
+        public string Status { get; set; } // draft | pending | approved | rejected | completed 
         
         public List<PartDomain> Parts { get; set; } = new();
         

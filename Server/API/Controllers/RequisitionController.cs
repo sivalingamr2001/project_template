@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Application.Contracts;
 using Application.DTOs.Request;
 
@@ -6,6 +7,7 @@ namespace API.Controllers
 {
     [Route("api/requisitions")]
     [ApiController]
+    [Authorize]
     public class RequisitionController : ControllerBase
     {
         private readonly IRequisitionService _requisitionService;
@@ -118,6 +120,7 @@ namespace API.Controllers
         /// Approve requisition
         /// </summary>
         [HttpPost("{recNo}/approve")]
+        [Authorize(Roles = "Hod,admin")]
         public async Task<IActionResult> ApproveRequisition(string recNo, [FromBody] ApproveRequisitionDto dto)
         {
             try
@@ -168,7 +171,7 @@ namespace API.Controllers
 
                 if (format.Equals("excel", StringComparison.OrdinalIgnoreCase))
                 {
-                    return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"{recNo}.xlsx");
+                    return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Requisition_${recNo}.xlsx");
                 }
                 else
                 {

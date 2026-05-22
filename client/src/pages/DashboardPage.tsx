@@ -7,6 +7,7 @@ import { formatDate } from "@/utils/date-format";
 import type { CellContext, ColumnDef } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -30,6 +31,16 @@ export const DashboardPage = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<RequisitionDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleExport = (recNo: string) => {
+    useRequestionApi.exportRequisitionExcel(recNo)
+      .then(() => {
+        toast.success("Requisition exported successfully");
+      })
+      .catch((error) => {
+        toast.error("Failed to export requisition:", error);
+      });
+  };
 
   const loadRequisitions = async () => {
     setIsLoading(true);
@@ -84,13 +95,22 @@ export const DashboardPage = () => {
         id: "actions",
         header: "Action",
         cell: (info: CellContext<RequisitionDocument, unknown>) => (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/form-details/${info.row.original.recNo}`)}
-          >
-            View
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/form-details/${info.row.original.recNo}`)}
+            >
+              View
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleExport(info.row.original.recNo)}
+            >
+              Export
+            </Button>
+          </div>
         ),
       },
     ],

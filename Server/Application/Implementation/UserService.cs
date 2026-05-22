@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Application.Contracts;
 using Application.DTOs.Request;
 using Application.DTOs.Response;
+using Application.Utils;
 using Domain.DomainEntities;
 using Domain.RepositoryInterface;
 
@@ -11,17 +12,20 @@ namespace Application.Implementation
 {
     public class UserService(
               IUserRepository userRepository
-            , IMapper mapper) : IUserService
+            , IMapper mapper
+            , IJwtService jwtService
+            , IPasswordHasher passwordHasher) : IUserService
     {
 
         public async Task<bool> CreateUserAsync(CreateUserDto userDto)
         {
             var userDomain = mapper.Map<UserDomain>(userDto);
-            userDomain.PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDomain.PasswordHash);
-            userDomain.Role = "viewer"; // Default role
+            // Hash the password using BCrypt
+            userDomain.PasswordHash = passwordHasher.HashPassword(userDto.Password);
+            userDomain.Role = "viewer"; // Default role for new users
             userDomain.CreatedAt = DateTime.UtcNow;
             userDomain.UpdatedAt = DateTime.UtcNow;
-            
+
             await userRepository.AddAsync(userDomain);
             var response = await userRepository.CommitAsync();
 
@@ -39,16 +43,21 @@ namespace Application.Implementation
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
-            // Verify password
-            bool isPasswordValid = BCrypt.Net.BCrypt.Verify(loginRequest.Password, userDomain.PasswordHash);
+            // Verify password using BCrypt
+            bool isPasswordValid = passwordHasher.VerifyPassword(loginRequest.Password, userDomain.PasswordHash);
             if (!isPasswordValid)
             {
                 throw new UnauthorizedAccessException("Invalid email or password");
             }
 
-            // Generate simple token (just user data for now - no JWT as per requirements)
-            var accessToken = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{userDomain.Id}:{DateTime.UtcNow.Ticks}"));
-            var refreshToken = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{userDomain.Id}:refresh:{DateTime.UtcNow.Ticks}"));
+            // Generate JWT tokens
+            var accessToken = jwtService.GenerateAccessToken(
+                userDomain.Id,
+                userDomain.Email,
+                userDomain.Role,
+                userDomain.FullName
+            );
+            var refreshToken = jwtService.GenerateRefreshToken();
 
             var userResponse = new UserResponseDto(
                 userDomain.Id.ToString(),
@@ -62,4 +71,3 @@ namespace Application.Implementation
         }
     }
 }
-

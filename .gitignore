@@ -1,0 +1,5 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Server/buildtempDebug/net10.0/cs/Microsoft.CodeAnalysis.CSharp.Workspaces.resources.dll

@@ -1,26 +1,23 @@
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { useForm } from "react-hook-form";
 
 import { FormHeader } from "./FormHeader";
 import { FormMeta } from "./FormMeta";
-import { ProductInfo } from "./ProductInfo";
 import { PartTable } from "./PartTable";
+import { ProductInfo } from "./ProductInfo";
 import { Signatures } from "./Signatures";
 import type { RequisitionFormData } from "./types";
-import { fetchMockRequisitionData } from "./utils";
 
 export default function DocumentViewer() {
-  const [isLoading, setIsLoading] = useState(false);
 
   const { register, control, handleSubmit, reset } = useForm<RequisitionFormData>({
     defaultValues: {
       recNo: "",
       date: "",
       pageNo: "1 of 1",
-      from: "",
-      to: "",
+      from: "D&D TEAM",
+      to: "Materials-D&D",
       productNo: "",
       rev: "",
       projectNo: "",
@@ -37,18 +34,6 @@ export default function DocumentViewer() {
       },
     },
   });
-
-  const handleAutoPopulate = async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchMockRequisitionData();
-      reset(data);
-    } catch (error) {
-      console.error("Error loading data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const onSubmit = (data: RequisitionFormData) => {
     console.log("Saving Form Requisition Data Payload:", data);

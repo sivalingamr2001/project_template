@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { axiosInstance } from "./axiosInstance";
 import type { RequisitionDocument } from "@/types";
 
@@ -144,15 +145,38 @@ export const useRequestionApi = {
     return unwrapList(response.data).map(mapRequisition);
   },
 
-  fetchNextSequence: async (): Promise<string> => {
-    const response = await axiosInstance.get<string | ApiEnvelope<string>>(
-      "/requisitions/next-sequence",
-    );
+  exportRequisitionExcel: async (recNo: string): Promise<void> => {
+    const response = await axiosInstance.get(`/requisitions/${recNo}/export`, {
+      params: { format: "excel" },
+      responseType: "blob",
+    });
 
-    if (typeof response.data === "string") {
-      return response.data;
+    if (response.status !== 200) {
+      throw new Error("Failed to export requisition");
     }
-    return response.data.data;
+
+    // 1. Extract the filename from the server's Content-Disposition header
+    let fileName = `Requisition_${recNo}.xlsx`;
+    const contentDisposition = response.headers["content-disposition"];
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename\*?=(?:UTF-8'')?([^;\n]*)/);
+      if (match && match[1]) {
+        fileName = decodeURIComponent(match[1].replace(/['"]/g, ""));
+      }
+    }
+
+    // 2. Create an invisible download link and click it programmatically
+    const downloadUrl = window.URL.createObjectURL(response.data);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.setAttribute("download", fileName);
+
+    document.body.appendChild(link);
+    link.click();
+
+    // 3. Clean up browser memory
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
   },
 
   fetchRequisition: async (recNo: string): Promise<RequisitionDocument> => {

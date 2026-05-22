@@ -19,14 +19,14 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
           Rec. No.
         </Label>
         {/* CHANGED: Swapped disabled for readOnly */}
-        <Input 
-          id="recNo" 
-          {...register("recNo")} 
-          className="h-9 font-mono bg-muted/40 cursor-not-allowed" 
-          readOnly 
+        <Input
+          id="recNo"
+          {...register("recNo")}
+          className="h-9 font-mono bg-muted/40 cursor-not-allowed"
+          readOnly
         />
       </div>
-      
+
       <div className="space-y-1.5">
         <Label
           htmlFor="date"
@@ -34,9 +34,16 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
         >
           Date
         </Label>
-        <Input id="date" type="date" {...register("date")} className="h-9" />
+        {/* FIXED: Added readOnly and moved cursor-not-allowed to className */}
+        <Input
+          id="date"
+          type="date"
+          readOnly
+          {...register("date")}
+          className="h-9 bg-muted/40 cursor-not-allowed"
+        />
       </div>
-      
+
       <div className="space-y-1.5">
         <Label
           htmlFor="pageNo"
@@ -45,32 +52,44 @@ export const FormMeta: React.FC<FormMetaProps> = ({ register }) => {
           Page No.
         </Label>
         {/* CHANGED: Swapped disabled for readOnly */}
-        <Input 
-          id="pageNo" 
-          {...register("pageNo")} 
-          className="h-9 bg-muted/40 cursor-not-allowed" 
-          readOnly 
+        <Input
+          id="pageNo"
+          {...register("pageNo")}
+          className="h-9 bg-muted/40 cursor-not-allowed"
+          readOnly
         />
       </div>
-      
+
       <div className="space-y-1.5">
         <Label
           htmlFor="from"
           className="text-muted-foreground text-xs font-semibold tracking-wider uppercase"
         >
-          From (D&D Team)
+          From
         </Label>
-        <Input id="from" {...register("from")} className="h-9" />
+        <Input
+          id="from"
+          defaultValue="(D&D Team)"
+          readOnly
+          {...register("from")}
+          className="h-9 bg-muted cursor-not-allowed"
+        />
       </div>
-      
+
       <div className="col-span-2 space-y-1.5 md:col-span-1">
         <Label
           htmlFor="to"
           className="text-muted-foreground text-xs font-semibold tracking-wider uppercase"
         >
-          To (Materials-D&D)
+          To
         </Label>
-        <Input id="to" {...register("to")} className="h-9" />
+        <Input
+          id="to"
+          defaultValue="(Materials-D&D)"
+          readOnly
+          {...register("to")}
+          className="h-9 bg-muted cursor-not-allowed"
+        />
       </div>
     </div>
   );
