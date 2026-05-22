@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260515093040_MakeApprovalFieldsNullable")]
-    partial class MakeApprovalFieldsNullable
+    [Migration("20260522083108_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -139,9 +139,8 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime?>("ReceivedDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ToTeam")
                         .IsRequired()
@@ -176,18 +175,21 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EmployeeId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("PasswordHash")
+                    b.Property<string>("Password")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("Role")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("TEXT");
@@ -206,9 +208,10 @@ namespace Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedBy = "System",
                             Email = "admin@company.com",
+                            EmployeeId = "1001",
                             FullName = "System Administrator",
-                            PasswordHash = "password",
-                            Role = "admin"
+                            Password = "password",
+                            Role = 1
                         },
                         new
                         {
@@ -216,9 +219,10 @@ namespace Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedBy = "System",
                             Email = "hod@company.com",
+                            EmployeeId = "1002",
                             FullName = "John HOD",
-                            PasswordHash = "password",
-                            Role = "Hod"
+                            Password = "password",
+                            Role = 2
                         });
                 });
 

@@ -172,6 +172,10 @@ namespace Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("EmployeeId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -201,6 +205,7 @@ namespace Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedBy = "System",
                             Email = "admin@company.com",
+                            EmployeeId = "1001",
                             FullName = "System Administrator",
                             Password = "password",
                             Role = 1
@@ -211,6 +216,7 @@ namespace Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             CreatedBy = "System",
                             Email = "hod@company.com",
+                            EmployeeId = "1002",
                             FullName = "John HOD",
                             Password = "password",
                             Role = 2

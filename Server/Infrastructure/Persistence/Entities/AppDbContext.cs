@@ -26,6 +26,7 @@ namespace Infrastructure.Persistence.Entities
                 new User
                 {
                     Id = 1,
+                    EmployeeId = "1001",
                     FullName = "System Administrator",
                     Email = "admin@company.com",
                     Password = "password",
@@ -36,6 +37,7 @@ namespace Infrastructure.Persistence.Entities
                 new User
                 {
                     Id = 2,
+                    EmployeeId = "1002",
                     FullName = "John HOD",
                     Email = "hod@company.com",
                     Password = "password",

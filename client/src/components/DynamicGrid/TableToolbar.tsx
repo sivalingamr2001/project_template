@@ -1,8 +1,15 @@
 import React, { useCallback } from "react";
 import { RefreshCw, Search, X } from "lucide-react";
+// 1. CHOOSE ONE ROUTER METHOD BASED ON YOUR FRAMEWORK:
+// For Next.js:
+// import { useRouter } from "next/navigation"; 
+// For React Router / Vite:
+// import { useNavigate } from "react-router-dom"; 
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { TableToolbarProps } from "./types";
+import { ComponentRequisitionModal } from "../DocumentViewer/ComponentRequisitionModal";
 
 function RefreshButton({
   onRefresh,
@@ -55,7 +62,7 @@ export function TableToolbar<TData>({
   globalFilter,
   onGlobalFilterChange,
   onRefresh,
-  onCreate,
+  onCreate, // Keep this prop in case you want to trigger callback events before routing
   isFetching,
   canGlobalFilter,
   placeholder,
@@ -63,6 +70,20 @@ export function TableToolbar<TData>({
   description,
 }: TableToolbarProps<TData>) {
   const hasActiveFilters = table.getState().columnFilters.length > 0;
+  
+  // 2. INITIALIZE ROUTER HOOK HERE (Uncomment your framework's hook):
+  // const router = useRouter(); // For Next.js
+  // const navigate = useNavigate(); // For React Router
+
+  const handleCreateRedirect = () => {
+    // Optional: Call your original onCreate callback prop if needed
+    if (onCreate) onCreate();
+
+    // 3. TRIGGER ROUTE SWITCH:
+    // Update "/requisitions/new" to your project's precise page route string
+    // router.push("/requisitions/new"); // For Next.js
+    // navigate("/requisitions/new"); // For React Router
+  };
 
   return (
     <div className="border-border flex flex-col gap-2 border-b pb-3">
@@ -100,16 +121,17 @@ export function TableToolbar<TData>({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {onCreate && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onCreate}
-              className="h-8 gap-1.5 text-xs font-medium"
-            >
-              Create
-            </Button>
-          )}
+          <ComponentRequisitionModal triggerVariant="outline" />
+
+          {/* Create Button: Swapped direct callback for routing function wrapper */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleCreateRedirect}
+            className="h-8 gap-1.5 text-xs font-medium"
+          >
+            Create
+          </Button>
           {onRefresh && <RefreshButton onRefresh={onRefresh} isFetching={isFetching} />}
         </div>
       </div>

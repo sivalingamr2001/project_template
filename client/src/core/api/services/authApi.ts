@@ -14,7 +14,7 @@ export interface LoginResponse {
 export const authApi = {
   login: async (identifier: string, password: string) => {
     // identifier can be email or user id
-    const response = await axiosInstance.post<LoginResponse>("/api/auth/login", {
+    const response = await axiosInstance.post<LoginResponse>("/auth/login", {
       identifier,
       password,
     });

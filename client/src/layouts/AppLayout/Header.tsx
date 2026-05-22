@@ -42,8 +42,8 @@ export const Header = () => {
           </div>
 
           <div>
-            <Button variant="ghost" size="sm" onClick={logout} className="flex items-center gap-2">
-              <LogOut className="h-4 w-4" /> Logout
+            <Button variant="outline" size="sm" onClick={logout} className="flex items-center gap-2 rounded-full">
+              <LogOut className="h-4 w-4 text-destructive" />
             </Button>
           </div>
         </div>

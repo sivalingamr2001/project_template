@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { authApi, type LoginResponse } from "@/core/api/services/authApi";
 interface AuthContextValue {
   user: LoginResponse["user"] | null;
   isAuthenticated: boolean;

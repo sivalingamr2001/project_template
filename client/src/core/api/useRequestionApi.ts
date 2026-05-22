@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { axiosInstance } from "./axiosInstance";
 import type { RequisitionDocument } from "@/types";
 
@@ -236,5 +235,22 @@ export const useRequestionApi = {
     );
 
     return mapRequisition(response.data.data);
+  },
+
+  fetchNextSequence: async (): Promise<string> => {
+    try {
+      const response = await axiosInstance.get<any>(`/requisitions/next-sequence`);
+      // Accept various response shapes
+      if (!response || response.status !== 200) throw new Error("Failed to fetch sequence");
+      const data = response.data;
+      if (!data) throw new Error("Invalid sequence response");
+      if (typeof data === "string") return data;
+      if (typeof data.nextRecNo === "string") return data.nextRecNo;
+      if (typeof data.recNo === "string") return data.recNo;
+      // fallback: try to stringify
+      return String(data);
+    } catch (e) {
+      throw e;
+    }
   },
 };

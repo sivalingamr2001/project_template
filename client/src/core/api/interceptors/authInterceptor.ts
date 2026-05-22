@@ -6,8 +6,10 @@ export const attachAuthInterceptor = (instance: AxiosInstance): void => {
       try {
         const token = localStorage.getItem("accessToken");
         if (token) {
-          if (!config.headers) config.headers = {};
-          config.headers["Authorization"] = `Bearer ${token}`;
+          // Ensure headers is an object compatible with Axios
+          const headers = (config.headers as Record<string, unknown>) || {};
+          headers["Authorization"] = `Bearer ${token}`;
+          config.headers = headers as InternalAxiosRequestConfig["headers"];
         }
       } catch (e) {
         // ignore
