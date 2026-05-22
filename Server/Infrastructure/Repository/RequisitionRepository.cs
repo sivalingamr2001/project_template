@@ -1,12 +1,13 @@
 using AutoMapper;
+using Domain.DomainEntities;
+using Domain.DomainEnums;
+using Domain.RepositoryInterface;
+using Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Domain.DomainEntities;
-using Domain.RepositoryInterface;
-using Infrastructure.Persistence.Entities;
 
 namespace Infrastructure.Repository
 {
@@ -43,9 +44,16 @@ namespace Infrastructure.Repository
             var query = _context.Requisitions.Include(r => r.Parts).AsQueryable();
 
             // Filter by status
-            if (!string.IsNullOrEmpty(status))
+            // 1. Convert the input string variable 'status' into your RequestStatus enum
+            if (Enum.TryParse<RequestStatus>(status, true, out var parsedStatus))
             {
-                query = query.Where(r => r.Status == status);
+                // 2. Perform the matching enum comparison
+                query = query.Where(r => r.Status == parsedStatus);
+            }
+            else
+            {
+                // Handle invalid status string input here (e.g., return empty list or throw an exception)
+                query = query.Where(r => false);
             }
 
             // Search

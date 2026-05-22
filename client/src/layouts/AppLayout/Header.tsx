@@ -1,8 +1,11 @@
-import { User2Icon } from "lucide-react";
-
+import { User2Icon, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/core/auth";
 
 export const Header = () => {
+  const { user, logout } = useAuth();
+
   return (
     <header className="bg-card/90 z-20 shrink-0 backdrop-blur-xl">
       <div className="flex items-center justify-between px-4 py-4 md:px-6">
@@ -13,9 +16,7 @@ export const Header = () => {
             <h1 className="text-primary text-3xl font-bold tracking-tight">
               Requisition For Component Developement Form
             </h1>
-            <p className="text-muted-foreground">
-              Manage component development requisitions
-            </p>
+            <p className="text-muted-foreground">Manage component development requisitions</p>
           </div>
         </div>
 
@@ -34,10 +35,16 @@ export const Header = () => {
             </div>
             {/* USER INFO */}
             <div className="hidden leading-tight md:block">
-              <p className="text-foreground text-sm font-semibold">Jessin Sam</p>
+              <p className="text-foreground text-sm font-semibold">{user?.name || "-"}</p>
 
-              <p className="text-muted-foreground text-xs">jessin@gmail.com</p>
+              <p className="text-muted-foreground text-xs">{user?.email || "-"}</p>
             </div>
+          </div>
+
+          <div>
+            <Button variant="ghost" size="sm" onClick={logout} className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" /> Logout
+            </Button>
           </div>
         </div>
       </div>

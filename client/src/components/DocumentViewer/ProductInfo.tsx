@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { type UseFormRegister, type Control, Controller, useFormContext, type UseFormSetValue } from "react-hook-form";
 import { useSearchApi } from "@/core/api/useSearch";
 import { Input } from "@/components/ui/input";
@@ -28,8 +28,11 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control, set
 
   const setValue = setValueProp ?? formContext?.setValue;
 
-  const fetchAndPopulate = async (query: string) => {
-    if (!query || !query.trim() || !setValue) return;
+  // Use a ref to track the active debounce timer across renders
+  const debounceTimerRef = useRef<number | null>(null);
+
+  const fetchAndPopulate = useCallback(async (query: string) => {
+    if (!query || query.trim().length <= 3 || !setValue) return;
     try {
       const results = await useSearchApi.searchProjects(query, 1, 1);
       if (results && results.length > 0) {
@@ -42,7 +45,19 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control, set
     } catch (e) {
       // ignore
     }
-  };
+  }, [setValue]);
+
+  // 2. Explicitly invoke window.setTimeout to bypass Node definitions
+  const handleDelayedSearch = useCallback((value: string) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      fetchAndPopulate(value);
+    }, 400);
+  }, [fetchAndPopulate]);
+
+
   return (
     <div className="bg-card grid grid-cols-1 gap-6 rounded-lg border p-5 shadow-sm md:grid-cols-3">
       <div className="space-y-4">
@@ -60,9 +75,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control, set
                 id="productNo"
                 {...reg}
                 className="h-9"
-                onBlur={(e) => {
-                  reg.onBlur?.(e);
-                  fetchAndPopulate((e.target as HTMLInputElement).value);
+                onChange={(e) => {
+                  reg.onChange(e); // Keep React Hook Form state in sync instantly
+                  handleDelayedSearch(e.target.value);
                 }}
               />
             );
@@ -94,9 +109,9 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control, set
                 id="projectNo"
                 {...reg}
                 className="h-9"
-                onBlur={(e) => {
-                  reg.onBlur?.(e);
-                  fetchAndPopulate((e.target as HTMLInputElement).value);
+                onChange={(e) => {
+                  reg.onChange(e); // Keep React Hook Form state in sync instantly
+                  handleDelayedSearch(e.target.value);
                 }}
               />
             );

@@ -4,6 +4,7 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { BlankLayout } from "@/layouts/BlankLayout";
 import { lazy, Suspense } from "react";
 import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
+import { useAuth } from "@/core/auth";
 
 const DashboardPage = lazy(() =>
   import("@/pages/DashboardPage").then((m) => ({
@@ -20,12 +21,20 @@ const NotFoundPage = lazy(() =>
     default: m.NotFoundPage,
   })),
 );
+const LoginPage = lazy(() => import("@/pages/LoginPage").then((m) => ({ default: m.LoginPage })));
+const RegisterPage = lazy(() => import("@/pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
 
 const withSuspense = (Component: React.ComponentType) => (
   <Suspense fallback={<PageLoader />}>
     <Component />
   </Suspense>
 );
+
+const RequireAuth = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+};
 
 const router = createBrowserRouter(
   [
@@ -34,15 +43,18 @@ const router = createBrowserRouter(
       errorElement: <RouteErrorBoundary />,
       children: [
         { index: true, element: <Navigate to="/dashboard" replace /> },
-        { path: "/dashboard", element: withSuspense(DashboardPage) },
-        { path: "/form-details/:recordId?", element: withSuspense(FormDetailsPage) },
-        { path: "/login", element: <Navigate to="/dashboard" replace /> },
+        { path: "/dashboard", element: <RequireAuth>{withSuspense(DashboardPage)}</RequireAuth> },
+        { path: "/form-details/:recordId?", element: <RequireAuth>{withSuspense(FormDetailsPage)}</RequireAuth> },
       ],
     },
     // Catch-all
     {
       element: <BlankLayout />,
-      children: [{ path: "*", element: withSuspense(NotFoundPage) }],
+      children: [
+        { path: "/login", element: withSuspense(LoginPage) },
+        { path: "/register", element: withSuspense(RegisterPage) },
+        { path: "*", element: withSuspense(NotFoundPage) },
+      ],
     },
   ],
   { basename: "/portal" },

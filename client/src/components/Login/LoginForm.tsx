@@ -14,7 +14,7 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onLogin }: LoginFormProps) {
-  const [formData, setFormData] = useState<LoginFormData>({ email: "", password: "" });
+  const [formData, setFormData] = useState<LoginFormData>({ identifier: "", password: "" });
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -28,7 +28,13 @@ export function LoginForm({ onLogin }: LoginFormProps) {
     const newErrors: Partial<LoginFormData> = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!emailRegex.test(formData.email)) newErrors.email = VALIDATION_ERRORS.email;
+    // identifier may be an email or a user id. If it looks like an email, validate as email.
+    if (formData.identifier.trim().length === 0) {
+      newErrors.identifier = "Please enter your email or user id";
+    } else if (formData.identifier.indexOf("@") !== -1 && !emailRegex.test(formData.identifier)) {
+      newErrors.identifier = VALIDATION_ERRORS.email;
+    }
+
     if (formData.password.length < 6) newErrors.password = VALIDATION_ERRORS.password;
 
     setErrors(newErrors);
@@ -58,19 +64,19 @@ export function LoginForm({ onLogin }: LoginFormProps) {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
+            <label htmlFor="identifier" className="text-sm font-medium">
+              Email or User ID
             </label>
             <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="user@example.com"
-              value={formData.email}
+              id="identifier"
+              name="identifier"
+              type="text"
+              placeholder="user@example.com or userId"
+              value={formData.identifier}
               onChange={handleChange}
               disabled={isLoading}
             />
-            {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+            {errors.identifier && <p className="text-sm text-red-500">{errors.identifier}</p>}
           </div>
 
           <div className="space-y-2">

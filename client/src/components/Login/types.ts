@@ -1,8 +1,8 @@
 export interface LoginFormData {
-  email: string;
+  identifier: string; // email or user id
   password: string;
 }
 
 export interface LoginProps {
-  onLogin: (email: string) => void;
+  onLogin: (identifier: string) => void;
 }

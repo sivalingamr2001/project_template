@@ -6,7 +6,6 @@ namespace Application.DTOs.Response
         string Id,
         string Email,
         string Name,
-        string Role,
-        string AvatarUrl
+        string Role
     );
 }

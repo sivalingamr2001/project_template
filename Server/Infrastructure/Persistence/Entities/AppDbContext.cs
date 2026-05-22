@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Domain.DomainEnums;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Entities
 {
@@ -27,8 +28,8 @@ namespace Infrastructure.Persistence.Entities
                     Id = 1,
                     FullName = "System Administrator",
                     Email = "admin@company.com",
-                    PasswordHash = "password",
-                    Role = "admin",
+                    Password = "password",
+                    Role = UserRoles.User,
                     CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     CreatedBy = "System"
                 },
@@ -37,8 +38,8 @@ namespace Infrastructure.Persistence.Entities
                     Id = 2,
                     FullName = "John HOD",
                     Email = "hod@company.com",
-                    PasswordHash = "password",
-                    Role = "Hod",
+                    Password = "password",
+                    Role = UserRoles.Hod,
                     CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                     CreatedBy = "System"
                 }

@@ -1,6 +1,5 @@
-﻿using AutoMapper;
-using Application.DTOs.Request;
-using Application.DTOs.Response;
+﻿using Application.DTOs.Response;
+using AutoMapper;
 using Domain.DomainEntities;
 
 namespace Application.Mappers
@@ -10,9 +9,6 @@ namespace Application.Mappers
 
         public UserMappingExtension()
         {
-            CreateMap<CreateUserDto, UserDomain>()
-                .ForMember(dest => dest.PasswordHash, opt =>
-                        opt.MapFrom(src => src.Password));
 
             CreateMap<UserDomain, UserResponseDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))

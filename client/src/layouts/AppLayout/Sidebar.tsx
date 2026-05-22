@@ -32,7 +32,18 @@ interface SidebarProps {
   collapsed?: boolean;
 }
 
+import { useAuth } from "@/core/auth";
+
 export const Sidebar = ({ onNavigate, collapsed }: SidebarProps) => {
+  const { user } = useAuth();
+
+  const filtered = navItems.filter((i) => {
+    if (i.path === "/users") {
+      return ["Hod", "HOD", "hod"].includes(String(user?.role));
+    }
+    return true;
+  });
+
   return (
     <div className="flex h-full flex-col overflow-y-auto px-3 py-4 transition-all duration-300">
       {/* BRAND */}
@@ -59,7 +70,7 @@ export const Sidebar = ({ onNavigate, collapsed }: SidebarProps) => {
         )}
 
         <nav className="space-y-2">
-          {navItems.map((item) => {
+          {filtered.map((item) => {
             const Icon = item.icon;
 
             return (

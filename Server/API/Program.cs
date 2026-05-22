@@ -1,8 +1,5 @@
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Infrastructure.Persistence.Entities;
 
 namespace API
@@ -13,31 +10,6 @@ namespace API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Configure JWT Authentication
-            var jwtSettings = builder.Configuration.GetSection("Jwt");
-            var secretKey = jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey not configured");
-            var key = Encoding.ASCII.GetBytes(secretKey);
-
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings["Issuer"] ?? "YourApp",
-                    ValidateAudience = true,
-                    ValidAudience = jwtSettings["Audience"] ?? "YourAppUsers",
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
-
             builder.Services.AddControllers();
             builder.Services.AddCors(options =>
             {
@@ -46,8 +18,7 @@ namespace API
                     {
                         policy.WithOrigins("http://localhost:3000")
                               .AllowAnyMethod()
-                              .AllowAnyHeader()
-                              .AllowCredentials();
+                              .AllowAnyHeader();
                     });
             });
 
@@ -75,7 +46,6 @@ namespace API
 
             app.UseHttpsRedirection();
             app.UseCors("AllowAll");
-            app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
 

@@ -14,8 +14,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
     <PackageReference Include="Oracle.ManagedDataAccess" Version="23.26.200" />
     <PackageReference Include="ClosedXML" Version="0.104.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.2" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.2" />
   </ItemGroup>
 
   <ItemGroup>

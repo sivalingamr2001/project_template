@@ -1,3 +1,4 @@
+using Domain.DomainEnums;
 using System;
 using System.Collections.Generic;
 
@@ -18,7 +19,7 @@ namespace Infrastructure.Persistence.Entities
         public string Purpose { get; set; } // new-product-validation | sales
         public int MonthlyQty { get; set; }
         
-        public string Status { get; set; } // draft | pending | approved | rejected | completed | archived
+        public RequestStatus Status { get; set; } // pending | approved | rejected | completed 
         
         public ICollection<Part> Parts { get; set; } = new List<Part>();
         

@@ -1,12 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Application;
-using Application.Contracts;
+﻿using Application.Contracts;
 using Application.Implementation;
-using Application.Utils;
 using Domain.RepositoryInterface;
-using Infrastructure;
 using Infrastructure.Persistence.Entities;
+using Infrastructure.Persistence.Oracle;
 using Infrastructure.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace API
 {
@@ -18,12 +16,28 @@ namespace API
             var connectionString = configuration.GetConnectionString("DatabaseConnection");
             var dbProvider = configuration.GetSection("Database:Provider").Value ?? "Sqlite";
 
-            services.AddDbContext<AppDbContext>(options =>
+            // Register OracleService into DI first so it can be resolved below
+            services.AddScoped<OracleService>();
+
+            services.AddDbContext<AppDbContext>((serviceProvider, options) =>
             {
-                if (dbProvider.Equals("MySql", StringComparison.OrdinalIgnoreCase))
+                if (dbProvider.Equals("Oracle", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Use MySQL
-                    options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+                    // 1. Resolve OracleService directly from DI container
+                    using var scope = serviceProvider.CreateScope();
+                    var oracleService = scope.ServiceProvider.GetRequiredService<OracleService>();
+
+                    // 2. Fetch connection string via OracleService
+                    var oracleCs = oracleService.GetConnectionString();
+
+                    // 3. Fail fast if connection string is missing or empty
+                    if (string.IsNullOrWhiteSpace(oracleCs))
+                    {
+                        throw new InvalidOperationException("Oracle provider is configured but the connection string from OracleService is missing.");
+                    }
+
+                    // 4. Use the Oracle extension method (requires Oracle.EntityFrameworkCore package)
+                    options.UseOracle(oracleCs);
                 }
                 else
                 {
@@ -56,8 +70,6 @@ namespace API
 
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRequisitionService, RequisitionService>();
-            services.AddScoped<IJwtService, JwtService>();
-            services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddSingleton<RequisitionExcelReportBuilder>();
 
             return services;

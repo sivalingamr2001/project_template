@@ -3,6 +3,7 @@ using Application.DTOs.Request;
 using Application.DTOs.Response;
 using AutoMapper;
 using Domain.DomainEntities;
+using Domain.DomainEnums;
 using Domain.RepositoryInterface;
 using System.Globalization;
 
@@ -65,15 +66,15 @@ namespace Application.Implementation
             {
                 Date = dto.Date,
                 PageNo = dto.PageNo,
-                FromTeam = dto.FromTeam,
-                ToTeam = dto.ToTeam,
+                From = dto.FromTeam,
+                To = dto.ToTeam,
                 ProductNo = dto.ProductNo,
                 ProductRev = dto.ProductRev,
                 ProjectNo = dto.ProjectNo,
                 ProductName = dto.ProductName,
                 Purpose = dto.Purpose,
                 MonthlyQty = monthlyQty,
-                Status = "draft",
+                Status = RequestStatus.Pending,
                 PreparedBy = dto.Prepared.Name,
                 PreparedDate = ParseDateOrDefault(dto.Prepared.Date, DateTime.UtcNow),
                 CheckedBy = string.IsNullOrWhiteSpace(dto.Checked.Name) ? null : dto.Checked.Name,
@@ -115,15 +116,15 @@ namespace Application.Implementation
             }
 
             // Only draft and pending can be updated
-            if (requisition.Status != "draft" && requisition.Status != "pending")
+            if (requisition.Status != RequestStatus.Pending)
             {
                 throw new InvalidOperationException("Cannot update approved requisition. Only draft and pending requisitions can be modified.");
             }
 
             requisition.Date = dto.Date;
             requisition.PageNo = dto.PageNo;
-            requisition.FromTeam = dto.FromTeam;
-            requisition.ToTeam = dto.ToTeam;
+            requisition.From = dto.FromTeam;
+            requisition.To = dto.ToTeam;
             requisition.ProductNo = dto.ProductNo;
             requisition.ProductRev = dto.ProductRev;
             requisition.ProjectNo = dto.ProjectNo;
@@ -165,12 +166,12 @@ namespace Application.Implementation
                 throw new KeyNotFoundException($"Requisition {recNo} not found");
             }
 
-            if (requisition.Status != "pending")
+            if (requisition.Status != RequestStatus.Pending)
             {
                 throw new InvalidOperationException("Only pending requisitions can be approved");
             }
 
-            requisition.Status = "approved";
+            requisition.Status = RequestStatus.Approved;
             requisition.ApprovedBy = dto.ApprovedBy;
             requisition.ApprovedDate = DateTime.Parse(dto.ApprovalDate);
             requisition.UpdatedAt = DateTime.UtcNow;
@@ -189,7 +190,7 @@ namespace Application.Implementation
                 throw new KeyNotFoundException($"Requisition {recNo} not found");
             }
 
-            if (requisition.Status != "draft")
+            if (requisition.Status != RequestStatus.Pending)
             {
                 throw new InvalidOperationException("Only draft requisitions can be submitted");
             }
@@ -200,7 +201,7 @@ namespace Application.Implementation
                 throw new InvalidOperationException("At least one part must be added before submission");
             }
 
-            requisition.Status = "pending";
+            requisition.Status = RequestStatus.Pending;
             requisition.CheckedBy = dto.CheckedBy;
             requisition.CheckedDate = DateTime.Parse(dto.CheckDate);
             requisition.UpdatedAt = DateTime.UtcNow;
@@ -220,7 +221,7 @@ namespace Application.Implementation
             }
 
             // Only draft can be deleted
-            if (requisition.Status != "draft")
+            if (requisition.Status != RequestStatus.Pending)
             {
                 throw new InvalidOperationException("Only draft requisitions can be deleted");
             }
@@ -258,8 +259,8 @@ namespace Application.Implementation
                 entity.RecNo,
                 entity.Date,
                 entity.PageNo,
-                entity.FromTeam,
-                entity.ToTeam,
+                entity.From,
+                entity.To,
                 entity.ProductNo,
                 entity.ProductRev,
                 entity.ProjectNo,

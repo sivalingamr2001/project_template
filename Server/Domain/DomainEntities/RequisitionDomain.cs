@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+using Domain.DomainEnums;
 
 namespace Domain.DomainEntities
 {
@@ -8,8 +7,9 @@ namespace Domain.DomainEntities
         public string RecNo { get; set; }
         public DateTime Date { get; set; }
         public string PageNo { get; set; }
-        public string FromTeam { get; set; }
-        public string ToTeam { get; set; }
+        public string From { get; set; }
+        public string Team { get; set; }
+        public string To { get; set; }
         
         public string ProductNo { get; set; }
         public string ProductRev { get; set; }
@@ -18,7 +18,7 @@ namespace Domain.DomainEntities
         public string Purpose { get; set; } // new-product-validation | sales
         public int MonthlyQty { get; set; }
         
-        public string Status { get; set; } // draft | pending | approved | rejected | completed 
+        public RequestStatus Status { get; set; } // pending | approved | rejected | completed 
         
         public List<PartDomain> Parts { get; set; } = new();
         
