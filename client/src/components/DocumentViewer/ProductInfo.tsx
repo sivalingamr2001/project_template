@@ -136,24 +136,7 @@ export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control, set
           >
             Purpose
           </Label>
-          <Controller
-            name="purpose"
-            control={control}
-            render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value || ""}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select purpose..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New product validation">
-                    New product validation
-                  </SelectItem>
-                  <SelectItem value="Sales Requirement">Sales Requirement</SelectItem>
-                  <SelectItem value="Design Optimization">Design Optimization</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
+          <Input id="productName" {...register("purpose")} className="h-9" />
         </div>
         <div className="space-y-1.5">
           <Label

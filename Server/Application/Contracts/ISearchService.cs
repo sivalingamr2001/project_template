@@ -1,7 +1,9 @@
-﻿namespace Application.Contracts
+﻿using Application.DTOs.Request;
+
+namespace Application.Contracts;
+
+public interface ISearchService
 {
-    public interface ISearchService
-    {
-        Task<IEnumerable<T>> SearchAsync<T>(string query);
-    }
+    Task<IEnumerable<ProjectHeaderDto>> SearchProjectsAsync(string query);
+    Task<IEnumerable<PartDetailDto>> SearchPartsAsync(string query);
 }

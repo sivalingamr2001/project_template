@@ -42,7 +42,6 @@ export const PartTable: React.FC<PartTableProps> = ({ register, control, setValu
         const p = results[0] as any;
         if (p.partName !== undefined) setValue(`parts.${index}.partName` as any, p.partName);
         if (p.rev !== undefined) setValue(`parts.${index}.rev` as any, p.rev);
-        if (p.qty !== undefined) setValue(`parts.${index}.qty` as any, p.qty);
       }
     } catch (e) {
       // silent fail — don't block user input

@@ -10,6 +10,5 @@ public record ProjectHeaderDto(
 public record PartDetailDto(
     string PartNumber,
     string PartName,
-    string PartType,
     string Rev
 );

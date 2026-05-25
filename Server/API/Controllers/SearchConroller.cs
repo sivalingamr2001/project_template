@@ -1,5 +1,6 @@
 ﻿using Application.Contracts;
 using Application.DTOs.Request;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Controllers;
@@ -20,7 +21,7 @@ public class SearchController(ISearchService searchService) : ControllerBase
             return BadRequest("Search query parameter cannot be empty.");
         }
 
-        var results = await _searchService.SearchAsync<ProjectHeaderDto>(query);
+        var results = await _searchService.SearchProjectsAsync(query);
         return Ok(results);
     }
 
@@ -34,7 +35,7 @@ public class SearchController(ISearchService searchService) : ControllerBase
             return BadRequest("Search query parameter cannot be empty.");
         }
 
-        var results = await _searchService.SearchAsync<PartDetailDto>(query);
+        var results = await _searchService.SearchPartsAsync(query);
         return Ok(results);
     }
 }

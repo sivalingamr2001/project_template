@@ -8,8 +8,8 @@ export interface SearchProjectResult {
 export interface SearchPartResult {
   partNumber: string;
   partName: string;
-  partType: string;
-  latestRev: string;
+  partType?: string;
+  rev?: string;
 }
 
 interface ApiListEnvelope<T> {

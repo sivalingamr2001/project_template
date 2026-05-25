@@ -1,7 +1,5 @@
-﻿using System.Data;
-using ConnectionDll;
+﻿using ConnectionDll;
 using Microsoft.Extensions.Logging;
-using Oracle.ManagedDataAccess.Client;
 
 namespace Infrastructure.Persistence.Oracle;
 
@@ -16,7 +14,7 @@ public class OracleService: IDisposable
         _logger = logger;
         _oracleProvider = new Class1();
 
-        if (string.IsNullOrWhiteSpace(_oracleProvider.oracon_prod_new.ConnectionString))
+        if (string.IsNullOrWhiteSpace(_oracleProvider.oracon.ConnectionString))
         {
             _logger.LogWarning("Oracle connection string from ConnectionDll is empty.");
         }
@@ -24,7 +22,7 @@ public class OracleService: IDisposable
 
     public string GetConnectionString()
     {
-        return _oracleProvider.oracon_prod_new.ConnectionString;
+        return _oracleProvider.oracon.ConnectionString;
     }
 
     public void Dispose()
