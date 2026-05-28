@@ -78,23 +78,43 @@ export const requestColumns: TableColumn<AccessRequest>[] = [
 ]
 
 export const employeeColumns: TableColumn<EmployeeRecord>[] = [
+  { key: "userId", header: "User ID", render: (row) => row.userId },
+  { key: "employeeId", header: "Employee ID", render: (row) => row.employeeId || "-" },
   {
     key: "employee",
     header: "Employee",
     render: (row) => (
       <div>
-        <p className="font-semibold">{row.name}</p>
-        <p className="text-sm text-muted-foreground">{row.email}</p>
+        <p className="font-semibold">{row.userName}</p>
+        {row.email ? (
+          <p className="text-sm text-muted-foreground">{row.email}</p>
+        ) : (
+          <p className="text-sm text-destructive">No Email</p>
+        )}
       </div>
     ),
   },
-  { key: "id", header: "User ID", render: (row) => row.userId },
-  {
-    key: "department",
-    header: "Department",
-    render: (row) => row.departmentName,
-  },
+  { key: "mobile", header: "Mobile", render: (row) => row.mobile || "-" },
   { key: "role", header: "Role", render: (row) => row.role },
+  { key: "location", header: "Location", render: (row) => row.location || "-" },
+  {
+    key: "departmentName",
+    header: "Department",
+    render: (row) => (
+      <div>
+        <p className="font-semibold">{row.departmentName || "-"}</p>
+        <p className="text-sm text-muted-foreground">{row.departmentId || "-"}</p>
+      </div>
+    ),
+  },
+  {
+    key: "hod", header: "HOD", render: (row) => (
+      <div>
+        <p className="font-semibold">{row.hod || "-"}</p>
+        <p className="text-sm text-muted-foreground">{row.hodId || "-"}</p>
+      </div>
+    )
+  },
 ]
 
 export const auditColumns: TableColumn<AuditLogItem>[] = [

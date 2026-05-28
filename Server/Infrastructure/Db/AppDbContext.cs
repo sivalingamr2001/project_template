@@ -35,19 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasDefaultValueSql("CURRENT_TIMESTAMP")
                 .ValueGeneratedOnAddOrUpdate();
 
-            entity.HasIndex(e => e.Email).IsUnique();
-        });
 
-        // Department Configuration
-        modelBuilder.Entity<DepartmentEntity>(entity =>
-        {
-            entity.ToTable("jan_department");
-            entity.HasKey(d => d.DepartmentId);
-
-            entity.HasOne(d => d.Hod)
-                .WithMany()
-                .HasForeignKey(d => d.HodId)
-                .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Access Request Configurations

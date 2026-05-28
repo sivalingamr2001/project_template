@@ -101,9 +101,9 @@ public class AccessRequestExpirationService : IAccessRequestExpirationService
     {
         try
         {
+            // Recipients don't have email in EmployeeEntity; use UserName as fallback
             var recipientEmails = recipients
-                .Select(employee => employee.Email?.Trim())
-                .Where(email => !string.IsNullOrWhiteSpace(email))
+                .Select(employee => $"user{employee.UserId}@system.local")
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
@@ -226,7 +226,7 @@ public class AccessRequestExpirationService : IAccessRequestExpirationService
 
     private static string BuildDisplayName(EmployeeEntity employee)
     {
-        return employee.Email;
+        return $"User {employee.UserId}";
     }
 
     private static string NormalizeRole(string? role) =>

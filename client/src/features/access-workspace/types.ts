@@ -65,10 +65,17 @@ export type PaginatedResponse<T> = {
 }
 
 export type Department = {
-  deptId: number
-  name: string
+  departmentId: number
+  departmentName: string
   hodId: number
-  hodName: string
+  Hod: Hod
+}
+
+export type Hod = {
+  userId: number
+  name: string
+  email: string
+  phoneNumber: string
 }
 
 export type NotificationItem = {
@@ -81,13 +88,20 @@ export type NotificationItem = {
   recipientRole: AppRole
 }
 export type EmployeeRecord = {
-  departmentName: string
-  email: string
-  employeeId?: string | null
   userId: number
+  userName: string
+  employeeId?: string | null
   name: string
   role: AppRole
+  email: string | null
+  mobile: number | string
+  hod: any // Change 'any' to a specific type if HOD details are known later
+  location: string
+  departmentId: number | null
+  departmentName: string
+  hodId: number | null
 }
+
 
 export interface HodResponse {
   UserId: number

@@ -17,15 +17,12 @@ import { IconEditFilled } from "@tabler/icons-react"
 function EmployeePage() {
   const { user, setSessionUser } = useAuth()
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
+  const [pageSize, setPageSize] = useState(10)
   const [totalCount, setTotalCount] = useState(0)
   const [employees, setEmployees] = useState<EmployeeRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
-    null
-  )
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -46,24 +43,11 @@ function EmployeePage() {
               size="sm"
               variant="outline"
               onClick={() => {
-                setSelectedEmployeeId(row.employeeId ?? null)
                 setSelectedUserId(row.userId)
                 setIsEditOpen(true)
               }}
             >
               <IconEditFilled className="size-4" />
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelectedEmployeeId(row.employeeId ?? null)
-                setSelectedUserId(row.userId)
-                setIsPasswordOpen(true)
-              }}
-            >
-              Reset Password
             </Button>
           </div>
         ),
@@ -127,14 +111,8 @@ function EmployeePage() {
         emptyMessage={
           isLoading ? "Loading..." : "No employee records are available."
         }
-        toolbarActions={
-          <Button type="button" size="sm" onClick={() => setIsCreateOpen(true)}>
-            Create User
-          </Button>
-        }
       />
       <EditEmployeeModal
-        employeeId={selectedEmployeeId}
         userId={selectedUserId}
         open={isEditOpen}
         onClose={() => setIsEditOpen(false)}

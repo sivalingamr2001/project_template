@@ -7,18 +7,17 @@ using Server.Features.AccessRequests.Resubmit;
 using Server.Features.AccessRequests.ReviewByHod;
 using Server.Features.AccessRequests.ReviewByIt;
 using Server.Features.AccessRequests.Revoke;
-using Server.Features.AuditLogs.GetList;
 using Server.Features.Admin.FolderMapping;
+using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
+using Server.Features.Dashboard.AccessRequestDashboard;
 using Server.Features.Dashboard.GetDashboard;
-using Server.Features.Departments.Create;
 using Server.Features.Departments.GetList;
 using Server.Features.Departments.Update;
 using Server.Features.Employees;
 using Server.Features.HOD;
 using Server.Features.Notifications.GetList;
 using Server.Features.Notifications.MarkRead;
-using Server.Features.Dashboard.AccessRequestDashboard;
 
 namespace Server.Api.Config;
 
@@ -29,16 +28,13 @@ public static class EndpointMappingExtensions
         var authGroup = app.MapGroup("/api/auth").WithTags("Auth");
         LoginEndpoint.Map(authGroup);
 
-        var employeesGroup = app.MapGroup("/api/employees").WithTags("Employees");
-        EmployeesEndpoint.Map(employeesGroup);
-
-        var legacyUsersGroup = app.MapGroup("/api/User").WithTags("Employees");
-        EmployeesEndpoint.MapLegacy(legacyUsersGroup);
+        var usersGroup = app.MapGroup("/api/users").WithTags("Users");
+        UsersEndpoint.Map(usersGroup);
 
         var departmentsGroup = app.MapGroup("/api/departments").WithTags("Departments");
         GetDepartmentsEndpoint.Map(departmentsGroup);
         //GetDepartmentHodEndpoint.Map(departmentsGroup);
-        CreateDepartmentEndpoint.Map(departmentsGroup);
+        //CreateDepartmentEndpoint.Map(departmentsGroup);
         UpdateDepartmentEndpoint.Map(departmentsGroup);
 
         var adminGroup = app.MapGroup("/api/admin").WithTags("Admin");

@@ -97,10 +97,9 @@ function CommonTable<T>({
     return filteredRows.slice(startIndex, startIndex + resolvedPageSize)
   }, [currentPage, filteredRows, isServerPaginated, resolvedPageSize])
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredRows.length / resolvedPageSize)
-  )
+  const totalPages = isServerPaginated
+    ? Math.max(1, Math.ceil((pagination?.totalCount ?? 0) / resolvedPageSize))
+    : Math.max(1, Math.ceil(filteredRows.length / resolvedPageSize))
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)

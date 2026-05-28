@@ -17,7 +17,7 @@ public sealed class DatabaseInitializer(
             await dbContext.Database.EnsureCreatedAsync(cancellationToken);
 
             // Seed the MySQL Stored Procedure for sequential ticket numbering
-            await SeedStoredProcedureAsync(cancellationToken);
+            //await SeedStoredProcedureAsync(cancellationToken);
 
             // Seed data
             await SeedDataAsync(cancellationToken);
@@ -94,32 +94,24 @@ public sealed class DatabaseInitializer(
                 new()
                 {
                     UserId = 1,
-                    EmployeeId = "1",
-                    Email = "john@example.com",
                     UserRole = UserRole.User,
                     IsActive = true
                 },
                 new()
                 {
                     UserId = 2,
-                    EmployeeId = "2",
-                    Email = "jane@example.com",
                     UserRole = UserRole.Hod,
                     IsActive = true
                 },
                 new()
                 {
-                    UserId = 3,
-                    EmployeeId = "3",
-                    Email = "rose@example.com",
+                    UserId = 5,
                     UserRole = UserRole.Operator,
                     IsActive = true
                 },
                 new()
                 {
-                    UserId = 4,
-                    EmployeeId = "4",
-                    Email = "admin@example.com",
+                    UserId = 6,
                     UserRole = UserRole.Admin,
                     IsActive = true
                 }

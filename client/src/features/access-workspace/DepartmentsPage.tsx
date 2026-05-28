@@ -10,19 +10,17 @@ import type { TableColumn } from "./types"
 import { useDepartments } from "./hooks/useDepartments"
 import type { Department } from "./types"
 
-type DepartmentRow = Department
-
 export default function DepartmentsPage() {
   const { departments, isLoading, error, refetch } = useDepartments()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [mode, setMode] = useState<"create" | "edit">("create")
   const [selected, setSelected] = useState<Department | null>(null)
 
-  const columns = useMemo<TableColumn<DepartmentRow>[]>(() => {
+  const columns = useMemo<TableColumn<Department>[]>(() => {
     return [
-      { key: "id", header: "Department ID", render: (row) => row.deptId },
-      { key: "name", header: "Department", render: (row) => row.name },
-      { key: "hod", header: "HOD Name", render: (row) => row.hodName },
+      { key: "id", header: "Department ID", render: (row) => row.departmentId },
+      { key: "name", header: "Department", render: (row) => row.departmentName },
+      { key: "hod", header: "HOD ID", render: (row) => row.hodId },
       {
         key: "actions",
         header: "Actions",
@@ -44,14 +42,14 @@ export default function DepartmentsPage() {
     ]
   }, [])
 
-  const rows: DepartmentRow[] = departments
+  const rows: Department[] = departments
 
   return (
     <PageSection title="Departments" description="Department reference table.">
       {error ? <p className="mb-4 text-sm text-destructive">{error}</p> : null}
       <CommonTable
         columns={columns}
-        getRowId={(row) => row.deptId}
+        getRowId={(row) => row.departmentId}
         onRefresh={refetch}
         pageSize={5}
         rows={isLoading ? [] : rows}

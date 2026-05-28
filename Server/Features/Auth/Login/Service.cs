@@ -91,8 +91,6 @@ public sealed class LoginService(
         var newUser = new EmployeeEntity
         {
             UserId = cmplUser.UserId,
-            EmployeeId = cmplUser.EmployeeId,
-            Email = cmplUser.Email,
             UserRole = UserRole.User,
             IsActive = true,
             CreatedOn = DateTime.UtcNow,
@@ -128,26 +126,9 @@ public sealed class LoginService(
 
     private async Task SyncLocalUserAsync(EmployeeEntity localUser, CmplUserRecord cmplUser, CancellationToken ct)
     {
-        var changed = false;
-
-        if (!string.Equals(localUser.EmployeeId, cmplUser.EmployeeId, StringComparison.OrdinalIgnoreCase))
-        {
-            localUser.EmployeeId = cmplUser.EmployeeId;
-            changed = true;
-        }
-
-        if (!string.Equals(localUser.Email, cmplUser.Email, StringComparison.OrdinalIgnoreCase))
-        {
-            localUser.Email = cmplUser.Email;
-            changed = true;
-        }
-
-        if (changed)
-        {
-            localUser.UpdatedOn = DateTime.UtcNow;
-            await dbContext.SaveChangesAsync(ct);
-            logger.LogDebug("Synced local user {UserId} with CMPL data", cmplUser.UserId);
-        }
+        // No longer syncing Email/EmployeeId as they are not stored in local EmployeeEntity
+        // These are maintained only in CMPL database
+        await Task.CompletedTask;
     }
 
     private async Task<LoginResponse> BuildLoginResponseAsync(
@@ -194,11 +175,10 @@ public sealed class LoginService(
         HODDetailsDto? hodDto = null;
         if (dept.Hod != null)
         {
-            // Note: You may need to fetch HOD profile from CMPL if not stored locally
             hodDto = new HODDetailsDto(
                 dept.Hod.UserId,
-                "N/A", // Fetch from CMPL or add UserName to EmployeeEntity
-                dept.Hod.Email ?? "N/A",
+                "N/A",
+                "N/A",
                 "N/A");
         }
 

@@ -174,13 +174,13 @@ export async function fetchAccessRequests(
 
   // Ensure payload and payload.data exist before mapping
   if (!payload || !Array.isArray(payload.data)) {
-    return [];
+    return []
   }
 
   return payload.data.map((request: any) => {
     // FIX: Fallback to a default status if request.status doesn't exist in DTO
-    const rawStatus = request.status !== undefined ? request.status : 0; 
-    
+    const rawStatus = request.status !== undefined ? request.status : 0
+
     return {
       ...request,
       status: (typeof rawStatus === "number"
@@ -188,7 +188,7 @@ export async function fetchAccessRequests(
         : rawStatus) as RequestStatus,
 
       // Match C# backend property name 'accessItems'
-      accessItems: Array.isArray(request.accessItems) 
+      accessItems: Array.isArray(request.accessItems)
         ? request.accessItems.map((item: any) => ({
             ...item,
             status: (typeof item.status === "number"
@@ -204,7 +204,7 @@ export async function fetchAccessRequests(
       aggregateStatus: (typeof request.aggregateStatus === "number"
         ? AGGREGATE_STATUS_MAP[request.aggregateStatus]
         : request.aggregateStatus || "Pending") as AggregateStatus,
-    };
+    }
   })
 }
 
@@ -250,10 +250,7 @@ export async function fetchNotifications(
   }
 }
 
-export async function markNotificationRead(
-  auditId: number,
-  userId: number
-) {
+export async function markNotificationRead(auditId: number, userId: number) {
   const response = await fetch(`${API_URL}/notifications/${auditId}/read`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -295,7 +292,7 @@ export async function fetchAllUsers(
   pageSize = 10
 ): Promise<PaginatedResponse<EmployeeRecord>> {
   const response = await fetch(
-    `${API_URL}/User/GetAllUsers?Page=${page}&PageSize=${pageSize}`
+    `${API_URL}/Users?Page=${page}&PageSize=${pageSize}`
   )
   if (!response.ok) throw new Error("Unable to load employees.")
 
@@ -303,11 +300,19 @@ export async function fetchAllUsers(
   return {
     data: payload.data.map((item: any) => ({
       userId: item.userId,
+      userName: item.userName,
       employeeId: item.employeeId,
-      name: item.name,
-      departmentName: item.departmentName,
-      role: item.role as AppRole,
+      name: item.userName, // Note: API uses 'userName', mapping it here as requested previously
+      role: item.role,
       email: item.email,
+      mobile: item.mobile,
+      hod: item.hod, // Directly mapping 'hod' field (null in example)
+      location: item.location,
+
+      // Department specific fields
+      departmentId: item.department?.departmentId || null,
+      departmentName: item.department?.departmentName || "",
+      hodId: item.department?.hodId || null, // Extracts hodId from inside department
     })),
     page: payload.page,
     pageSize: payload.pageSize,
@@ -343,7 +348,7 @@ export async function searchEmployees(
 }
 
 export async function fetchUserProfile(userId: number): Promise<AuthUser> {
-  const response = await fetch(`${API_URL}/User/${userId}`)
+  const response = await fetch(`${API_URL}/Users/${userId}`)
   if (!response.ok) throw new Error("Unable to load user profile.")
   return safeParseJson(response)
 }
@@ -365,7 +370,7 @@ export async function updateUserProfile(
   userId: number,
   payload: UpdateUserPayload
 ): Promise<AuthUser> {
-  const response = await fetch(`${API_URL}/User/${userId}`, {
+  const response = await fetch(`${API_URL}/Users/${userId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -425,8 +430,8 @@ export async function createDepartment(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      deptId: department.deptId,
-      name: department.name,
+      deptId: department.departmentId,
+      name: department.departmentName,
       hodId: department.hodId,
     }),
   })
@@ -444,11 +449,11 @@ export async function createDepartment(
 export async function updateDepartment(
   department: Department
 ): Promise<Department> {
-  const response = await fetch(`${API_URL}/departments/${department.deptId}`, {
+  const response = await fetch(`${API_URL}/departments/${department.departmentId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      name: department.name,
+      name: department.departmentName,
       hodId: department.hodId,
     }),
   })

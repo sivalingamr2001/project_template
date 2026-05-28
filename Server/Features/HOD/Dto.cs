@@ -7,3 +7,11 @@ public class HodResponse
     public string Email { get; set; } = null!;
     public string PhoneNumber { get; set; } = null!;
 }
+
+public class HodRequest
+{
+    public string EmployeeId { get; set; } = string.Empty;
+    public string Name { get; set; } = null!;
+    public string Email { get; set; } = null!;
+    public string UserId { get; set; } = null!;
+}

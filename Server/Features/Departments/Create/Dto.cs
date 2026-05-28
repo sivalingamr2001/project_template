@@ -1,5 +1,5 @@
-using Server.Shared.Helpers;
+//using Server.Shared.Helpers;
 
-namespace Server.Features.Departments.Create;
+//namespace Server.Features.Departments.Create;
 
-public sealed record CreateDepartmentRequest(int DeptId, string Name, int HodId);
+//public sealed record CreateDepartmentRequest(int DeptId, string Name, int HodId);

@@ -45,9 +45,9 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
 
         try
         {
-            var recipientEmails = notification.Recipients
-                .Select(employee => employee.Email?.Trim())
-                .Where(email => !string.IsNullOrWhiteSpace(email))
+            // Recipients don't have email in EmployeeEntity; use synthetic address
+            var recipientEmails = recipients
+                .Select(employee => $"user{employee.UserId}@system.local")
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
@@ -187,7 +187,7 @@ public class AccessRequestEmailNotificationService : IAccessRequestEmailNotifica
 
     private static string BuildDisplayName(EmployeeEntity employee)
     {
-        return employee.Email;
+        return $"User {employee.UserId}";
     }
 
     private static string BuildRecipientLabel(EmployeeEntity employee)

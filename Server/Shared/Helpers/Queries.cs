@@ -27,9 +27,9 @@ public static class Queries
         FROM it_inventory_db_new.jan_complaint_login";
 
     public const string GetDepartmentIdQuery = @"
-        SELECT DISTINCT TRIM(dept_id) AS DepartmentId
+        SELECT DISTINCT dept_id AS departmentId
         FROM it_inventory_db_new.jan_complaint_login
-        WHERE dept_id IS NOT NULL AND TRIM(dept_id) != ''
+        WHERE dept_id IS NOT NULL AND dept_id != ''
         ORDER BY DepartmentId ASC";
 
     public const string GetHodData = @"
@@ -37,7 +37,35 @@ public static class Queries
             id AS EmployeeId, 
             hodname AS Name, 
             Email_ID AS Email, 
-            Mob_no AS PhoneNumber
+            Mob_no AS Mobile
         FROM it_inventory_db_new.hod_master
         WHERE deleted = 0";
+
+    public const string SearchHodMasterQuery = @"
+        SELECT 
+            id_row AS UserId, 
+            id AS EmployeeId, 
+            hodname AS Name, 
+            Email_ID AS Email, 
+            Mob_no AS Mobile
+        FROM it_inventory_db_new.hod_master
+        WHERE deleted = 0 
+          AND (hodname = @SearchTerm 
+               OR id = @SearchTerm 
+               OR Email_ID = @SearchTerm)";
+
+    public const string SearchCmplLoginQuery = @"
+        SELECT 
+            String(CMPL_USER_ID) AS UserId, 
+            emp_id AS EmployeeId, 
+            CMPL_USER_NAME AS Name, 
+            MAIL_ID AS Email,
+            MOB_NO AS Mobile
+        FROM it_inventory_db_new.jan_complaint_login
+        WHERE deleted_flag = 0 
+          AND (CMPL_USER_NAME = @SearchTerm 
+               OR CMPL_USER_ID = @SearchTerm 
+               OR emp_id = @SearchTerm 
+               OR MAIL_ID = @SearchTerm)
+        LIMIT 1";
 }

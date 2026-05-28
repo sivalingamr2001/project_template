@@ -15,11 +15,11 @@ public sealed class DepartmentEntity
 
     [Required]
     [Column("dept_name")]
-    public string DepartmentName { get; set; } = string.Empty;
+    public string? DepartmentName { get; set; } = string.Empty;
 
     [Required]
     [Column("hod_id")]
-    public int HodId { get; set; }
+    public int? HodId { get; set; }
 
     [ForeignKey(nameof(HodId))]
     public EmployeeEntity? Hod { get; set; }
@@ -28,13 +28,13 @@ public sealed class DepartmentEntity
     public bool IsActive { get; set; } = true;
 
     [Column("CreatedOn")]
-    public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+    public DateTime? CreatedOn { get; set; }
 
     [Column("CreatedBy")]
     public string? CreatedBy { get; set; }
 
     [Column("UpdatedOn")]
-    public DateTime UpdatedOn { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedOn { get; set; }
 
     [Column("ModifiedBy")]
     public string? ModifiedBy { get; set; }

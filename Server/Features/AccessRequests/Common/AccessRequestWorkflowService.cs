@@ -1151,9 +1151,7 @@ public sealed class AccessRequestWorkflowService(
         var employees = await dbContext.Employees
         .AsNoTracking()
         .Where(employee =>
-            folderHodEmployeeIds.Contains(employee.UserId)
-            || folderHodEmails.Contains(employee.Email)
-            || folderHodUserNames.Contains(employee.Email))
+            folderHodEmployeeIds.Contains(employee.UserId))
         .ToListAsync(cancellationToken);
 
         return employees.DistinctBy(employee => employee.UserId).ToList(); ;
@@ -1161,31 +1159,16 @@ public sealed class AccessRequestWorkflowService(
 
     private static void AddFolderHodIdentifiers(
         string? hodId,
-        string? hodEmail,
-        HashSet<int> employeeIds,
-        HashSet<string> emails,
-        HashSet<string> usernames)
+        HashSet<int> employeeIds)
     {
         if (!string.IsNullOrWhiteSpace(hodId))
         {
             var trimmedId = hodId.Trim();
+            // Only support numeric UserId matching since EmployeeEntity no longer has Email
             if (int.TryParse(trimmedId, out var parsedEmployeeId))
             {
                 employeeIds.Add(parsedEmployeeId);
             }
-            else if (trimmedId.Contains("@"))
-            {
-                emails.Add(trimmedId);
-            }
-            else
-            {
-                usernames.Add(trimmedId);
-            }
-        }
-
-        if (!string.IsNullOrWhiteSpace(hodEmail))
-        {
-            emails.Add(hodEmail.Trim());
         }
     }
 

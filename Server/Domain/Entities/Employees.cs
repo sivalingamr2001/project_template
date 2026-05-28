@@ -13,11 +13,8 @@ public sealed class EmployeeEntity
     [Column("user_id")]
     public int UserId { get; set; }
 
-    [Column("employee_id")]
-    public string? EmployeeId { get; set; }
-
     [Column("email")]
-    public string? Email { get; set; }
+    public string? Email { get; set; } = string.Empty;
 
     [Column("user_role")]
     public UserRole? UserRole { get; set; }

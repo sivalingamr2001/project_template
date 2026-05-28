@@ -1,23 +1,20 @@
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql;
 using Server.Features.AccessRequests.Common;
 using Server.Features.AccessRequests.Create;
+using Server.Features.AccessRequests.GetList;
+using Server.Features.Admin.FolderMapping;
 using Server.Features.AuditLogs.GetList;
 using Server.Features.Auth.Login;
-using Server.Features.Dashboard.AccessRequestDashboard;
 using Server.Features.Dashboard.GetDashboard;
-using Server.Features.Departments.Create;
 using Server.Features.Departments.GetList;
 using Server.Features.Departments.Update;
 using Server.Features.Employees;
+using Server.Features.HOD;
 using Server.Infrastructure.Db;
 using Server.Infrastructure.Oracle;
 using Server.Shared.Camunda;
 using Server.Shared.Constants;
-using Server.Features.AccessRequests.GetList;
-using Server.Features.HOD;
 using Server.Shared.Helpers;
-using Server.Features.Admin.FolderMapping;
 
 namespace Server.Api.Config;
 
@@ -61,7 +58,9 @@ public static class ServiceCollectionExtensions
         services.AddSwaggerGen();
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
 
+        // Register it as a service, not as Options
         services.AddSingleton<ConnectionStrings>();
+
         services.AddScoped<DatabaseInitializer>();
         services.AddTransient<AccessRequestWorkflowService>();
         services.AddScoped<LoginService>();
@@ -71,7 +70,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CreateAccessRequestService>();
         services.AddScoped<GetAccessRequestsService>();
         services.AddScoped<GetDepartmentsService>();
-        services.AddScoped<CreateDepartmentService>();
+        //services.AddScoped<CreateDepartmentService>();
         services.AddScoped<UpdateDepartmentService>();
         services.AddScoped<HODService>();
         services.AddScoped<GetDashboardService>();
