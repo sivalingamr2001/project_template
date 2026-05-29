@@ -16,7 +16,7 @@ namespace API
                 options.AddPolicy("AllowAll",
                     policy =>
                     {
-                        policy.WithOrigins("http://localhost:3000")
+                        policy.WithOrigins("http://localhost:3000", "http://localhost:5000")
                               .AllowAnyMethod()
                               .AllowAnyHeader();
                     });
@@ -54,6 +54,8 @@ namespace API
             
             app.UseAuthorization();
             app.MapControllers();
+
+            app.MapFallbackToFile("index.html");
 
             app.Run();
         }

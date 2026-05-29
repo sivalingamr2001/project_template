@@ -1,9 +1,9 @@
 using Domain.DomainEnums;
-using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Infrastructure.Persistence.Entities
 {
+    [Table("JAN_REQUISITIONS")]
     public class Requisition : BaseAuditableEntity
     {
         public string RecNo { get; set; }

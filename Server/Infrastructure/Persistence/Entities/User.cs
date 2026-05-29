@@ -1,7 +1,9 @@
 ﻿using Domain.DomainEnums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Infrastructure.Persistence.Entities
 {
+    [Table("JAN_USERS")]
     public class User : BaseAuditableEntity
     {
         public string EmployeeId { get; set; }

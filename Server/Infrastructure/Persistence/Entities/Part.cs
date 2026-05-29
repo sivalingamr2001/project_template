@@ -1,7 +1,9 @@
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Infrastructure.Persistence.Entities
 {
+    [Table("JAN_PARTS")]
     public class Part : BaseEntity
     {
         public int RequisitionId { get; set; }
