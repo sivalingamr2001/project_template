@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 // Utility function to get VITE_BASE_API_URL from environment variables
 export const getApiBaseUrl = (): string => {
   const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-  const trimmedBaseUrl = rawApiBaseUrl?.replace(/\/+$/g, "") ?? "https://localhost:5001";
+  const trimmedBaseUrl = rawApiBaseUrl?.replace(/\/+$/g, "") ?? "/api";
   return trimmedBaseUrl.endsWith("/api")
     ? trimmedBaseUrl
     : `${trimmedBaseUrl}/api`;
