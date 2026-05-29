@@ -1,15 +1,8 @@
-import React, { useCallback, useRef } from "react";
-import { type UseFormRegister, type Control, Controller, useFormContext, type UseFormSetValue } from "react-hook-form";
-import { useSearchApi } from "@/core/api/useSearch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useSearchApi } from "@/core/api/useSearch";
+import React, { useCallback, useRef } from "react";
+import { type Control, useFormContext, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import type { RequisitionFormData } from "./types";
 
 interface ProductInfoProps {
@@ -18,7 +11,7 @@ interface ProductInfoProps {
   setValue?: UseFormSetValue<RequisitionFormData>;
 }
 
-export const ProductInfo: React.FC<ProductInfoProps> = ({ register, control, setValue: setValueProp }) => {
+export const ProductInfo: React.FC<ProductInfoProps> = ({ register, setValue: setValueProp }) => {
   let formContext: { setValue?: UseFormSetValue<RequisitionFormData> } | undefined;
   try {
     formContext = useFormContext<RequisitionFormData>();

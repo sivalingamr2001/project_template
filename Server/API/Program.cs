@@ -46,6 +46,12 @@ namespace API
 
             app.UseHttpsRedirection();
             app.UseCors("AllowAll");
+
+             // Serve default files like index.html
+            app.UseDefaultFiles(); 
+            // Serve static files from wwwroot
+            app.UseStaticFiles(); 
+            
             app.UseAuthorization();
             app.MapControllers();
 
@@ -53,4 +59,3 @@ namespace API
         }
     }
 }
-

@@ -64,7 +64,7 @@ const router = createBrowserRouter(
       ],
     },
   ],
-  { basename: "/portal" },
+  { basename: "/rcd-portal" },
 );
 
 export const Router = () => <RouterProvider router={router} />;

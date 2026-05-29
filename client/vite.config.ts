@@ -6,7 +6,7 @@ import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig(({ mode }) => ({
-  base: "/portal",
+  base: "/rcd-portal",
   server: {
     port: 3000,
   },
