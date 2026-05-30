@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Core Infrastructure Dependencies (Managed Centrally) -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Newtonsoft.Json" />
+
+    <!-- Logging Engine Dependencies (Managed Centrally) -->
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+
+    <!-- OpenApi Routing Dependencies (Managed Centrally - Fixes UseSerilogRequestLogging and Controller mappings) -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Local Assembly Integration Reference -->
+    <Reference Include="KATCRUDServices.Core">
+      <HintPath>Infrastructure\ExternalSources\KATCRUDServices.Core.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Cross-Project Class Library Reference Dependency Link -->
+    <ProjectReference Include="..\..\DataEngine\DataEngine.csproj" />
+  </ItemGroup>
+</Project>

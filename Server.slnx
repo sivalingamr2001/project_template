@@ -1,3 +1,4 @@
 <Solution>
-  <Project Path="Server/Server.csproj" />
+  <Project Path="DataEngine/DataEngine.csproj" Id="a0648199-147c-4a64-ae6d-441dcf603002" />
+  <Project Path="Server/WebApi/WebApi.csproj" />
 </Solution>
