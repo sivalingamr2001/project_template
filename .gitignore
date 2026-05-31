@@ -57,7 +57,7 @@ appsettings.*.local.json
 
 ## EF Core Migrations — keep these, but ignore migration snapshots in development
 # Uncomment below if you want to ignore migrations:
-# **/Migrations/
+**/Migrations/
 
 ## Docker
 docker-compose.override.yml
