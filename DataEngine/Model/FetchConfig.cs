@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 namespace DataEngine.Model;
 
@@ -31,7 +31,11 @@ public class FetchConfig
 public class FilterCondition
 {
     public string Field { get; set; } = string.Empty;
-    public string Operator { get; set; } = "eq"; // eq, neq, gt, lt, gte, lte, contains, startswith, endswith
+
+    /// <summary>
+    /// Supported: eq | neq | gt | lt | gte | lte | contains | startswith | endswith
+    /// </summary>
+    public string Operator { get; set; } = "eq";
     public object? Value { get; set; }
 }
 

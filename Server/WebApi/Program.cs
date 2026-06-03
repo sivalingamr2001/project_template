@@ -2,6 +2,8 @@ using DataEngine.Extensions;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using WebApi.API.Features._Common;
+using WebApi.Domain.Interfaces;
+using WebApi.Domain.Services;
 
 /**
 * Instantiates a new logging configuration engine.
@@ -89,6 +91,7 @@ try
     * Registers the WebApi common transaction routing helper class into the service scope context.
     */
     builder.Services.AddScoped<ProcessTransactionService>();
+    builder.Services.AddScoped<IAuthService, AuthServices>();
 
     // --- APPLICATION BUILDING LAYER ---
 

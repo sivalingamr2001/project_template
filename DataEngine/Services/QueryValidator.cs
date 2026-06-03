@@ -1,8 +1,13 @@
-﻿using DataEngine.Abstractions;
+using DataEngine.Abstractions;
 using DataEngine.Model;
 
 namespace DataEngine.Services;
 
+/// <summary>
+/// Validates FetchConfig before query execution.
+/// Pure synchronous validation — no database calls.
+/// Logic unchanged from original; comments improved.
+/// </summary>
 public class QueryValidator : IQueryValidator
 {
     private static readonly HashSet<string> AllowedOperators = new(StringComparer.OrdinalIgnoreCase)
@@ -12,31 +17,27 @@ public class QueryValidator : IQueryValidator
 
     public (bool IsValid, string FailureReason) ValidateQueryConfig(FetchConfig config)
     {
+        // Direct execution requires QueryText to be supplied
         if (config.EnableDirectQueryExecution && string.IsNullOrWhiteSpace(config.QueryText))
-        {
             return (false, "Direct query execution enabled but QueryText is null or empty.");
-        }
 
+        // Validate each filter condition when server-side filtering is active
         if (config.EnableServerSideFiltering && config.FilterConditions != null)
         {
             foreach (var filter in config.FilterConditions)
             {
                 if (string.IsNullOrWhiteSpace(filter.Field))
-                {
-                    return (false, "Filter field target cannot be null or blank space characters.");
-                }
+                    return (false, "Filter field target cannot be null or blank.");
 
                 if (!AllowedOperators.Contains(filter.Operator))
-                {
-                    return (false, $"Unsupported operator pattern passed: '{filter.Operator}'");
-                }
+                    return (false, $"Unsupported filter operator: '{filter.Operator}'. " +
+                                   $"Allowed: {string.Join(", ", AllowedOperators)}");
             }
         }
 
+        // Sort requires a field name
         if (config.EnableServerSideSorting && string.IsNullOrWhiteSpace(config.SortField))
-        {
-            return (false, "Server side sorting enabled but SortField targets blank values.");
-        }
+            return (false, "Server-side sorting is enabled but SortField is blank.");
 
         return (true, string.Empty);
     }

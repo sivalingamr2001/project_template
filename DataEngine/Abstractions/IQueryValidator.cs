@@ -1,4 +1,4 @@
-﻿using DataEngine.Model;
+using DataEngine.Model;
 
 namespace DataEngine.Abstractions;
 

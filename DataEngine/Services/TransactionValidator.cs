@@ -4,58 +4,77 @@ using System.Globalization;
 
 namespace DataEngine.Services;
 
+/// <summary>
+/// Validates TransactionRequest payload against the live table schema
+/// before any database write is attempted.
+///
+/// Logic unchanged from original.
+/// Error messages improved for clarity.
+/// </summary>
 public class TransactionValidator : ITransactionValidator
 {
-    public Task<(bool IsValid, string FailureReason)> ValidatePayloadAsync(TransactionRequest request, List<ColumnMetadata> schema, CancellationToken cancellationToken = default)
+    public Task<(bool IsValid, string FailureReason)> ValidatePayloadAsync(
+        TransactionRequest request,
+        List<ColumnMetadata> schema,
+        CancellationToken cancellationToken = default)
     {
-        // 1. Map columns for instant O(1) lookups
-        var schemaMap = schema.ToDictionary(c => c.ColumnName.ToLowerInvariant());
+        // O(1) column lookup map
+        var schemaMap = schema.ToDictionary(
+            c => c.ColumnName.ToLowerInvariant(),
+            c => c);
 
-        // 2. Validate Delete Payloads (Check PK structural existence)
+        // ── Validate DELETE payloads ───────────────────────────────────
         if (request.DelProps.TryGetValue(request.TransactionEntityName, out var deleteRows))
         {
             var pkColumn = schema.FirstOrDefault(c => c.IsPrimaryKey);
-            if (pkColumn == null)
-            {
-                return Task.FromResult((false, $"Delete requested but no primary key defined on table '{request.TransactionEntityName}'"));
-            }
+            if (pkColumn is null)
+                return Task.FromResult((false,
+                    $"DELETE requested but table '{request.TransactionEntityName}' " +
+                    $"has no primary key defined in INFORMATION_SCHEMA."));
 
             foreach (var row in deleteRows)
             {
-                if (!row.TryGetValue(pkColumn.ColumnName, out var pkValue) || pkValue == null)
-                {
-                    return Task.FromResult((false, $"Delete operation payload missing targeted primary key field: '{pkColumn.ColumnName}'"));
-                }
+                if (!row.TryGetValue(pkColumn.ColumnName, out var pkValue) || pkValue is null)
+                    return Task.FromResult((false,
+                        $"DELETE payload is missing primary key field '{pkColumn.ColumnName}'. " +
+                        $"Every delete row must include the primary key value."));
             }
         }
 
-        // 3. Validate Upsert Payloads (Type Matrix Compliance Match)
+        // ── Validate UPSERT payloads ───────────────────────────────────
         if (request.RenProps.TryGetValue(request.TransactionEntityName, out var upsertRows))
         {
             foreach (var row in upsertRows)
             {
                 foreach (var field in row)
                 {
-                    if (!schemaMap.TryGetValue(field.Key.ToLowerInvariant(), out var columnMetadata))
-                    {
-                        // Safe Guard: Blocks incoming columns that do not exist in the physical database
-                        return Task.FromResult((false, $"Column '{field.Key}' does not exist on table '{request.TransactionEntityName}'"));
-                    }
+                    // Block columns not present in the physical table
+                    if (!schemaMap.TryGetValue(field.Key.ToLowerInvariant(), out var columnMeta))
+                        return Task.FromResult((false,
+                            $"Column '{field.Key}' does not exist on table " +
+                            $"'{request.TransactionEntityName}'. " +
+                            $"Check for typos or stale client schemas."));
 
-                    if (field.Value == null || field.Value is DBNull)
+                    // Null check on non-nullable columns
+                    if (field.Value is null || field.Value is DBNull)
                     {
-                        if (!columnMetadata.IsNullable && !columnMetadata.IsAutoIncrement && !columnMetadata.HasDefaultValue)
+                        if (!columnMeta.IsNullable &&
+                            !columnMeta.IsAutoIncrement &&
+                            !columnMeta.HasDefaultValue)
                         {
-                            return Task.FromResult((false, $"Column '{field.Key}' is non-nullable and cannot accept Null data inputs."));
+                            return Task.FromResult((false,
+                                $"Column '{field.Key}' is non-nullable and has no default value. " +
+                                $"A null value is not permitted."));
                         }
                         continue;
                     }
 
-                    // 4. Evaluate Payload Type Matrix Compatibilities
-                    if (!IsValidTypeMapping(field.Value, columnMetadata))
-                    {
-                        return Task.FromResult((false, $"Type mismatch for column '{field.Key}'. Received payload type '{field.Value.GetType().Name}' which is incompatible with database type reference '{columnMetadata.DataType}'"));
-                    }
+                    // Type compatibility check
+                    if (!IsValidTypeMapping(field.Value, columnMeta))
+                        return Task.FromResult((false,
+                            $"Type mismatch for column '{field.Key}': " +
+                            $"received '{field.Value.GetType().Name}' " +
+                            $"which is incompatible with database type '{columnMeta.DataType}'."));
                 }
             }
         }
@@ -63,28 +82,28 @@ public class TransactionValidator : ITransactionValidator
         return Task.FromResult((true, string.Empty));
     }
 
-    private bool IsValidTypeMapping(object value, ColumnMetadata column)
+    private static bool IsValidTypeMapping(object value, ColumnMetadata column)
     {
-        string rawValue = value.ToString() ?? string.Empty;
+        string raw = value.ToString() ?? string.Empty;
 
         return column.DataType.ToLowerInvariant() switch
         {
             "int" or "integer" or "bigint" or "smallint" or "tinyint" =>
-                long.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out _),
+                long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out _),
 
             "decimal" or "numeric" or "double" or "float" =>
-                decimal.TryParse(rawValue, NumberStyles.Float, CultureInfo.InvariantCulture, out _),
+                decimal.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out _),
 
             "datetime" or "timestamp" or "date" =>
-                DateTime.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+                DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
 
             "bit" or "boolean" =>
-                bool.TryParse(rawValue, out _) || rawValue == "1" || rawValue == "0",
+                bool.TryParse(raw, out _) || raw == "1" || raw == "0",
 
             "varchar" or "char" or "text" or "longtext" or "mediumtext" =>
-                column.MaxCharacterLength == null || rawValue.Length <= column.MaxCharacterLength,
+                column.MaxCharacterLength is null || raw.Length <= column.MaxCharacterLength,
 
-            _ => true // Fallback trace for custom binary blobs or special expressions
+            _ => true // Unknown/custom types pass through
         };
     }
 }

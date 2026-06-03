@@ -1,20 +1,42 @@
 using DataEngine.Abstractions;
+using DataEngine.Logging;
 using DataEngine.Repository;
 using DataEngine.Services;
 using Microsoft.Extensions.DependencyInjection;
 
+namespace DataEngine.Extensions;
+
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers all DataEngine services.
+    ///
+    /// Single call — unchanged for consumers.
+    /// Internally adds the new ITransaction central contract
+    /// while keeping IDynamicTransactionProcessor and IDynamicReadEngine
+    /// available for existing callers.
+    ///
+    /// Usage (unchanged):
+    ///   services.AddDynamicDataEngine();
+    /// </summary>
     public static IServiceCollection AddDynamicDataEngine(this IServiceCollection services)
     {
-        // CRUD Mutations Layer
+        // ── Infrastructure ─────────────────────────────────────────────
         services.AddSingleton<ApplicationTableMetadataRepository>();
-        services.AddSingleton<ITransactionValidator, TransactionValidator>();
-        services.AddScoped<IDynamicTransactionProcessor, DynamicTransactionProcessor>();
+        services.AddSingleton<DataEngineFileLogger>();
 
-        // Pure Fetch Query Engine Layer
+        // ── Validators ─────────────────────────────────────────────────
+        services.AddSingleton<ITransactionValidator, TransactionValidator>();
         services.AddSingleton<IQueryValidator, QueryValidator>();
-        services.AddScoped<IDynamicReadEngine, DynamicReadEngine>();
+
+        // ── Central transaction engine ─────────────────────────────────
+        // DataEngineTransaction implements ITransaction, IDynamicTransactionProcessor,
+        // and IDynamicReadEngine. Registered as Scoped — creates one instance per
+        // HTTP request/DI scope. All three interfaces resolve to the same instance.
+        services.AddScoped<DataEngineTransaction>();
+        services.AddScoped<ITransaction>(sp => sp.GetRequiredService<DataEngineTransaction>());
+        services.AddScoped<IDynamicTransactionProcessor>(sp => sp.GetRequiredService<DataEngineTransaction>());
+        services.AddScoped<IDynamicReadEngine>(sp => sp.GetRequiredService<DataEngineTransaction>());
 
         return services;
     }
